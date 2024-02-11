@@ -244,7 +244,7 @@ public class EntityItem extends Entity {
                 }
             }
 
-            int bid = level.getBlock(this.getFloorX(), NukkitMath.floorDouble(this.boundingBox.getMaxY()), this.getFloorZ(), false).getId();
+            int bid = level.getBlock(this.getFloorX(), NukkitMath.floorDouble(this.boundingBox.getMinY()), this.getFloorZ(), false).getId();
             if (bid == BlockID.STILL_WATER || bid == BlockID.WATER) {
                 this.motionY -= this.getGravity() * -0.015;
             } else if (this.isInsideOfWater() || (this.floatsInLava && (bid == BlockID.LAVA || bid == BlockID.STILL_LAVA))) {
