@@ -95,7 +95,7 @@ public class EntityBoat extends EntityVehicle {
 
     @Override
     public float getBaseOffset() {
-        return 0.375F;
+        return 0.475F;
     }
 
     @Override
