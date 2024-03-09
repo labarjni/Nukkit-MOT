@@ -813,8 +813,6 @@ public class Server {
                 if (!this.getNukkitVersion().equals(latest) && !this.getNukkitVersion().equals("git-null") && isMaster) {
                     this.getLogger().info("§c[Nukkit-MOT][Update] §eThere is a new build of §cNukkit§3-§dMOT §eavailable! Current: " + this.getNukkitVersion() + " Latest: " + latest);
                     this.getLogger().info("§c[Nukkit-MOT][Update] §eYou can download the latest build from https://github.com/MemoriesOfTime/Nukkit-MOT/");
-                } else if (!isMaster) {
-                    this.getLogger().warning("§c[Nukkit-MOT] §eYou are running a dev build! Do not use in production! Branch: " + Nukkit.getBranch());
                 }
             } catch (Exception ignore) {
             }
