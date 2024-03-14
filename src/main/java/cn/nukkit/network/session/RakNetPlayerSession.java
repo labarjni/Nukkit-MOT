@@ -76,6 +76,9 @@ public class RakNetPlayerSession implements NetworkPlayerSession, RakNetSessionL
         if (packetId == 0xfe) {
             byte[] packetBuffer;
 
+            int totalLength = packet.getBuffer().readableBytes();
+            System.out.println(totalLength);
+
             boolean ci = false;
             if (this.compressionInitialized && this.player.protocol >= ProtocolInfo.v1_20_60) {
                 ci = true;
