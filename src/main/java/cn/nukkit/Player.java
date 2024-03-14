@@ -2832,6 +2832,8 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             return;
         }
 
+        System.out.println(packet.getBuffer().length);
+
         int pid = packet.packetId();
         if (!loginVerified && !PRE_LOGIN_VERIFIED_PACKETS.contains(pid)) {
             server.getLogger().warning("Ignoring " + packet.getClass().getSimpleName() + " from " + getAddress() + " due to player not verified yet");
