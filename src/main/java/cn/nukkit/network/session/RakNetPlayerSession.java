@@ -74,7 +74,7 @@ public class RakNetPlayerSession implements NetworkPlayerSession, RakNetSessionL
         ByteBuf buffer = packet.getBuffer();
         short packetId = buffer.readUnsignedByte();
 
-        System.out.println(packet.getPartCount());
+        System.out.println(packet.getBuffer().toString().length());
         if (packetId == 0xfe) {
             byte[] packetBuffer;
 
