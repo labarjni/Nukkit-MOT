@@ -76,7 +76,6 @@ public class RakNetPlayerSession implements NetworkPlayerSession, RakNetSessionL
         if (packetId == 0xfe) {
             byte[] packetBuffer;
 
-            System.out.println(packet.getSize());
             boolean ci = false;
             if (this.compressionInitialized && this.player.protocol >= ProtocolInfo.v1_20_60) {
                 ci = true;
@@ -286,6 +285,7 @@ public class RakNetPlayerSession implements NetworkPlayerSession, RakNetSessionL
 
     private void sendPacket(byte[] compressedPayload, RakNetPriority priority) {
         boolean ci = false;
+        System.out.println(compressedPayload.length);
         if (this.compressionInitialized && this.player.protocol >= ProtocolInfo.v1_20_60) {
             ci = true;
         }
