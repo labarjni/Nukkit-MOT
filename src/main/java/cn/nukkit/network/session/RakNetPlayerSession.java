@@ -73,11 +73,11 @@ public class RakNetPlayerSession implements NetworkPlayerSession, RakNetSessionL
     public void onEncapsulated(EncapsulatedPacket packet) {
         ByteBuf buffer = packet.getBuffer();
         short packetId = buffer.readUnsignedByte();
+
+        int totalLength = packet.getBuffer().readableBytes();
+        System.out.println(totalLength);
         if (packetId == 0xfe) {
             byte[] packetBuffer;
-
-            int totalLength = packet.getBuffer().readableBytes();
-            System.out.println(totalLength);
 
             boolean ci = false;
             if (this.compressionInitialized && this.player.protocol >= ProtocolInfo.v1_20_60) {
