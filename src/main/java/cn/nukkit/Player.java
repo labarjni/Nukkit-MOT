@@ -2664,6 +2664,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             }
         }
 
+        infoPacket.hasAddonPacks = false;
         infoPacket.mustAccept = this.server.getForceResources();
         this.dataPacket(infoPacket);
     }
