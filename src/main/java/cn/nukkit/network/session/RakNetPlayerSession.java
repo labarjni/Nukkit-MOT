@@ -285,7 +285,7 @@ public class RakNetPlayerSession implements NetworkPlayerSession, RakNetSessionL
 
     private void sendPacket(byte[] compressedPayload, RakNetPriority priority) {
         boolean ci = false;
-        System.out.println(compressedPayload.length);
+//        System.out.println(compressedPayload.length);
         if (this.compressionInitialized && this.player.protocol >= ProtocolInfo.v1_20_60) {
             ci = true;
         }
