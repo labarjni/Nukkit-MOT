@@ -2886,7 +2886,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
                 this.protocol = loginPacket.getProtocol();
 
-                this.username = TextFormat.clean(loginPacket.username);
+                this.username = TextFormat.clean(loginPacket.username).replace(" ", "_");
 
                 if (!ProtocolInfo.SUPPORTED_PROTOCOLS.contains(this.protocol)) {
                     this.close("", "You are running unsupported Minecraft version");
