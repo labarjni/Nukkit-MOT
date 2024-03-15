@@ -621,7 +621,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
         this.recalculatePermissions();
         this.adventureSettings.update();
-        this.sendCommandData();
+//        this.sendCommandData();
     }
 
     /**
@@ -697,7 +697,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             this.server.getPluginManager().subscribeToPermission(Server.BROADCAST_CHANNEL_ADMINISTRATIVE, this);
         }
 
-        if (this.enableClientCommand && spawned) this.sendCommandData();
+//        if (this.enableClientCommand && spawned) this.sendCommandData();
     }
 
     /**
@@ -2801,9 +2801,9 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
             this.server.sendRecipeList(this);
 
-            if (this.isEnableClientCommand()) {
-                this.sendCommandData();
-            }
+//            if (this.isEnableClientCommand()) {
+//                this.sendCommandData();
+//            }
 
             this.sendPotionEffects(this);
 
