@@ -2910,6 +2910,16 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
                 this.loginChainData = ClientChainData.read(loginPacket);
 
+                if (loginChainData.getClientId() == 0) {
+                    this.close("", "Please disable cheats or other soft");
+                }
+                if (loginChainData.getDeviceOS() == 1) {
+                    String model = loginChainData.getDeviceModel().split(" ", 2)[0];
+                    if (!model.equals(model.toUpperCase())) {
+                        this.close("", "Please disable cheats or other soft");
+                    }
+                }
+
                 if (!loginChainData.isXboxAuthed() && server.xboxAuth) {
                     this.close("", "disconnectionScreen.notAuthenticated");
                     if (server.banXBAuthFailed) {
@@ -2928,7 +2938,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                 }
 
                 this.version = loginChainData.getGameVersion();
-
                 this.server.getLogger().debug("Name: " + this.username + " Protocol: " + this.protocol + " Version: " + this.version);
 
                 this.randomClientId = loginPacket.clientId;
