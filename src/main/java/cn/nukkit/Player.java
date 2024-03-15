@@ -621,7 +621,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
         this.recalculatePermissions();
         this.adventureSettings.update();
-        this.sendCommandData();
+//        this.sendCommandData();
     }
 
     /**
