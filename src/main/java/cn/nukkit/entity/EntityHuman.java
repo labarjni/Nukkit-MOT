@@ -347,12 +347,14 @@ public class EntityHuman extends EntityHumanType {
             pk.metadata = this.dataProperties.clone();
             player.dataPacket(pk);
 
-            if (this.isPlayer) {
-                this.inventory.sendArmorContents(player);
-            } else {
-                this.inventory.sendArmorContentsIfNotAr(player);
+            if (this.inventory != null) {
+                if (this.isPlayer) {
+                    this.inventory.sendArmorContents(player);
+                } else {
+                    this.inventory.sendArmorContentsIfNotAr(player);
+                }
             }
-            this.offhandInventory.sendContents(player);
+            if (this.offhandInventory != null) this.offhandInventory.sendContents(player);
 
             if (this.riding != null) {
                 SetEntityLinkPacket pkk = new SetEntityLinkPacket();
