@@ -19,6 +19,7 @@ import cn.nukkit.utils.BlockColor;
 import cn.nukkit.utils.DyeColor;
 
 import javax.annotation.Nonnull;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class BlockSweetBerryBush extends BlockFlowable {
@@ -187,7 +188,11 @@ public class BlockSweetBerryBush extends BlockFlowable {
             amount++;
         }
 
-        return new Item[]{ new ItemSweetBerries(0, amount) };
+        Item sweetBerry = new ItemSweetBerries(0, amount);
+        if (!Objects.equals(getLevel().getName(), "world")) {
+            sweetBerry.setLore("notSpawn");
+        }
+        return new Item[]{ sweetBerry };
     }
 
     @Override
