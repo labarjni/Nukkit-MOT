@@ -210,7 +210,7 @@ public abstract class BlockPistonBase extends BlockSolidMeta implements Faceable
             List<Block> destroyBlocks = calculator.getBlocksToDestroy();
             for (int i = destroyBlocks.size() - 1; i >= 0; --i) {
                 Block block = destroyBlocks.get(i);
-                if (block.getId() != BlockID.RAIL && block.getId() != BlockID.ACTIVATOR_RAIL) {
+                if (block.getId() != BlockID.RAIL && block.getId() != BlockID.ACTIVATOR_RAIL && block.getId() != BlockID.REDSTONE_BLOCK) {
                     this.level.useBreakOn(block, null, null, false);
 
                     if (Server.getInstance().dropSpawners && block instanceof BlockMobSpawner){
@@ -235,7 +235,7 @@ public abstract class BlockPistonBase extends BlockSolidMeta implements Faceable
             for (int i = 0; i < newBlocks.size(); i++){
                 Block newBlock = newBlocks.get(i);
                 Vector3 oldPos = newBlock.add(0);
-                newBlock.position(newBlock.add(0).getSide(side));
+                newBlock.position(newBlock.add(0));
                 this.level.setBlock(newBlock, Block.get(BlockID.MOVING_BLOCK), true);
 
                 CompoundTag nbt = BlockEntity.getDefaultCompound(newBlock, BlockEntity.MOVING_BLOCK)
