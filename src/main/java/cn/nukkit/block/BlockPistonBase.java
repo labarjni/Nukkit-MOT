@@ -200,14 +200,16 @@ public abstract class BlockPistonBase extends BlockSolidMeta implements Faceable
         }
 
         List<BlockVector3> attached = Collections.emptyList();
-        if (canMove && (this.sticky || extending) || (calculator.getBlocksToMove().contains(Block.get(BlockID.RAIL)) || calculator.getBlocksToMove().contains(Block.get(BlockID.ACTIVATOR_RAIL)))) {
+        if (canMove && (this.sticky || extending)) {
             List<Block> destroyBlocks = calculator.getBlocksToDestroy();
             for (int i = destroyBlocks.size() - 1; i >= 0; --i) {
                 Block block = destroyBlocks.get(i);
-                this.level.useBreakOn(block, null, null, false);
+                if (block.getId() != BlockID.RAIL && block.getId() != BlockID.ACTIVATOR_RAIL) {
+                    this.level.useBreakOn(block, null, null, false);
 
-                if (Server.getInstance().dropSpawners && block instanceof BlockMobSpawner){
-                    this.level.dropItem(block.add(0.5, 0.5, 0.5), Item.get(Item.MONSTER_SPAWNER, 0, 1));
+                    if (Server.getInstance().dropSpawners && block instanceof BlockMobSpawner){
+                        this.level.dropItem(block.add(0.5, 0.5, 0.5), Item.get(Item.MONSTER_SPAWNER, 0, 1));
+                    }
                 }
             }
 
