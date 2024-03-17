@@ -200,7 +200,7 @@ public abstract class BlockPistonBase extends BlockSolidMeta implements Faceable
         }
 
         List<BlockVector3> attached = Collections.emptyList();
-        if (canMove && (this.sticky || extending)) {
+        if (canMove && (this.sticky || extending) || (calculator.getBlocksToMove().contains(Block.get(BlockID.RAIL)) || calculator.getBlocksToMove().contains(Block.get(BlockID.ACTIVATOR_RAIL)))) {
             List<Block> destroyBlocks = calculator.getBlocksToDestroy();
             for (int i = destroyBlocks.size() - 1; i >= 0; --i) {
                 Block block = destroyBlocks.get(i);
