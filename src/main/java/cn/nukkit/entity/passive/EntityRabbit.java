@@ -12,6 +12,7 @@ import cn.nukkit.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class EntityRabbit extends EntityJumpingAnimal {
 
@@ -57,10 +58,8 @@ public class EntityRabbit extends EntityJumpingAnimal {
     @Override
     public boolean targetOption(EntityCreature creature, double distance) {
         if (creature instanceof Player player) {
-            if (player.getInventory() != null && player.getInventory().getItemInHandFast() != null) {
-                int id = player.getInventory().getItemInHandFast().getId();
-                return player.spawned && player.isAlive() && !player.closed && (id == Item.DANDELION || id == Item.CARROT || id == Item.GOLDEN_CARROT) && distance <= 49;
-            }
+            int id = Objects.requireNonNullElse(player.getInventory(), EMPTY_INVENTORY).getItemInHandFast().getId();
+            return player.spawned && player.isAlive() && !player.closed && (id == Item.DANDELION || id == Item.CARROT || id == Item.GOLDEN_CARROT) && distance <= 49;
         }
         return super.targetOption(creature, distance);
     }
