@@ -235,7 +235,7 @@ public abstract class BlockPistonBase extends BlockSolidMeta implements Faceable
             for (int i = 0; i < newBlocks.size(); i++){
                 Block newBlock = newBlocks.get(i);
                 Vector3 oldPos = newBlock.add(0);
-                newBlock.position(newBlock.add(0));
+                newBlock.position(newBlock.add(0).getSide(side));
                 this.level.setBlock(newBlock, Block.get(BlockID.MOVING_BLOCK), true);
 
                 CompoundTag nbt = BlockEntity.getDefaultCompound(newBlock, BlockEntity.MOVING_BLOCK)
