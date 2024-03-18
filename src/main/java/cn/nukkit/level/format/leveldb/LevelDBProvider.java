@@ -155,8 +155,7 @@ public class LevelDBProvider implements LevelProvider {
             stream.write(data);
         }
 
-        DB db = openDB(new File(dbPath.toString()
-                .replace(File.separator, "/")));
+        DB db = openDB(dbPath.toFile());
         db.close();
     }
 
