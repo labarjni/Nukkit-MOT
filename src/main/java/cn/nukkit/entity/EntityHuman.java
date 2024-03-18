@@ -1,10 +1,13 @@
 package cn.nukkit.entity;
 
 import cn.nukkit.Player;
+import cn.nukkit.block.Block;
+import cn.nukkit.block.BlockID;
 import cn.nukkit.entity.data.IntPositionEntityData;
 import cn.nukkit.entity.data.Skin;
 import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.item.Item;
+import cn.nukkit.item.ItemBlock;
 import cn.nukkit.item.ItemShield;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.nbt.tag.CompoundTag;
@@ -336,16 +339,22 @@ public class EntityHuman extends EntityHumanType {
             pk.speedZ = (float) this.motionZ;
             pk.yaw = (float) this.yaw;
             pk.pitch = (float) this.pitch;
-            pk.item = this.getInventory().getItemInHand();
+
+            Item item;
+            if (this.getInventory() == null) item = new ItemBlock(Block.get(BlockID.AIR), 0, 0); else item = this.getInventory().getItemInHand();
+
+            pk.item = item;
             pk.metadata = this.dataProperties.clone();
             player.dataPacket(pk);
 
-            if (this.isPlayer) {
-                this.inventory.sendArmorContents(player);
-            } else {
-                this.inventory.sendArmorContentsIfNotAr(player);
+            if (this.inventory != null) {
+                if (this.isPlayer) {
+                    this.inventory.sendArmorContents(player);
+                } else {
+                    this.inventory.sendArmorContentsIfNotAr(player);
+                }
             }
-            this.offhandInventory.sendContents(player);
+            if (this.offhandInventory != null) this.offhandInventory.sendContents(player);
 
             if (this.riding != null) {
                 SetEntityLinkPacket pkk = new SetEntityLinkPacket();

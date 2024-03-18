@@ -621,7 +621,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
         this.recalculatePermissions();
         this.adventureSettings.update();
-        this.sendCommandData();
+//        this.sendCommandData();
     }
 
     /**
@@ -697,7 +697,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             this.server.getPluginManager().subscribeToPermission(Server.BROADCAST_CHANNEL_ADMINISTRATIVE, this);
         }
 
-        if (this.enableClientCommand && spawned) this.sendCommandData();
+//        if (this.enableClientCommand && spawned) this.sendCommandData();
     }
 
     /**
@@ -2664,6 +2664,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             }
         }
 
+        infoPacket.hasAddonPacks = false;
         infoPacket.mustAccept = this.server.getForceResources();
         this.dataPacket(infoPacket);
     }
@@ -2800,9 +2801,9 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
             this.server.sendRecipeList(this);
 
-            if (this.isEnableClientCommand()) {
-                this.sendCommandData();
-            }
+//            if (this.isEnableClientCommand()) {
+//                this.sendCommandData();
+//            }
 
             this.sendPotionEffects(this);
 
@@ -2885,7 +2886,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
                 this.protocol = loginPacket.getProtocol();
 
-                this.username = TextFormat.clean(loginPacket.username);
+                this.username = TextFormat.clean(loginPacket.username).replace(" ", "_");
 
                 if (!ProtocolInfo.SUPPORTED_PROTOCOLS.contains(this.protocol)) {
                     this.close("", "You are running unsupported Minecraft version");
@@ -2927,7 +2928,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                 }
 
                 this.version = loginChainData.getGameVersion();
-
                 this.server.getLogger().debug("Name: " + this.username + " Protocol: " + this.protocol + " Version: " + this.version);
 
                 this.randomClientId = loginPacket.clientId;
@@ -5015,7 +5015,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             this.perm = null;
         }
 
-        this.inventory = null;
         this.chunk = null;
 
         this.server.removePlayer(this);

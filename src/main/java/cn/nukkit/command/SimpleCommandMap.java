@@ -30,10 +30,10 @@ public class SimpleCommandMap implements CommandMap {
     }
 
     private void setDefaultCommands() {
-        this.register("nukkit", new VersionCommand("version"));
+//        this.register("nukkit", new VersionCommand("version"));
         this.register("nukkit", new PluginsCommand("plugins"));
         this.register("nukkit", new HelpCommand("help"));
-        this.register("nukkit", new StopCommand("stop"));
+//        this.register("nukkit", new StopCommand("stop"));
         this.register("nukkit", new TellCommand("tell"));
         this.register("nukkit", new BanCommand("ban"));
         this.register("nukkit", new BanIpCommand("ban-ip"));
@@ -42,8 +42,8 @@ public class SimpleCommandMap implements CommandMap {
         this.register("nukkit", new PardonIpCommand("pardon-ip"));
         this.register("nukkit", new ListCommand("list"));
         this.register("nukkit", new KickCommand("kick"));
-        this.register("nukkit", new OpCommand("op"));
-        this.register("nukkit", new DeopCommand("deop"));
+//        this.register("nukkit", new OpCommand("op"));
+//        this.register("nukkit", new DeopCommand("deop"));
         this.register("nukkit", new SaveCommand("save-all"));
         this.register("nukkit", new GiveCommand("give"));
         this.register("nukkit", new EffectCommand("effect"));
@@ -59,14 +59,14 @@ public class SimpleCommandMap implements CommandMap {
         this.register("nukkit", new XpCommand("xp"));
         this.register("nukkit", new StatusCommand("status"));
         this.register("nukkit", new SummonCommand("summon"));
-        this.register("nukkit", new WorldCommand("world"));
+//        this.register("nukkit", new WorldCommand("world"));
         this.register("nukkit", new GenerateWorldCommand("genworld"));
         this.register("nukkit", new WhitelistCommand("whitelist"));
         this.register("nukkit", new GameruleCommand("gamerule"));
         this.register("nukkit", new SpawnCommand("spawn"));
-        this.register("nukkit", new DefaultGamemodeCommand("defaultgamemode"));
-        this.register("nukkit", new SayCommand("say"));
-        this.register("nukkit", new MeCommand("me"));
+//        this.register("nukkit", new DefaultGamemodeCommand("defaultgamemode"));
+//        this.register("nukkit", new SayCommand("say"));
+//        this.register("nukkit", new MeCommand("me"));
         this.register("nukkit", new SaveOnCommand("save-on"));
         this.register("nukkit", new SaveOffCommand("save-off"));
         this.register("nukkit", new DifficultyCommand("difficulty"));

@@ -73,6 +73,8 @@ public class RakNetPlayerSession implements NetworkPlayerSession, RakNetSessionL
     public void onEncapsulated(EncapsulatedPacket packet) {
         ByteBuf buffer = packet.getBuffer();
         short packetId = buffer.readUnsignedByte();
+
+//        System.out.println(packet.getBuffer().toString().length());
         if (packetId == 0xfe) {
             byte[] packetBuffer;
 
@@ -252,12 +254,7 @@ public class RakNetPlayerSession implements NetworkPlayerSession, RakNetSessionL
     public void serverTick() {
         DataPacket packet;
         while ((packet = this.inbound.poll()) != null) {
-            try {
-                this.player.handleDataPacket(packet);
-            } catch (Throwable e) {
-                log.error(new FormattedMessage("An error occurred whilst handling {} for {}",
-                        new Object[]{packet.getClass().getSimpleName(), this.player.getName()}, e));
-            }
+            this.player.handleDataPacket(packet);
         }
     }
 
@@ -309,7 +306,7 @@ public class RakNetPlayerSession implements NetworkPlayerSession, RakNetSessionL
             } catch (Exception e) {
                 log.error("Packet encryption failed for {}", player.getName(), e);
             }
-        }else {
+        } else {
             if (ci) {
                 finalPayload.writeByte(this.compressionOut.getPrefix());
             }

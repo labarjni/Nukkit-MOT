@@ -41,7 +41,7 @@ public class EntityBoat extends EntityVehicle {
     public static final Vector3f RIDER_OFFSET = new Vector3f(0, -0.2f, 0);
 
     public static final Vector3f PASSENGER_OFFSET = new Vector3f(-0.6f);
-    public static final Vector3f RIDER_PASSENGER_OFFSET = new Vector3f(0.2f);
+    public static final Vector3f RIDER_PASSENGER_OFFSET = new Vector3f(0.2f, 0.2F);
 
     public static final int RIDER_INDEX = 0;
     public static final int PASSENGER_INDEX = 1;
@@ -95,7 +95,7 @@ public class EntityBoat extends EntityVehicle {
 
     @Override
     public float getBaseOffset() {
-        return 0.375F;
+        return 0.6F;
     }
 
     @Override

@@ -201,21 +201,26 @@ public abstract class BlockPistonBase extends BlockSolidMeta implements Faceable
 
         List<BlockVector3> attached = Collections.emptyList();
         if (canMove && (this.sticky || extending)) {
-            List<Block> destroyBlocks = calculator.getBlocksToDestroy();
-            for (int i = destroyBlocks.size() - 1; i >= 0; --i) {
-                Block block = destroyBlocks.get(i);
-                this.level.useBreakOn(block, null, null, false);
-
-                if (Server.getInstance().dropSpawners && block instanceof BlockMobSpawner){
-                    this.level.dropItem(block.add(0.5, 0.5, 0.5), Item.get(Item.MONSTER_SPAWNER, 0, 1));
-                }
-            }
-
             List<Block> newBlocks = calculator.getBlocksToMove();
             attached = newBlocks.stream().map(Vector3::asBlockVector3).collect(Collectors.toList());
             BlockFace side = extending ? direction : direction.getOpposite();
 
             List<CompoundTag> namedTags = new ArrayList<>();
+
+            List<Block> destroyBlocks = calculator.getBlocksToDestroy();
+            for (int i = destroyBlocks.size() - 1; i >= 0; --i) {
+                Block block = destroyBlocks.get(i);
+                if (block.getId() != BlockID.RAIL && block.getId() != BlockID.ACTIVATOR_RAIL && block.getId() != BlockID.REDSTONE_BLOCK) {
+                    this.level.useBreakOn(block, null, null, false);
+
+                    if (Server.getInstance().dropSpawners && block instanceof BlockMobSpawner){
+                        this.level.dropItem(block.add(0.5, 0.5, 0.5), Item.get(Item.MONSTER_SPAWNER, 0, 1));
+                    }
+                } else {
+                    newBlocks.add(block);
+                }
+            }
+
             for (Block oldBlock : newBlocks){
                 CompoundTag tag = null;
                 BlockEntity blockEntity = this.level.getBlockEntity(oldBlock);
