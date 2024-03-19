@@ -2440,14 +2440,10 @@ public class Level implements ChunkManager, Metadatable {
             Item[] eventDrops;
             if (!player.isSurvival()) {
                 eventDrops = Item.EMPTY_ARRAY;
-            } else if (isSilkTouch && target.canSilkTouch()) {
+            } else if (isSilkTouch && target.canSilkTouch() || !target.canDropRaw(player)) {
                 eventDrops = new Item[]{target.toItem()};
             } else {
-                if (target.canDropRaw(player)) {
-                    eventDrops = target.getDrops(item);
-                } else {
-                    eventDrops = new Item[]{target.toItem()};
-                }
+                eventDrops = target.getDrops(item);
             }
             //TODO 直接加1000可能会影响其他判断，需要进一步改进
             boolean fastBreak = (player.lastBreak + breakTime * 1000) > Long.sum(System.currentTimeMillis(), 1000);
