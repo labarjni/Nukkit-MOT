@@ -2443,7 +2443,13 @@ public class Level implements ChunkManager, Metadatable {
             } else if (isSilkTouch && target.canSilkTouch()) {
                 eventDrops = new Item[]{target.toItem()};
             } else {
-                eventDrops = target.getDrops(item);
+                if (target instanceof BlockOreIron || target instanceof BlockOreGold) {
+                    if (player.protocol < ProtocolInfo.v1_17_0) {
+                        eventDrops = new Item[]{target.toItem()};
+                    } else {
+                        eventDrops = target.getDrops(item);
+                    }
+                } else eventDrops = target.getDrops(item);
             }
             //TODO 直接加1000可能会影响其他判断，需要进一步改进
             boolean fastBreak = (player.lastBreak + breakTime * 1000) > Long.sum(System.currentTimeMillis(), 1000);
