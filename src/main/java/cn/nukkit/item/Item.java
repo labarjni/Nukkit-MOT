@@ -1494,7 +1494,7 @@ public class Item implements Cloneable, BlockID, ItemID, ProtocolInfo {
         try {
             return NBTIO.read(tag, ByteOrder.LITTLE_ENDIAN);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            return new CompoundTag();
         }
     }
 
