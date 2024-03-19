@@ -2444,8 +2444,10 @@ public class Level implements ChunkManager, Metadatable {
                 eventDrops = new Item[]{target.toItem()};
             } else {
                 if (target.canDropRaw(player)) {
-                        eventDrops = new Item[]{target.toItem()};
-                } else eventDrops = target.getDrops(item);
+                    eventDrops = target.getDrops(item);
+                } else {
+                    eventDrops = new Item[]{target.toItem()};
+                }
             }
             //TODO 直接加1000可能会影响其他判断，需要进一步改进
             boolean fastBreak = (player.lastBreak + breakTime * 1000) > Long.sum(System.currentTimeMillis(), 1000);
