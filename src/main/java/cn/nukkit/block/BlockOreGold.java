@@ -1,10 +1,12 @@
 package cn.nukkit.block;
 
+import cn.nukkit.Player;
 import cn.nukkit.item.Item;
 import cn.nukkit.item.ItemRawGold;
 import cn.nukkit.item.ItemRawIron;
 import cn.nukkit.item.ItemTool;
 import cn.nukkit.item.enchantment.Enchantment;
+import cn.nukkit.network.protocol.ProtocolInfo;
 import cn.nukkit.utils.Utils;
 
 /**
@@ -46,6 +48,11 @@ public class BlockOreGold extends BlockSolid {
     @Override
     public boolean canHarvestWithHand() {
         return false;
+    }
+
+    @Override
+    public boolean canDropRaw(Player player) {
+        return player.protocol >= ProtocolInfo.v1_17_0;
     }
 
     @Override
