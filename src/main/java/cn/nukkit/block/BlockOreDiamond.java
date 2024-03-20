@@ -45,11 +45,6 @@ public class BlockOreDiamond extends BlockSolid {
     }
 
     @Override
-    public boolean canDropRaw(Player player) {
-        return player.protocol >= ProtocolInfo.v1_17_0;
-    }
-
-    @Override
     public Item[] getDrops(Item item) {
         if (item.isPickaxe() && item.getTier() >= this.getToolTier()) {
             if (item.hasEnchantment(Enchantment.ID_SILK_TOUCH)) {
