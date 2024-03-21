@@ -62,7 +62,7 @@ public class WhitelistCommand extends VanillaCommand {
                     sender.getServer().setWhitelisted(true);
 
                     for (Player player : Server.getInstance().getOnlinePlayers().values()) {
-                        if (!player.isWhitelisted()) player.kick(PlayerKickEvent.Reason.NOT_WHITELISTED, Server.getInstance().whitelistReason);
+                        if (!Server.getInstance().isWhitelisted(player.getName().toLowerCase())) player.kick(PlayerKickEvent.Reason.NOT_WHITELISTED, Server.getInstance().whitelistReason);
                     }
 
                     broadcastCommandMessage(sender, new TranslationContainer("commands.allowlist.enabled"));
