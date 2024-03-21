@@ -98,11 +98,11 @@ public class WhitelistCommand extends VanillaCommand {
 
         switch (args[0].toLowerCase()) {
             case "add" -> {
-                sender.getServer().getOfflinePlayer(args[1]).setWhitelisted(true);
+                sender.getServer().getOfflinePlayer(args[1].toLowerCase()).setWhitelisted(true);
                 broadcastCommandMessage(sender, new TranslationContainer("commands.allowlist.add.success", args[1]));
             }
             case "remove" -> {
-                sender.getServer().getOfflinePlayer(args[1]).setWhitelisted(false);
+                sender.getServer().getOfflinePlayer(args[1].toLowerCase()).setWhitelisted(false);
                 broadcastCommandMessage(sender, new TranslationContainer("commands.allowlist.remove.success", args[1]));
             }
         }
