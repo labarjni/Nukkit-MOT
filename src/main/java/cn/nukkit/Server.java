@@ -519,10 +519,6 @@ public class Server {
      */
     public boolean enableSpark;
     /**
-     * Enable Raw Drop of Iron and Gold
-     */
-    public boolean enableRawOres;
-    /**
      * This is needed for structure generation
      */
     public final ForkJoinPool computeThreadPool;
@@ -3084,7 +3080,6 @@ public class Server {
         this.useClientSpectator = this.getPropertyBoolean("use-client-spectator", true);
         this.networkCompressionThreshold = this.getPropertyInt("compression-threshold", 256);
         this.enableSpark = this.getPropertyBoolean("enable-spark", false);
-        this.enableRawOres = this.getPropertyBoolean("enable-raw-ores", false);
         this.c_s_spawnThreshold = (int) Math.ceil(Math.sqrt(this.spawnThreshold));
         try {
             this.gamemode = this.getPropertyInt("gamemode", 0) & 0b11;
