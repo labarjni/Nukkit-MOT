@@ -1320,11 +1320,13 @@ public class Level implements ChunkManager, Metadatable {
             int existingLoaders = Math.max(0, this.chunkTickList.getOrDefault(index, 0));
             this.chunkTickList.put(index, existingLoaders + 1);
             for (int chunk = 0; chunk < chunksPerLoader; ++chunk) {
-                int dx = Utils.random.nextInt(randRange << 1) - randRange;
-                int dz = Utils.random.nextInt(randRange << 1) - randRange;
-                long hash = Level.chunkHash(dx + chunkX, dz + chunkZ);
-                if (!this.chunkTickList.containsKey(hash) && requireProvider().isChunkLoaded(hash)) {
-                    this.chunkTickList.put(hash, -1);
+                if (randRange != 0) {
+                    int dx = Utils.random.nextInt(randRange << 1) - randRange;
+                    int dz = Utils.random.nextInt(randRange << 1) - randRange;
+                    long hash = Level.chunkHash(dx + chunkX, dz + chunkZ);
+                    if (!this.chunkTickList.containsKey(hash) && requireProvider().isChunkLoaded(hash)) {
+                        this.chunkTickList.put(hash, -1);
+                    }
                 }
             }
         }
