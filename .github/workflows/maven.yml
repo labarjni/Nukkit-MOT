@@ -2,10 +2,9 @@ name: Java CI with Maven
 
 on:
   push:
-    branches: [ master ]
+    branches: [ dev/zhmurkov ]
   pull_request:
-    branches: [ master ]
-
+    branches: [ dev/zhmurkov ]
 jobs:
   build:
     runs-on: ubuntu-latest
