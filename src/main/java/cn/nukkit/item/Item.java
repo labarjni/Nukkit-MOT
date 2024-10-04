@@ -4,7 +4,7 @@ import cn.nukkit.Player;
 import cn.nukkit.Server;
 import cn.nukkit.block.Block;
 import cn.nukkit.block.BlockID;
-import cn.nukkit.block.customblock.CustomBlockManager;
+import cn.nukkit.block.custom.CustomBlockManager;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.inventory.Fuel;
 import cn.nukkit.inventory.ItemTag;
@@ -1722,7 +1722,26 @@ public class Item implements Cloneable, BlockID, ItemID, ProtocolInfo {
     }
 
     public boolean isUnbreakable() {
-        return false;
+        if (!(this instanceof ItemDurable)) {
+            return false;
+        }
+
+        Tag tag = this.getNamedTagEntry("Unbreakable");
+        return tag instanceof ByteTag byteTag && byteTag.data > 0;
+    }
+
+    public Item setUnbreakable(boolean value) {
+        if (!(this instanceof ItemDurable)) {
+            return this;
+        }
+
+        CompoundTag tag = this.getOrCreateNamedTag();
+        this.setNamedTag(tag.putByte("Unbreakable", value ? 1 : 0));
+        return this;
+    }
+
+    public Item setUnbreakable() {
+        return this.setUnbreakable(true);
     }
 
     public boolean canBreakShield() {
