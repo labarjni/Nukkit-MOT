@@ -291,7 +291,7 @@ public class EntityItem extends Entity {
         Block floor = getLevelBlock();
         if (floor.isLiquidSource() || (floor = level.getBlock(floor, 1)).isLiquidSource()) {
             double height = floor.y + 1 - ((BlockLiquid) floor).getFluidHeightPercent() - 0.1111111;
-            if (this.y + getEyeHeight() < height) {
+            if (this.getEyeY() < height) {
                 //item is going up in liquid, don't let it go back down too fast
                 motionY = getGravity() - 0.06;
                 return;
@@ -361,7 +361,7 @@ public class EntityItem extends Entity {
 
         this.checkBlockCollision();
 
-        if (this.y <= -16 && this.isAlive()) {
+        if (this.y <= (level.getMinBlockY() - 16) && this.isAlive()) {
             this.attack(new EntityDamageEvent(this, DamageCause.VOID, 10));
             hasUpdate = true;
         }

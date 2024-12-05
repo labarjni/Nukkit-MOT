@@ -56,6 +56,7 @@ public interface FullChunk extends Cloneable {
     }
 
     Block getAndSetBlock(int x, int y, int z, Block block);
+
     Block getAndSetBlock(int x, int y, int z, int layer, Block block);
 
     default boolean setFullBlockId(int x, int y, int z, int fullId) {
@@ -209,6 +210,8 @@ public interface FullChunk extends Cloneable {
 
     byte[] getBiomeIdArray();
 
+    void setBiomeIdArray(byte[] biomeIdArray);
+
     int[] getBiomeColorArray();
 
     byte[] getHeightMapArray();
@@ -240,4 +243,6 @@ public interface FullChunk extends Cloneable {
     void setChanged();
 
     void setChanged(boolean changed);
+
+    boolean compress();
 }

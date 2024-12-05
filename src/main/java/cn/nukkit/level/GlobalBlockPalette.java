@@ -75,6 +75,14 @@ public class GlobalBlockPalette {
     private static final BlockPalette blockPalette630;
     private static final BlockPalette blockPalette649;
     private static final BlockPalette blockPalette662;
+    private static final BlockPalette blockPalette671;
+    private static final BlockPalette blockPalette685;
+    private static final BlockPalette blockPalette712;
+    private static final BlockPalette blockPalette729;
+    private static final BlockPalette blockPalette748;
+    private static final BlockPalette blockPalette766;
+
+    public static final BlockPalette[] NEW_PALETTES;
 
     private static byte[] compiledTable282;
     private static byte[] compiledTable291;
@@ -123,6 +131,42 @@ public class GlobalBlockPalette {
         blockPalette630 = new BlockPalette(ProtocolInfo.v1_20_50);
         blockPalette649 = new BlockPalette(ProtocolInfo.v1_20_60);
         blockPalette662 = new BlockPalette(ProtocolInfo.v1_20_70);
+        blockPalette671 = new BlockPalette(ProtocolInfo.v1_20_80);
+        blockPalette685 = new BlockPalette(ProtocolInfo.v1_21_0);
+        blockPalette712 = new BlockPalette(ProtocolInfo.v1_21_20);
+        blockPalette729 = new BlockPalette(ProtocolInfo.v1_21_30);
+        blockPalette748 = new BlockPalette(ProtocolInfo.v1_21_40);
+        blockPalette766 = new BlockPalette(ProtocolInfo.v1_21_50);
+
+        NEW_PALETTES = new BlockPalette[]{
+                blockPalette419,
+                blockPalette428,
+                blockPalette440,
+                blockPalette448,
+                blockPalette465,
+                blockPalette471,
+                blockPalette486,
+                blockPalette503,
+                blockPalette527,
+                blockPalette544,
+                blockPalette560,
+                blockPalette567,
+                blockPalette575,
+                blockPalette582,
+                blockPalette589,
+                blockPalette594,
+                blockPalette618,
+                blockPalette622,
+                blockPalette630,
+                blockPalette649,
+                blockPalette662,
+                blockPalette671,
+                blockPalette685,
+                blockPalette712,
+                blockPalette729,
+                blockPalette748,
+                blockPalette766
+        };
     }
 
     public static void init() {
@@ -310,7 +354,19 @@ public class GlobalBlockPalette {
     }
 
     public static BlockPalette getPaletteByProtocol(int protocol) {
-        if (protocol >= ProtocolInfo.v1_20_70) {
+        if (protocol >= ProtocolInfo.v1_21_50_26) {
+            return blockPalette766;
+        } else if (protocol >= ProtocolInfo.v1_21_40) {
+            return blockPalette748;
+        } else if (protocol >= ProtocolInfo.v1_21_30) {
+            return blockPalette729;
+        } else if (protocol >= ProtocolInfo.v1_21_20) {
+            return blockPalette712;
+        } else if (protocol >= ProtocolInfo.v1_21_0) {
+            return blockPalette685;
+        } else if (protocol >= ProtocolInfo.v1_20_80) {
+            return blockPalette671;
+        } else if (protocol >= ProtocolInfo.v1_20_70) {
             return blockPalette662;
         } else if (protocol >= ProtocolInfo.v1_20_60) {
             return blockPalette649;

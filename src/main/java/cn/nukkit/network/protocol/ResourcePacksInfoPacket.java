@@ -8,6 +8,7 @@ import lombok.ToString;
 import lombok.Value;
 
 import java.util.List;
+import java.util.UUID;
 
 @ToString
 public class ResourcePacksInfoPacket extends DataPacket {
@@ -25,10 +26,19 @@ public class ResourcePacksInfoPacket extends DataPacket {
     public ResourcePack[] resourcePackEntries = ResourcePack.EMPTY_ARRAY;
     /**
      * @since v618
+     * @deprecated since v748 1.21.40
      */
     @Getter
     @Setter
     private List<CDNEntry> CDNEntries = new ObjectArrayList<>();
+    /**
+     * @since v766
+     */
+    public UUID worldTemplateId = new UUID(0, 0);
+    /**
+     * @since v766
+     */
+    public String worldTemplateVersion = "";
 
     @Override
     public void decode() {
@@ -38,20 +48,26 @@ public class ResourcePacksInfoPacket extends DataPacket {
     public void encode() {
         this.reset();
         this.putBoolean(this.mustAccept);
-        if (protocol >= ProtocolInfo.v1_20_70) {
+        if (this.protocol >= ProtocolInfo.v1_20_70) {
             this.putBoolean(this.hasAddonPacks);
         }
-        if (protocol >= ProtocolInfo.v1_9_0) {
+        if (this.protocol >= ProtocolInfo.v1_9_0) {
             this.putBoolean(this.scripting);
-            if (protocol >= ProtocolInfo.v1_17_10) {
+            if (this.protocol >= ProtocolInfo.v1_17_10 && this.protocol < ProtocolInfo.v1_21_30) {
                 this.putBoolean(this.forceServerPacks);
             }
         }
+        if (this.protocol >= ProtocolInfo.v1_21_50) {
+            this.putUUID(this.worldTemplateId);
+            this.putString(this.worldTemplateVersion);
+        }
 
-        this.encodeBehaviourPacks(this.behaviourPackEntries);
+        if (this.protocol < ProtocolInfo.v1_21_30) {
+            this.encodeBehaviourPacks(this.behaviourPackEntries);
+        }
         this.encodeResourcePacks(this.resourcePackEntries);
 
-        if (protocol >= ProtocolInfo.v1_20_30_24) {
+        if (this.protocol >= ProtocolInfo.v1_20_30_24 && this.protocol < ProtocolInfo.v1_21_40) {
             this.putArray(this.CDNEntries, (entry) -> {
                 this.putString(entry.getPackId());
                 this.putString(entry.getRemoteUrl());
@@ -65,17 +81,21 @@ public class ResourcePacksInfoPacket extends DataPacket {
             this.putString(entry.getPackId().toString());
             this.putString(entry.getPackVersion());
             this.putLLong(entry.getPackSize());
-            this.putString(entry.getEncryptionKey()); // encryption key
-            this.putString(""); // sub-pack name
+            this.putString(entry.getEncryptionKey());
+            this.putString(entry.getSubPackName());
             this.putString(!"".equals(entry.getEncryptionKey()) ? entry.getPackId().toString() : ""); // content identity
-            this.putBoolean(false); // scripting
+            this.putBoolean(entry.usesScripting());
         }
     }
 
     private void encodeResourcePacks(ResourcePack[] packs) {
         this.putLShort(packs.length);
         for (ResourcePack entry : packs) {
-            this.putString(entry.getPackId().toString());
+            if (this.protocol >= ProtocolInfo.v1_21_50) {
+                this.putUUID(entry.getPackId());
+            } else {
+                this.putString(entry.getPackId().toString());
+            }
             this.putString(entry.getPackVersion());
             this.putLLong(entry.getPackSize());
             this.putString(entry.getEncryptionKey()); // encryption key
@@ -87,7 +107,13 @@ public class ResourcePacksInfoPacket extends DataPacket {
                 if (protocol >= ProtocolInfo.v1_9_0) {
                     this.putBoolean(false); // scripting
                     if (protocol >= ProtocolInfo.v1_16_200) {
+                        if (protocol >= ProtocolInfo.v1_21_20) {
+                            this.putBoolean(entry.isAddonPack());
+                        }
                         this.putBoolean(false); // raytracing capable
+                        if (protocol >= ProtocolInfo.v1_21_40) {
+                            this.putString(entry.getCDNUrl());
+                        }
                     }
                 }
             }

@@ -71,8 +71,8 @@ public class BlockChest extends BlockTransparentMeta implements Faceable, BlockE
     }
 
     @Override
-    public int getWaterloggingLevel() {
-        return 1;
+    public WaterloggingType getWaterloggingType() {
+        return WaterloggingType.WHEN_PLACED_IN_WATER;
     }
 
     @Override
@@ -95,13 +95,13 @@ public class BlockChest extends BlockTransparentMeta implements Faceable, BlockE
         BlockEntityChest chest = null;
         this.setDamage(faces[player != null ? player.getDirection().getHorizontalIndex() : 0]);
 
-        for (int side = 2; side <= 5; ++side) {
-            if ((this.getDamage() == 4 || this.getDamage() == 5) && (side == 4 || side == 5)) {
+        for (BlockFace side : BlockFace.Plane.HORIZONTAL) {
+            if ((this.getDamage() == 4 || this.getDamage() == 5) && (side == BlockFace.WEST || side == BlockFace.EAST)) {
                 continue;
-            } else if ((this.getDamage() == 3 || this.getDamage() == 2) && (side == 2 || side == 3)) {
+            } else if ((this.getDamage() == 3 || this.getDamage() == 2) && (side == BlockFace.NORTH || side == BlockFace.SOUTH)) {
                 continue;
             }
-            Block c = this.getSide(BlockFace.fromIndex(side));
+            Block c = this.getSide(side);
             if (c instanceof BlockChest && c.getDamage() == this.getDamage()) {
                 BlockEntity blockEntity = this.getLevel().getBlockEntity(c);
                 if (blockEntity instanceof BlockEntityChest && !((BlockEntityChest) blockEntity).isPaired()) {
@@ -155,8 +155,10 @@ public class BlockChest extends BlockTransparentMeta implements Faceable, BlockE
     public boolean onActivate(Item item, Player player) {
         if (player != null) {
             Block top = this.up();
-            if (!top.isTransparent() && !(top instanceof BlockSlab && (top.getDamage() & 0x07) <= 0)) { // avoid issues with the slab hack
-                return true;
+            if (!(top instanceof BlockStairs)) { // Stairs don't block chest on vanilla
+                if (!top.isTransparent()) {
+                    return true;
+                }
             }
 
             BlockEntity t = this.getLevel().getBlockEntity(this);

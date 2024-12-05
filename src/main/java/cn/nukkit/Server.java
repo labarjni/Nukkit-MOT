@@ -1,6 +1,7 @@
 package cn.nukkit;
 
 import cn.nukkit.block.Block;
+import cn.nukkit.block.custom.CustomBlockManager;
 import cn.nukkit.blockentity.*;
 import cn.nukkit.command.*;
 import cn.nukkit.console.NukkitConsole;
@@ -19,18 +20,17 @@ import cn.nukkit.entity.weather.EntityLightning;
 import cn.nukkit.event.HandlerList;
 import cn.nukkit.event.level.LevelInitEvent;
 import cn.nukkit.event.level.LevelLoadEvent;
-import cn.nukkit.event.server.BatchPacketsEvent;
 import cn.nukkit.event.server.PlayerDataSerializeEvent;
 import cn.nukkit.event.server.QueryRegenerateEvent;
 import cn.nukkit.event.server.ServerStopEvent;
 import cn.nukkit.inventory.CraftingManager;
 import cn.nukkit.inventory.Recipe;
 import cn.nukkit.item.Item;
+import cn.nukkit.item.RuntimeItemMapping;
 import cn.nukkit.item.RuntimeItems;
 import cn.nukkit.item.enchantment.Enchantment;
 import cn.nukkit.lang.BaseLang;
 import cn.nukkit.lang.TextContainer;
-import cn.nukkit.lang.TranslationContainer;
 import cn.nukkit.level.EnumLevel;
 import cn.nukkit.level.GlobalBlockPalette;
 import cn.nukkit.level.Level;
@@ -41,6 +41,9 @@ import cn.nukkit.level.format.LevelProviderManager;
 import cn.nukkit.level.format.anvil.Anvil;
 import cn.nukkit.level.format.leveldb.LevelDBProvider;
 import cn.nukkit.level.generator.*;
+import cn.nukkit.level.tickingarea.manager.SimpleTickingAreaManager;
+import cn.nukkit.level.tickingarea.manager.TickingAreaManager;
+import cn.nukkit.level.tickingarea.storage.JSONTickingAreaStorage;
 import cn.nukkit.math.NukkitMath;
 import cn.nukkit.metadata.EntityMetadataStore;
 import cn.nukkit.metadata.LevelMetadataStore;
@@ -89,6 +92,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import lombok.extern.log4j.Log4j2;
+import org.cloudburstmc.netty.channel.raknet.RakConstants;
 import org.iq80.leveldb.CompressionType;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
@@ -151,8 +155,16 @@ public class Server {
     private final ConsoleCommandSender consoleSender;
     private final IScoreboardManager scoreboardManager;
 
+    private final TickingAreaManager tickingAreaManager;
+
     private int maxPlayers;
     private boolean autoSave = true;
+    /**
+     * Automatic compression of the world
+     */
+    private boolean autoCompaction = true;
+    private int autoCompactionTicks = 60 * 30 * 20;
+
     private RCON rcon;
 
     private final EntityMetadataStore entityMetadata;
@@ -519,13 +531,26 @@ public class Server {
      * This is needed for structure generation
      */
     public final ForkJoinPool computeThreadPool;
-
+    /**
+     * Set LevelDB cache size.
+     */
+    public int levelDbCache;
+    /**
+     * Use native LevelDB implementation for better performance.
+     */
     public boolean useNativeLevelDB;
-
     /**
      * Enable Raw Drop of Iron and Gold
      */
     public boolean enableRawOres;
+    /**
+     * A number of datagram packets each address can send within one RakNet tick (10ms)
+     */
+    public int rakPacketLimit;
+    /**
+     * Temporary disable world saving to allow safe backup of leveldb worlds.
+     */
+    public boolean holdWorldSave;
 
     Server(final String filePath, String dataPath, String pluginPath, boolean loadPlugins, boolean debug) {
         Preconditions.checkState(instance == null, "Already initialized!");
@@ -583,6 +608,7 @@ public class Server {
         }
 
         this.baseLang = new BaseLang(this.getPropertyString("language", BaseLang.FALLBACK_LANGUAGE));
+
         computeThreadPool = new ForkJoinPool(Math.min(0x7fff, Runtime.getRuntime().availableProcessors()), new ComputeThreadPoolThreadFactory(), null, false);
 
         Object poolSize = this.getProperty("async-workers", "auto");
@@ -614,6 +640,7 @@ public class Server {
         this.playerMetadata = new PlayerMetadataStore();
         this.levelMetadata = new LevelMetadataStore();
         this.scoreboardManager = new ScoreboardManager(new JSONScoreboardStorage(this.dataPath + "scoreboard.json"));
+        this.tickingAreaManager = new SimpleTickingAreaManager(new JSONTickingAreaStorage(this.dataPath + "worlds/"));
 
         this.operators = new Config(this.dataPath + "ops.txt", Config.ENUM);
         this.whitelist = new Config(this.dataPath + "white-list.txt", Config.ENUM);
@@ -624,6 +651,9 @@ public class Server {
 
         this.maxPlayers = this.getPropertyInt("max-players", 50);
         this.setAutoSave(this.getPropertyBoolean("auto-save", true));
+
+        this.autoCompaction = this.getPropertyBoolean("level-auto-compaction", true);
+        this.autoCompactionTicks = Math.max(60 * 20, this.getPropertyInt("level-auto-compaction-ticks", 60 * 30 * 20));
 
         if (this.isHardcore && this.difficulty < 3) {
             this.setDifficulty(3);
@@ -658,6 +688,7 @@ public class Server {
         Potion.init();
         Attribute.init();
         DispenseBehaviorRegister.init();
+        CustomBlockManager.init(this);
         GlobalBlockPalette.getOrCreateRuntimeId(ProtocolInfo.CURRENT_PROTOCOL, 0, 0);
 
         // Convert legacy data before plugins get the chance to mess with it
@@ -696,11 +727,23 @@ public class Server {
 
         this.pluginManager.loadInternalPlugin();
         if (loadPlugins) {
+            this.pluginManager.loadPlugins(this.pluginPath);
             if (this.enableSpark) {
                 SparkInstaller.initSpark(this);
             }
-            this.pluginManager.loadPlugins(this.pluginPath);
             this.enablePlugins(PluginLoadOrder.STARTUP);
+        }
+
+        try {
+            if (CustomBlockManager.get().closeRegistry()) {
+                for (RuntimeItemMapping runtimeItemMapping : RuntimeItems.VALUES) {
+                    runtimeItemMapping.generatePalette();
+                }
+            }
+
+            Item.initCreativeItems();
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to init custom blocks", e);
         }
 
         LevelProviderManager.addProvider(this, Anvil.class);
@@ -822,6 +865,8 @@ public class Server {
             }
         });
 
+        Runtime.getRuntime().addShutdownHook(new Thread(this::forceShutdown));
+
         this.start();
     }
 
@@ -915,22 +960,11 @@ public class Server {
     }
 
     public void batchPackets(Player[] players, DataPacket[] packets) {
-        this.batchPackets(players, packets, false);
+        this.batchingHelper.batchPackets(players, packets);
     }
 
+    @Deprecated
     public void batchPackets(Player[] players, DataPacket[] packets, boolean forceSync) {
-        if (players == null || packets == null || players.length == 0 || packets.length == 0) {
-            return;
-        }
-
-        if (callBatchPkEv) {
-            BatchPacketsEvent ev = new BatchPacketsEvent(players, packets, forceSync);
-            pluginManager.callEvent(ev);
-            if (ev.isCancelled()) {
-                return;
-            }
-        }
-
         this.batchingHelper.batchPackets(players, packets);
     }
 
@@ -963,13 +997,7 @@ public class Server {
             throw new ServerException("CommandSender is not valid");
         }
 
-        if (this.commandMap.dispatch(sender, commandLine)) {
-            return true;
-        }
-
-        sender.sendMessage(new TranslationContainer(TextFormat.RED + "%commands.generic.unknown", commandLine));
-
-        return false;
+        return this.commandMap.dispatch(sender, commandLine);
     }
 
     public ConsoleCommandSender getConsoleSender() {
@@ -1014,10 +1042,10 @@ public class Server {
         }
 
         this.pluginManager.registerInterface(JavaPluginLoader.class);
+        this.pluginManager.loadPlugins(this.pluginPath);
         if (this.enableSpark) {
             SparkInstaller.initSpark(this);
         }
-        this.pluginManager.loadPlugins(this.pluginPath);
         this.enablePlugins(PluginLoadOrder.STARTUP);
         this.enablePlugins(PluginLoadOrder.POSTWORLD);
     }
@@ -1042,6 +1070,10 @@ public class Server {
 
             ServerStopEvent serverStopEvent = new ServerStopEvent();
             pluginManager.callEvent(serverStopEvent);
+
+            if (this.holdWorldSave) {
+                this.getLogger().warning("World save hold was not released! Any backup currently being taken may be invalid");
+            }
 
             if (this.rcon != null) {
                 this.getLogger().debug("Closing RCON...");
@@ -1087,6 +1119,11 @@ public class Server {
                 this.getLogger().debug("Closing name lookup DB...");
                 nameLookup.close();
             }
+
+            if (this.watchdog != null) {
+                this.getLogger().debug("Stopping Watchdog...");
+                this.watchdog.kill();
+            }
         } catch (Exception e) {
             log.fatal("Exception happened while shutting down, exiting the process", e);
             System.exit(1);
@@ -1112,18 +1149,21 @@ public class Server {
         this.forceShutdown();
     }
 
+    private static final byte[] QUERY_PREFIX = {(byte) 0xfe, (byte) 0xfd};
+
+    /**
+     * Internal: Handle query
+     * @param address sender address
+     * @param payload payload
+     */
     public void handlePacket(InetSocketAddress address, ByteBuf payload) {
         try {
-            if (!payload.isReadable(3)) {
+            if (this.queryHandler == null || !payload.isReadable(3)) {
                 return;
             }
             byte[] prefix = new byte[2];
             payload.readBytes(prefix);
-
-            if (!Arrays.equals(prefix, new byte[]{(byte) 0xfe, (byte) 0xfd})) {
-                return;
-            }
-            if (this.queryHandler != null) {
+            if (Arrays.equals(prefix, QUERY_PREFIX)) {
                 this.queryHandler.handle(address, payload);
             }
         } catch (Exception e) {
@@ -1135,6 +1175,9 @@ public class Server {
 
     private int lastLevelGC;
 
+    /**
+     * Internal: Tick the server
+     */
     public void tickProcessor() {
         this.nextTick = System.currentTimeMillis();
         try {
@@ -1152,7 +1195,10 @@ public class Server {
                             int offset = 0;
                             for (int i = 0; i < levelArray.length; i++) {
                                 offset = (i + lastLevelGC) % levelArray.length;
-                                levelArray[offset].doGarbageCollection(allocated - 1);
+                                Level level = levelArray[offset];
+                                if (!level.isBeingConverted) {
+                                    level.doGarbageCollection(allocated - 1);
+                                }
                                 allocated = next - System.currentTimeMillis();
                                 if (allocated <= 0) break;
                             }
@@ -1192,6 +1238,9 @@ public class Server {
     }
 
     public void removeOnlinePlayer(Player player) {
+        if (player.getUniqueId() == null) {
+            return;
+        }
         if (this.playerList.containsKey(player.getUniqueId())) {
             this.playerList.remove(player.getUniqueId());
 
@@ -1271,7 +1320,19 @@ public class Server {
     }
 
     public void sendRecipeList(Player player) {
-        if (player.protocol >= ProtocolInfo.v1_20_70) {
+        if (player.protocol >= ProtocolInfo.v1_21_50_26) {
+            player.dataPacket(CraftingManager.packet766);
+        } else if (player.protocol >= ProtocolInfo.v1_21_40) {
+            player.dataPacket(CraftingManager.packet748);
+        } else if (player.protocol >= ProtocolInfo.v1_21_30) {
+            player.dataPacket(CraftingManager.packet729);
+        } else if (player.protocol >= ProtocolInfo.v1_21_20) {
+            player.dataPacket(CraftingManager.packet712);
+        } else if (player.protocol >= ProtocolInfo.v1_21_0) {
+            player.dataPacket(CraftingManager.packet685);
+        } else if (player.protocol >= ProtocolInfo.v1_20_80) {
+            player.dataPacket(CraftingManager.packet671);
+        } else if (player.protocol >= ProtocolInfo.v1_20_70) {
             player.dataPacket(CraftingManager.packet662);
         } else if (player.protocol >= ProtocolInfo.v1_20_60) {
             player.dataPacket(CraftingManager.packet649);
@@ -1338,9 +1399,13 @@ public class Server {
             }
         }
 
+        for (Player p : this.getOnlinePlayers().values()) {
+            p.resetPacketCounters();
+        }
+
         // Do level ticks
         for (Level level : this.levelArray) {
-            if (level.getTickRate() > this.baseTickRate && --level.tickRateCounter > 0) {
+            if (level.isBeingConverted || (level.getTickRate() > this.baseTickRate && --level.tickRateCounter > 0)) {
                 continue;
             }
 
@@ -1460,7 +1525,9 @@ public class Server {
 
         if (this.tickCounter % 100 == 0) {
             for (Level level : this.levelArray) {
-                level.doChunkGarbageCollection();
+                if (!level.isBeingConverted) {
+                    level.doChunkGarbageCollection();
+                }
             }
         }
 
@@ -1582,6 +1649,19 @@ public class Server {
         for (Level level : this.levelArray) {
             level.setAutoSave(this.autoSave);
         }
+    }
+
+    public boolean isAutoCompactionEnabled() {
+        return this.autoCompaction;
+    }
+
+    public void setAutoCompactionTicks(int ticks) {
+        Preconditions.checkArgument(ticks > 0, "ticks");
+        this.autoCompactionTicks = ticks;
+    }
+
+    public int getAutoCompactionTicks() {
+        return this.autoCompactionTicks;
     }
 
     public String getLevelType() {
@@ -1848,7 +1928,7 @@ public class Server {
             Optional<UUID> uuid = lookupName(name);
             return getOfflinePlayerDataInternal(uuid.map(UUID::toString).orElse(name), true, create);
         } else {
-            return getOfflinePlayerDataInternal(name, true, create);
+            return getOfflinePlayerDataInternal(name.toLowerCase(), true, create);
         }
     }
 
@@ -2330,7 +2410,7 @@ public class Server {
         }
 
         if (provider == null) {
-            provider = LevelProviderManager.getProviderByName("anvil");
+            provider = LevelProviderManager.getProviderByName("leveldb");
         }
 
         String path;
@@ -2653,7 +2733,7 @@ public class Server {
      * @return is operator
      */
     public boolean isOp(String name) {
-        return this.operators.exists(name, true);
+        return name != null && this.operators.exists(name, true);
     }
 
     /**
@@ -2895,6 +2975,7 @@ public class Server {
         //Others
         Entity.registerEntity("Human", EntityHuman.class, true);
         Entity.registerEntity("Lightning", EntityLightning.class);
+        Entity.registerEntity("AreaEffectCloud", EntityAreaEffectCloud.class);
     }
 
     /**
@@ -2911,6 +2992,7 @@ public class Server {
         BlockEntity.registerBlockEntity(BlockEntity.FLOWER_POT, BlockEntityFlowerPot.class);
         BlockEntity.registerBlockEntity(BlockEntity.BREWING_STAND, BlockEntityBrewingStand.class);
         BlockEntity.registerBlockEntity(BlockEntity.ITEM_FRAME, BlockEntityItemFrame.class);
+        BlockEntity.registerBlockEntity(BlockEntity.GLOW_ITEM_FRAME, BlockEntityItemFrameGlow.class);
         BlockEntity.registerBlockEntity(BlockEntity.CAULDRON, BlockEntityCauldron.class);
         BlockEntity.registerBlockEntity(BlockEntity.ENDER_CHEST, BlockEntityEnderChest.class);
         BlockEntity.registerBlockEntity(BlockEntity.BEACON, BlockEntityBeacon.class);
@@ -2935,6 +3017,7 @@ public class Server {
         BlockEntity.registerBlockEntity(BlockEntity.DECORATED_POT, BlockEntityDecoratedPot.class);
         BlockEntity.registerBlockEntity(BlockEntity.TARGET, BlockEntityTarget.class);
         BlockEntity.registerBlockEntity(BlockEntity.BRUSHABLE_BLOCK, BlockEntityBrushableBlock.class);
+        BlockEntity.registerBlockEntity(BlockEntity.PERSISTENT_CONTAINER, PersistentDataContainerBlockEntity.class);
     }
 
     /**
@@ -2968,6 +3051,10 @@ public class Server {
         this.playerDataSerializer = Preconditions.checkNotNull(playerDataSerializer, "playerDataSerializer");
     }
 
+    public TickingAreaManager getTickingAreaManager() {
+        return tickingAreaManager;
+    }
+
     /**
      * Get the Server instance
      *
@@ -2991,7 +3078,7 @@ public class Server {
      */
     private void loadSettings() {
         this.forceLanguage = this.getPropertyBoolean("force-language", false);
-        this.networkCompressionLevel = Math.max(Math.min(this.getPropertyInt("compression-level", 4), 9), 0);
+        this.networkCompressionLevel = Math.max(Math.min(this.getPropertyInt("compression-level", 5), 9), 0);
         this.chunkCompressionLevel = Math.max(Math.min(this.getPropertyInt("chunk-compression-level", 7), 9), 1);
         this.autoTickRate = this.getPropertyBoolean("auto-tick-rate", true);
         this.autoTickRateLimit = this.getPropertyInt("auto-tick-rate-limit", 20);
@@ -3040,7 +3127,7 @@ public class Server {
         this.forceGamemode = this.getPropertyBoolean("force-gamemode", true);
         this.doNotLimitInteractions = this.getPropertyBoolean("do-not-limit-interactions", false);
         this.motd = this.getPropertyString("motd", "Minecraft Server");
-        this.viewDistance = this.getPropertyInt("view-distance", 8);
+        this.viewDistance = Math.max(1, this.getPropertyInt("view-distance", 8));
         this.mobDespawnTicks = this.getPropertyInt("ticks-per-entity-despawns", 12000);
         this.port = this.getPropertyInt("server-port", 19132);
         this.ip = this.getPropertyString("server-ip", "0.0.0.0");
@@ -3096,8 +3183,10 @@ public class Server {
             }
         }
 
+        this.levelDbCache = this.getPropertyInt("leveldb-cache-mb", 80);
         this.useNativeLevelDB = this.getPropertyBoolean("use-native-leveldb", false);
         this.enableRawOres = this.getPropertyBoolean("enable-raw-ores", true);
+        this.rakPacketLimit = this.getPropertyInt("rak-packet-limit", RakConstants.DEFAULT_PACKET_LIMIT);
     }
 
     /**
@@ -3149,6 +3238,9 @@ public class Server {
             put("rcon.port", 25575);
 
             put("auto-save", true);
+            put("level-auto-compaction", true);
+            put("level-auto-compaction-ticks", 60 * 30 * 20);
+
             put("force-resources", false);
             put("force-resources-allow-client-packs", false);
             put("xbox-auth", true);
@@ -3172,11 +3264,10 @@ public class Server {
             put("async-workers", "auto");
 
             put("zlib-provider", 2);
-            put("compression-level", 4);
+            put("compression-level", 5);
             put("compression-threshold", "256");
-            put("use-snappy-compression", true);
-            put("min-mtu", 576);
-            put("max-mtu", 1492);
+            put("use-snappy-compression", false);
+            put("rak-packet-limit", RakConstants.DEFAULT_PACKET_LIMIT);
             put("timeout-milliseconds", 25000);
 
             put("auto-tick-rate", true);
@@ -3240,6 +3331,7 @@ public class Server {
             put("enable-spark", false);
             put("hastebin-token", "");
 
+            put("leveldb-cache-mb", 80);
             put("use-native-leveldb", false);
             put("enable-raw-ores", true);
         }

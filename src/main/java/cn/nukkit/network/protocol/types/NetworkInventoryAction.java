@@ -274,6 +274,10 @@ public class NetworkInventoryAction {
 
                 return new DropItemAction(this.oldItem, this.newItem);
             case SOURCE_CREATIVE:
+                if (!player.isCreative()) {
+                    return null;
+                }
+
                 int type;
 
                 switch (this.inventorySlot) {
@@ -305,6 +309,11 @@ public class NetworkInventoryAction {
                     case SOURCE_TYPE_CRAFTING_RESULT:
                         return new CraftingTakeResultAction(this.oldItem, this.newItem);
                     case SOURCE_TYPE_CRAFTING_USE_INGREDIENT:
+                        Inventory inv = player.getWindowById(Player.LOOM_WINDOW_ID);
+                        if (inv instanceof LoomInventory) {
+                            LoomInventory loomInventory = (LoomInventory) inv;
+                            return new LoomItemAction(this.oldItem, this.newItem, loomInventory);
+                        }
                         return new CraftingTransferMaterialAction(this.oldItem, this.newItem, this.inventorySlot);
                 }
 

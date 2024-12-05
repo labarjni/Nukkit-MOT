@@ -1,13 +1,11 @@
 package cn.nukkit.item;
 
-import static cn.nukkit.utils.Utils.dynamic;
-
 /**
  * List of item IDs
  */
 public interface ItemID {
 
-    int STRING_IDENTIFIED_ITEM = dynamic(255);
+    int STRING_IDENTIFIED_ITEM = 255;
     int IRON_SHOVEL = 256;
     int IRON_PICKAXE = 257;
     int IRON_AXE = 258;
@@ -346,4 +344,6 @@ public interface ItemID {
     int RECORD_OTHERSIDE = 773;
 
     int SOUL_CAMPFIRE = 801;
+
+    int GLOW_ITEM_FRAME = 850;
 }

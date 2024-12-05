@@ -487,6 +487,12 @@ public class LevelSoundEventPacket extends DataPacket {
     public static final int SOUND_DECORATED_POT_INSERT = 481;
     public static final int SOUND_DECORATED_POT_INSERT_FAILED = 482;
     public static final int SOUND_CRAFTER_DISABLE_SLOT = 483;
+    public static final int SOUND_TRIAL_SPAWNER_OPEN_SHUTTER = 484;
+    public static final int SOUND_TRIAL_SPAWNER_EJECT_ITEM = 485;
+    public static final int SOUND_TRIAL_SPAWNER_DETECT_PLAYER = 486;
+    public static final int SOUND_TRIAL_SPAWNER_SPAWN_MOB = 487;
+    public static final int SOUND_TRIAL_SPAWNER_CLOSE_SHUTTER = 488;
+    public static final int SOUND_TRIAL_SPAWNER_AMBIENT = 489;
     public static final int SOUND_COPPER_BULB_ON = 490;
     public static final int SOUND_COPPER_BULB_OFF = 491;
     public static final int SOUND_AMBIENT_IN_AIR = 492;
@@ -497,8 +503,128 @@ public class LevelSoundEventPacket extends DataPacket {
     public static final int SOUND_EQUIP_WOLF = 497;
     public static final int SOUND_UNEQUIP_WOLF = 498;
     public static final int SOUND_REFLECT = 499;
+    /**
+     * @since v662
+     */
+    public static final int SOUND_VAULT_OPEN_SHUTTER = 500;
+    /**
+     * @since v662
+     */
+    public static final int SOUND_VAULT_CLOSE_SHUTTER = 501;
+    /**
+     * @since v662
+     */
+    public static final int SOUND_VAULT_EJECT_ITEM = 502;
+    /**
+     * @since v662
+     */
+    public static final int SOUND_VAULT_INSERT_ITEM = 503;
+    /**
+     * @since v662
+     */
+    public static final int SOUND_VAULT_INSERT_ITEM_FAIL = 504;
+    /**
+     * @since v662
+     */
+    public static final int SOUND_VAULT_AMBIENT = 505;
+    /**
+     * @since v662
+     */
+    public static final int SOUND_VAULT_ACTIVATE = 506;
+    /**
+     * @since v662
+     */
+    public static final int SOUND_VAULT_DEACTIVATE = 507;
+    /**
+     * @since v662
+     */
+    public static final int SOUND_HURT_REDUCED = 508;
+    /**
+     * @since v662
+     */
+    public static final int SOUND_WIND_CHARGE_BURST = 509;
+    /**
+     * @since v712
+     */
+    public static final int SOUND_IMITATE_BOGGED = 510;
+    /**
+     * @since v671
+     */
+    public static final int SOUND_ARMOR_CRACK_WOLF = 511;
+    /**
+     * @since v671
+     */
+    public static final int SOUND_ARMOR_BREAK_WOLF = 512;
+    /**
+     * @since v671
+     */
+    public static final int SOUND_ARMOR_REPAIR_WOLF = 513;
+    /**
+     * @since v671
+     */
+    public static final int SOUND_MACE_SMASH_AIR = 514;
+    /**
+     * @since v671
+     */
+    public static final int SOUND_MACE_SMASH_GROUND = 515;
+    /**
+     * @since v671
+     */
+    public static final int SOUND_MACE_SMASH_HEAVY_GROUND = 520;
+    /**
+     * @since v685
+     */
+    public static final int SOUND_TRAIL_SPAWNER_CHARGE_ACTIVATE = 516;
+    /**
+     * @since v685
+     */
+    public static final int SOUND_TRAIL_SPAWNER_AMBIENT_OMINOUS = 517;
+    /**
+     * @since v685
+     */
+    public static final int SOUND_OMINOUS_ITEM_SPAWNER_SPAWN_ITEM = 518;
+    /**
+     * @since v685
+     */
+    public static final int SOUND_OMINOUS_BOTTLE_END_USE = 519;
+    /**
+     * @since v685
+     */
+    public static final int SOUND_OMINOUS_ITEM_SPAWNER_SPAWN_ITEM_BEGIN = 521;
+    /**
+     * @since v685
+     */
+    public static final int SOUND_APPLY_EFFECT_BAD_OMEN = 523;
+    /**
+     * @since v685
+     */
+    public static final int SOUND_APPLY_EFFECT_RAID_OMEN = 524;
+    /**
+     * @since v685
+     */
+    public static final int SOUND_APPLY_EFFECT_TRIAL_OMEN = 525;
+    /**
+     * @since v685
+     */
+    public static final int SOUND_OMINOUS_ITEM_SPAWNER_ABOUT_TO_SPAWN_ITEM = 526;
+    /**
+     * @since v685
+     */
+    public static final int SOUND_RECORD_CREATOR = 527;
+    /**
+     * @since v685
+     */
+    public static final int SOUND_RECORD_CREATOR_MUSIC_BOX = 528;
+    /**
+     * @since v685
+     */
+    public static final int SOUND_RECORD_PRECIPICE = 529;
+    /**
+     * @since v712
+     */
+    public static final int SOUND_VAULT_REJECT_REWARDED_PLAYER = 530;
 
-    public static final int SOUND_UNDEFINED = Utils.dynamic(500);
+    public static final int SOUND_UNDEFINED = Utils.dynamic(531);
 
     public int sound;
     public float x;

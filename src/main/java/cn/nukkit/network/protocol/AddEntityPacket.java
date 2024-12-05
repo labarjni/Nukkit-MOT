@@ -114,7 +114,7 @@ public class AddEntityPacket extends DataPacket {
         mapping.put(EntityLightning.NETWORK_ID, "minecraft:lightning_bolt");
         mapping.put(EntitySmallFireBall.NETWORK_ID, "minecraft:small_fireball");
         mapping.put(EntityLlamaSpit.NETWORK_ID, "minecraft:llama_spit");
-        mapping.put(95, "minecraft:area_effect_cloud");
+        mapping.put(EntityAreaEffectCloud.NETWORK_ID, "minecraft:area_effect_cloud");
         mapping.put(EntityPotionLingering.NETWORK_ID, "minecraft:lingering_potion");
         mapping.put(EntityFirework.NETWORK_ID, "minecraft:fireworks_rocket");
         mapping.put(EntityEvocationFangs.NETWORK_ID, "minecraft:evocation_fang");
@@ -188,6 +188,20 @@ public class AddEntityPacket extends DataPacket {
         } else {
             mapping.put(EntityCamel.NETWORK_ID, "minecraft:camel");
         }
+
+        //TODO 多版本
+        //1.20.0
+        mapping.put(139, "minecraft:sniffer");
+        //1.21.0
+        mapping.put(140, "minecraft:breeze");
+        //1.21.0
+        mapping.put(141, "minecraft:breeze_wind_charge_projectile");
+        //1.20.80
+        mapping.put(142, "minecraft:armadillo");
+        //1.21.0
+        mapping.put(143, "minecraft:wind_charge_projectile");
+        //1.21.0
+        mapping.put(144, "minecraft:bogged");
     }
 
     @Override

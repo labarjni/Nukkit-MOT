@@ -39,12 +39,12 @@ public class BlockComposter extends BlockSolidMeta implements ItemID {
 
     @Override
     public double getHardness() {
-        return 2;
+        return 0.6;
     }
 
     @Override
     public double getResistance() {
-        return 3;
+        return 0.6;
     }
 
     @Override
@@ -58,8 +58,8 @@ public class BlockComposter extends BlockSolidMeta implements ItemID {
     }
 
     @Override
-    public int getWaterloggingLevel() {
-        return 1;
+    public WaterloggingType getWaterloggingType() {
+        return WaterloggingType.WHEN_PLACED_IN_WATER;
     }
 
     @Override

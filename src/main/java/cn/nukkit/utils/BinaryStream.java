@@ -22,26 +22,31 @@ import cn.nukkit.network.LittleEndianByteBufInputStream;
 import cn.nukkit.network.LittleEndianByteBufOutputStream;
 import cn.nukkit.network.protocol.ProtocolInfo;
 import cn.nukkit.network.protocol.types.EntityLink;
-import cn.nukkit.network.protocol.types.itemstack.ContainerSlotType;
-import cn.nukkit.network.protocol.types.itemstack.request.ItemStackRequest;
-import cn.nukkit.network.protocol.types.itemstack.request.ItemStackRequestSlotData;
-import cn.nukkit.network.protocol.types.itemstack.request.TextProcessingEventOrigin;
-import cn.nukkit.network.protocol.types.itemstack.request.action.*;
+import cn.nukkit.network.protocol.types.inventory.ContainerSlotType;
+import cn.nukkit.network.protocol.types.inventory.itemstack.request.ItemStackRequest;
+import cn.nukkit.network.protocol.types.inventory.itemstack.request.ItemStackRequestSlotData;
+import cn.nukkit.network.protocol.types.inventory.itemstack.request.TextProcessingEventOrigin;
+import cn.nukkit.network.protocol.types.inventory.itemstack.request.action.*;
 import com.google.common.base.Preconditions;
 import io.netty.buffer.AbstractByteBufAllocator;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import it.unimi.dsi.fastutil.io.FastByteArrayInputStream;
 import lombok.SneakyThrows;
+import org.cloudburstmc.nbt.NBTOutputStream;
+import org.cloudburstmc.nbt.NbtUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.*;
+
+import static org.cloudburstmc.protocol.common.util.Preconditions.checkArgument;
 
 /**
  * BinaryStream
@@ -418,6 +423,13 @@ public class BinaryStream {
         return new SerializedImage(width, height, data);
     }
 
+    public SerializedImage getImage(int maxSize) {
+        int width = this.getLInt();
+        int height = this.getLInt();
+        byte[] data = this.getByteArray(maxSize);
+        return new SerializedImage(width, height, data);
+    }
+
     public Skin getSkin() {
         Server.mvw("BinaryStream#getSkin()");
         return getSkin(ProtocolInfo.CURRENT_PROTOCOL);
@@ -430,18 +442,18 @@ public class BinaryStream {
             skin.setPlayFabId(this.getString());
         }
         skin.setSkinResourcePatch(this.getString());
-        skin.setSkinData(this.getImage());
+        skin.setSkinData(this.getImage(Skin.SKIN_PERSONA_SIZE));
 
         int animationCount = this.getLInt();
         for (int i = 0; i < Math.min(animationCount, 1024); i++) {
-            SerializedImage image = this.getImage();
+            SerializedImage image = this.getImage(Skin.SKIN_128_128_SIZE);
             int type = this.getLInt();
             float frames = this.getLFloat();
             int expression = protocol >= ProtocolInfo.v1_16_100 ? this.getLInt() : 0;
             skin.getAnimations().add(new SkinAnimation(image, type, frames, expression));
         }
 
-        skin.setCapeData(this.getImage());
+        skin.setCapeData(this.getImage(Skin.SINGLE_SKIN_SIZE));
         skin.setGeometryData(this.getString());
         if (protocol >= ProtocolInfo.v1_17_30) {
             skin.setGeometryDataEngineVersion(this.getString());
@@ -707,10 +719,13 @@ public class BinaryStream {
         }
 
         int blockRuntimeId = this.getVarInt();// blockRuntimeId
-        if (id != null && id < 256 && id != 166) { // ItemBlock
-            int fullId = GlobalBlockPalette.getLegacyFullId(protocolId, blockRuntimeId);
-            if (fullId != -1) {
-                damage = fullId & 0x3f;
+        //TODO 在1.21.30会得到错误数据
+        if (protocolId < ProtocolInfo.v1_21_30) {
+            if (id != null && id < 256 && id != 166) { // ItemBlock
+                int fullId = GlobalBlockPalette.getLegacyFullId(protocolId, blockRuntimeId);
+                if (fullId != -1) {
+                    damage = fullId & Block.DATA_MASK;
+                }
             }
         }
 
@@ -837,6 +852,11 @@ public class BinaryStream {
     public void putSlot(int protocolId, Item item, boolean crafting) {
         if (protocolId >= ProtocolInfo.v1_16_220) {
             this.putSlotNew(protocolId, item, crafting);
+            return;
+        }
+
+        if (protocolId < ProtocolInfo.v1_2_0) {
+            this.putSlotV113(item);
             return;
         }
 
@@ -1037,6 +1057,22 @@ public class BinaryStream {
         }
     }
 
+    private void putSlotV113(Item item) {
+        if (item == null || item.getId() == Item.AIR) {
+            this.putVarInt(0);
+            return;
+        }
+
+        this.putVarInt(item.getId());
+        int auxValue = (((item.hasMeta() ? item.getDamage() : -1) & 0x7fff) << 8) | item.getCount();
+        this.putVarInt(auxValue);
+        byte[] nbt = item.getCompoundTag();
+        this.putLShort(nbt.length);
+        this.put(nbt);
+        this.putVarInt(0); //CanPlaceOn entry count
+        this.putVarInt(0); //CanDestroy entry count
+    }
+
     private void putSlotNew(int protocolId, Item item, boolean instanceItem) {
         if (item == null || item.getId() == Item.AIR) {
             this.putByte((byte) 0);
@@ -1093,7 +1129,7 @@ public class BinaryStream {
 
         if (!instanceItem) {
             this.putBoolean(true);
-            this.putVarInt(1);
+            this.putVarInt(1); // Item is present
         }
 
         Block block = isBlock ? item.getBlockUnsafe() : null;
@@ -1141,8 +1177,7 @@ public class BinaryStream {
                 stream.writeLong(0);
             }
 
-            byte[] bytes = new byte[userDataBuf.readableBytes()];
-            userDataBuf.readBytes(bytes);
+            byte[] bytes = Utils.convertByteBuf2Array(userDataBuf);
             putByteArray(bytes);
         } catch (IOException e) {
             throw new IllegalStateException("Unable to write item user data", e);
@@ -1181,14 +1216,14 @@ public class BinaryStream {
     public void putRecipeIngredient(int protocolId, Item item) {
         if (item == null || item.getId() == 0) {
             if (protocolId >= ProtocolInfo.v1_19_30_23) {
-                this.putBoolean(false); // isValid? - false
+                this.putByte((byte) 0); //ItemDescriptorType.INVALID
             }
             this.putVarInt(0); // item == null ? 0 : item.getCount()
             return;
         }
 
         if (protocolId >= ProtocolInfo.v1_19_30_23) {
-            this.putBoolean(true); // isValid? - true
+            this.putByte((byte) 1); //ItemDescriptorType.DEFAULT
         }
 
         int runtimeId = item.getId();
@@ -1254,6 +1289,14 @@ public class BinaryStream {
 
     public byte[] getByteArray() {
         return this.get((int) this.getUnsignedVarInt());
+    }
+
+    public byte[] getByteArray(int maxLength) {
+        int length = (int) this.getUnsignedVarInt();
+        checkArgument(this.isReadable(length),
+                "Tried to read %s bytes but only has %s readable", length, this.readableBytes());
+        checkArgument(maxLength <= 0 || length <= maxLength, "Tried to read %s bytes but maximum is %s", length, maxLength);
+        return this.get(length);
     }
 
     public void putByteArray(byte[] b) {
@@ -1327,7 +1370,7 @@ public class BinaryStream {
     }
 
     public Vector3f getVector3f() {
-        return new Vector3f(this.getLFloat(4), this.getLFloat(4), this.getLFloat(4));
+        return new Vector3f(this.getLFloat(), this.getLFloat(), this.getLFloat());
     }
 
     public void putVector3f(Vector3f v) {
@@ -1341,7 +1384,7 @@ public class BinaryStream {
     }
 
     public Vector2f getVector2f() {
-        return new Vector2f(this.getLFloat(4), this.getLFloat(4));
+        return new Vector2f(this.getLFloat(), this.getLFloat());
     }
 
     public void putVector2f(Vector2f v) {
@@ -1434,12 +1477,17 @@ public class BinaryStream {
     }
 
     public void putEntityLink(int protocol, EntityLink link) {
-        putEntityUniqueId(link.fromEntityUniquieId);
-        putEntityUniqueId(link.toEntityUniquieId);
-        putByte(link.type);
-        putBoolean(link.immediate);
-        if (protocol >= 407) {
-            putBoolean(link.riderInitiated);
+        this.putEntityUniqueId(link.fromEntityUniquieId);
+        this.putEntityUniqueId(link.toEntityUniquieId);
+        this.putByte(link.type);
+        if (protocol >= ProtocolInfo.v1_2_0) {
+            this.putBoolean(link.immediate);
+            if (protocol >= ProtocolInfo.v1_16_0) {
+                this.putBoolean(link.riderInitiated);
+                if (protocol >= ProtocolInfo.v1_21_20) {
+                    this.putLFloat(link.vehicleAngularVelocity);
+                }
+            }
         }
     }
 
@@ -1449,7 +1497,8 @@ public class BinaryStream {
                 getEntityUniqueId(),
                 (byte) getByte(),
                 getBoolean(),
-                getBoolean() //1.16+
+                getBoolean(), //1.16+
+                getLFloat() //1.21.20+
         );
     }
 
@@ -1536,6 +1585,14 @@ public class BinaryStream {
         this.putOptional(Objects::nonNull, object, consumer);
     }
 
+    public boolean isReadable(int length) {
+        return this.count - this.offset >= length;
+    }
+
+    public int readableBytes() {
+        return this.count - this.offset;
+    }
+
     public boolean feof() {
         return this.offset < 0 || this.offset >= this.buffer.length;
     }
@@ -1580,6 +1637,16 @@ public class BinaryStream {
         return (minCapacity > MAX_ARRAY_SIZE) ?
                 Integer.MAX_VALUE :
                 MAX_ARRAY_SIZE;
+    }
+
+    public <T> void putNbtTag(T tag) {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        try (NBTOutputStream writer = NbtUtils.createNetworkWriter(stream)) {
+            writer.writeTag(tag);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        this.put(stream.toByteArray());
     }
 
     public ItemStackRequest readItemStackRequest() {

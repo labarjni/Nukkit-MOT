@@ -101,8 +101,8 @@ public class BlockCauldron extends BlockSolidMeta implements BlockEntityHolder<B
     }
 
     @Override
-    public int getWaterloggingLevel() {
-        return 1;
+    public WaterloggingType getWaterloggingType() {
+        return WaterloggingType.WHEN_PLACED_IN_WATER;
     }
 
     @Override
@@ -160,6 +160,13 @@ public class BlockCauldron extends BlockSolidMeta implements BlockEntityHolder<B
                         } else { // lava bucket
                             if (!isEmpty()) {
                                 clearWithFizz(cauldron);
+                            } else {
+                                BlockCauldronLava blockCauldronLava = new BlockCauldronLava(14);
+                                blockCauldronLava.setFillLevel(3);
+                                this.level.setBlock(this, blockCauldronLava, true, true);
+                                cauldron.clearCustomColor();
+                                this.getLevel().addSoundToViewers(this, Sound.BUCKET_EMPTY_LAVA);
+                                break;
                             }
                         }
                         //this.update();

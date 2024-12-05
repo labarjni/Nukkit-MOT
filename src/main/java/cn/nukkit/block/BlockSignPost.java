@@ -78,8 +78,8 @@ public class BlockSignPost extends BlockTransparentMeta implements Faceable, Blo
     }
 
     @Override
-    public int getWaterloggingLevel() {
-        return 1;
+    public WaterloggingType getWaterloggingType() {
+        return WaterloggingType.WHEN_PLACED_IN_WATER;
     }
 
     protected int getPostId() {
@@ -97,11 +97,7 @@ public class BlockSignPost extends BlockTransparentMeta implements Faceable, Blo
                     .putString("id", BlockEntity.SIGN)
                     .putInt("x", (int) block.x)
                     .putInt("y", (int) block.y)
-                    .putInt("z", (int) block.z)
-                    .putString("Text1", "")
-                    .putString("Text2", "")
-                    .putString("Text3", "")
-                    .putString("Text4", "");
+                    .putInt("z", (int) block.z);
 
             if (face == BlockFace.UP) {
                 setDamage((int) Math.floor(((player.yaw + 180) * 16 / 360) + 0.5) & 0x0f);

@@ -1,5 +1,6 @@
 package cn.nukkit.inventory;
 
+import cn.nukkit.inventory.data.RecipeUnlockingRequirement;
 import cn.nukkit.item.Item;
 import io.netty.util.collection.CharObjectHashMap;
 
@@ -26,12 +27,30 @@ public class ShapedRecipe implements CraftingRecipe {
 
     private final int networkId;
 
+    /**
+     * @since v671
+     */
+    private final boolean assumeSymetry;
+    /**
+     * @since v685
+     */
+    private final RecipeUnlockingRequirement requirement;
+
+
     public ShapedRecipe(Item primaryResult, String[] shape, Map<Character, Item> ingredients, List<Item> extraResults) {
         this(null, 1, primaryResult, shape, ingredients, extraResults);
     }
 
     public ShapedRecipe(String recipeId, int priority, Item primaryResult, String[] shape, Map<Character, Item> ingredients, List<Item> extraResults) {
         this(recipeId, priority, primaryResult, shape, ingredients, extraResults, null);
+    }
+
+    public ShapedRecipe(String recipeId, int priority, Item primaryResult, String[] shape, Map<Character, Item> ingredients, List<Item> extraResults, Integer networkId) {
+        this(recipeId, priority, primaryResult, shape, ingredients, extraResults, networkId, true);
+    }
+
+    public ShapedRecipe(String recipeId, int priority, Item primaryResult, String[] shape, Map<Character, Item> ingredients, List<Item> extraResults, Integer networkId, boolean assumeSymetry) {
+        this(recipeId, priority, primaryResult, shape, ingredients, extraResults, networkId, assumeSymetry, RecipeUnlockingRequirement.ALWAYS_UNLOCKED);
     }
 
     /**
@@ -50,7 +69,7 @@ public class ShapedRecipe implements CraftingRecipe {
      *
      *                         Note: Recipes **do not** need to be square. Do NOT add padding for empty rows/columns.
      */
-    public ShapedRecipe(String recipeId, int priority, Item primaryResult, String[] shape, Map<Character, Item> ingredients, List<Item> extraResults, Integer networkId) {
+    public ShapedRecipe(String recipeId, int priority, Item primaryResult, String[] shape, Map<Character, Item> ingredients, List<Item> extraResults, Integer networkId, boolean assumeSymetry, RecipeUnlockingRequirement requirement) {
         this.recipeId = recipeId;
         this.priority = priority;
         int rowCount = shape.length;
@@ -104,6 +123,8 @@ public class ShapedRecipe implements CraftingRecipe {
         }
         this.ingredientsAggregate.sort(CraftingManager.recipeComparator);
         this.networkId = networkId != null ? networkId : ++CraftingManager.NEXT_NETWORK_ID;
+        this.assumeSymetry = assumeSymetry;
+        this.requirement = requirement;
     }
 
     public int getWidth() {
@@ -307,6 +328,14 @@ public class ShapedRecipe implements CraftingRecipe {
 
     public int getNetworkId() {
         return this.networkId;
+    }
+
+    public boolean isAssumeSymetry() {
+        return this.assumeSymetry;
+    }
+
+    public RecipeUnlockingRequirement getRequirement() {
+        return this.requirement;
     }
 
     public static class Entry {

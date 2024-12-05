@@ -1,5 +1,6 @@
 package cn.nukkit.network.protocol;
 
+import cn.nukkit.Server;
 import cn.nukkit.entity.data.Skin;
 import cn.nukkit.utils.PersonaPiece;
 import cn.nukkit.utils.PersonaPieceTint;
@@ -13,6 +14,8 @@ import lombok.ToString;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+
+import static cn.nukkit.utils.ClientChainData.decodeToken;
 
 @ToString
 public class LoginPacket extends DataPacket {
@@ -69,7 +72,7 @@ public class LoginPacket extends DataPacket {
 
     private void decodeChainData() {
         int size = this.getLInt();
-        if (size > 3000000) {
+        if (size > 52428800) {
             throw new IllegalArgumentException("The chain data is too big: " + size);
         }
 
@@ -90,14 +93,13 @@ public class LoginPacket extends DataPacket {
 
     private void decodeSkinData() {
         int size = this.getLInt();
-        if (size > 3000000) {
-            throw new IllegalArgumentException("The skin data is too big: " + size);
+        if (size > 52428800) {
+            Server.getInstance().getLogger().warning(username + ": The skin data is too big: " + size);
+            return; // Get disconnected due to "invalid skin"
         }
 
-        String data = new String(this.get(size));
-        JsonObject skinToken = decodeToken(data);
-
-        if (skinToken == null) return;
+        JsonObject skinToken = decodeToken(new String(this.get(size), StandardCharsets.UTF_8));
+        if (skinToken == null) throw new RuntimeException("Invalid null skin token");
 
         // 将1.19.62按1.19.63版本处理 修复1.19.62皮肤修改问题
         if (this.protocol_ == ProtocolInfo.v1_19_60 &&
@@ -210,12 +212,6 @@ public class LoginPacket extends DataPacket {
                 }
             }
         }
-    }
-
-    private static JsonObject decodeToken(String token) {
-        String[] base = token.split("\\.");
-        if (base.length < 2) return null;
-        return GSON.fromJson(new String(Base64.getDecoder().decode(base[1]), StandardCharsets.UTF_8), JsonObject.class);
     }
 
     private static SkinAnimation getAnimation(int protocol, JsonObject element) {

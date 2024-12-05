@@ -1,6 +1,8 @@
 package cn.nukkit.network.protocol;
 
 import cn.nukkit.Server;
+import cn.nukkit.block.custom.CustomBlockDefinition;
+import cn.nukkit.block.custom.CustomBlockManager;
 import cn.nukkit.item.RuntimeItems;
 import cn.nukkit.level.GameRules;
 import cn.nukkit.level.GlobalBlockPalette;
@@ -11,8 +13,12 @@ import cn.nukkit.network.protocol.types.NetworkPermissions;
 import cn.nukkit.utils.Utils;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import lombok.ToString;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,6 +32,7 @@ public class StartGamePacket extends DataPacket {
     public static final int GAME_PUBLISH_SETTING_FRIENDS_ONLY = 2;
     public static final int GAME_PUBLISH_SETTING_FRIENDS_OF_FRIENDS = 3;
     public static final int GAME_PUBLISH_SETTING_PUBLIC = 4;
+    private static final Logger log = LoggerFactory.getLogger(StartGamePacket.class);
 
     @Override
     public byte pid() {
@@ -44,6 +51,13 @@ public class StartGamePacket extends DataPacket {
     public float pitch;
     public int seed;
     public byte dimension;
+    /**
+     * generator is the generator used for the world. It is a value from 0-4, with 0 being old limited worlds,
+     * 1 being infinite worlds, 2 being flat worlds, 3 being nether worlds and 4 being end worlds. A value of
+     * 0 will actually make the client stop rendering chunks you send beyond the world limit.
+     * <p>
+     * 防止主世界不渲染384高度，这里始终保持1
+     */
     public int generator = 1;
     public int worldGamemode;
     public int difficulty;
@@ -93,6 +107,7 @@ public class StartGamePacket extends DataPacket {
     public boolean isServerAuthoritativeBlockBreaking;
     public long currentTick;
     public int enchantmentSeed;
+    public Collection<CustomBlockDefinition> blockDefinitions = CustomBlockManager.get().getBlockDefinitions();
     public String multiplayerCorrelationId = "";
     public boolean isDisablingPersonas;
     public boolean isDisablingCustomSkins;
@@ -126,6 +141,22 @@ public class StartGamePacket extends DataPacket {
      * @since v588
      */
     public NetworkPermissions networkPermissions = NetworkPermissions.DEFAULT;
+    /**
+     * @since v671
+     */
+    public boolean hardcore;
+    /**
+     * @since v685
+     */
+    public String serverId = "";
+    /**
+     * @since v685
+     */
+    public String worldId = "";
+    /**
+     * @since v685
+     */
+    public String scenarioId = "";
 
     @Override
     public void decode() {
@@ -154,6 +185,9 @@ public class StartGamePacket extends DataPacket {
         this.putVarInt(this.dimension);
         this.putVarInt(this.generator);
         this.putVarInt(this.worldGamemode);
+        if (this.protocol >= ProtocolInfo.v1_20_80) {
+            this.putBoolean(this.hardcore);
+        }
         this.putVarInt(this.difficulty);
         this.putBlockVector3(this.spawnX, this.spawnY, this.spawnZ);
         this.putBoolean(this.hasAchievementsDisabled);
@@ -264,6 +298,11 @@ public class StartGamePacket extends DataPacket {
                 if (protocol >= ProtocolInfo.v1_19_20) {
                     this.putByte(this.chatRestrictionLevel);
                     this.putBoolean(this.disablePlayerInteractions);
+                    if (protocol >= ProtocolInfo.v1_21_0) {
+                        this.putString(this.serverId);
+                        this.putString(this.worldId);
+                        this.putString(this.scenarioId);
+                    }
                 }
             }
         }
@@ -292,7 +331,19 @@ public class StartGamePacket extends DataPacket {
         }
         if (protocol > ProtocolInfo.v1_5_0) {
             if (protocol >= ProtocolInfo.v1_16_100) {
-                this.putUnsignedVarInt(0); // Custom blocks
+                if (this.blockDefinitions != null && !this.blockDefinitions.isEmpty()) {
+                    this.putUnsignedVarInt(this.blockDefinitions.size());
+                    for (CustomBlockDefinition definition : this.blockDefinitions) {
+                        this.putString(definition.identifier());
+                        try {
+                            this.put(NBTIO.write(definition.nbt(), ByteOrder.LITTLE_ENDIAN, true));
+                        } catch (Exception e) {
+                             log.error("Error while encoding NBT data of CustomBlockDefinition", e);
+                        }
+                    }
+                } else {
+                    this.putUnsignedVarInt(0); // No custom blocks
+                }
             } else {
                 this.put(GlobalBlockPalette.getCompiledTable(this.protocol));
             }

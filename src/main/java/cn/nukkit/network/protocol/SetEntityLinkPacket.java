@@ -16,6 +16,10 @@ public class SetEntityLinkPacket extends DataPacket {
     public byte type;
     public byte immediate;
     public boolean riderInitiated = false;
+    /**
+     * @since v712
+     */
+    public float vehicleAngularVelocity;
 
     @Override
     public void decode() {
@@ -27,9 +31,15 @@ public class SetEntityLinkPacket extends DataPacket {
         this.putEntityUniqueId(this.vehicleUniqueId);
         this.putEntityUniqueId(this.riderUniqueId);
         this.putByte(this.type);
+        if (protocol < ProtocolInfo.v1_2_0) {
+            return;
+        }
         this.putByte(this.immediate);
         if (protocol >= 407) {
             this.putBoolean(this.riderInitiated);
+            if (this.protocol >= ProtocolInfo.v1_21_20) {
+                this.putLFloat(this.vehicleAngularVelocity);
+            }
         }
     }
 

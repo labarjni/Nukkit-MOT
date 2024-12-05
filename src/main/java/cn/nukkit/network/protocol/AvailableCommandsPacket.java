@@ -4,8 +4,9 @@ import cn.nukkit.command.data.*;
 import cn.nukkit.network.protocol.types.CommandParam;
 import cn.nukkit.utils.BinaryStream;
 import cn.nukkit.utils.SequencedHashSet;
-import cn.nukkit.utils.TypeMap;
+import com.google.gson.Gson;
 import lombok.ToString;
+import org.cloudburstmc.protocol.common.util.TypeMap;
 
 import java.util.*;
 import java.util.function.ObjIntConsumer;
@@ -185,9 +186,16 @@ public class AvailableCommandsPacket extends DataPacket {
             .insert(54, CommandParam.HAS_PROPERTY_ELEMENTS)
             .insert(55, CommandParam.HAS_PROPERTY_SELECTOR)
             .build();
+    private static final TypeMap<CommandParam> COMMAND_PARAMS_685 = COMMAND_PARAMS_662.toBuilder()
+            .shift(86, 4)
+            .insert(86, CommandParam.CODE_BUILDER_ARG)
+            .insert(87, CommandParam.CODE_BUILDER_ARGS)
+            .insert(88, CommandParam.CODE_BUILDER_SELECT_PARAM)
+            .insert(89, CommandParam.CODE_BUILDER_SELECTOR)
+            .build();
 
     //TODO Multiversion 保持最新版
-    private static final TypeMap<CommandParam> COMMAND_PARAMS = COMMAND_PARAMS_662.toBuilder().build();
+    private static final TypeMap<CommandParam> COMMAND_PARAMS = COMMAND_PARAMS_685.toBuilder().build();
 
     //兼容nk插件
     public static final int ARG_TYPE_UNKNOWN = COMMAND_PARAMS.getId(CommandParam.UNKNOWN);
@@ -216,7 +224,9 @@ public class AvailableCommandsPacket extends DataPacket {
 
     public static TypeMap<CommandParam> getCommandParams(int protocol) {
         //TODO Multiversion
-        if (protocol >= ProtocolInfo.v1_20_70) {
+        if (protocol >= ProtocolInfo.v1_21_0) {
+            return COMMAND_PARAMS_685;
+        } else if (protocol >= ProtocolInfo.v1_20_70) {
             return COMMAND_PARAMS_662;
         } else if (protocol >= ProtocolInfo.v1_20_10_21) {
             return COMMAND_PARAMS_594;
@@ -367,6 +377,12 @@ public class AvailableCommandsPacket extends DataPacket {
     @Override
     public void encode() {
         this.reset();
+
+        if (this.protocol < ProtocolInfo.v1_2_0) {
+            this.putString(new Gson().toJson(this.commands));
+            this.putString("");
+            return;
+        }
 
         LinkedHashSet<String> enumValuesSet = new LinkedHashSet<>();
         SequencedHashSet<String> subCommandValues = new SequencedHashSet<>();
@@ -524,8 +540,12 @@ public class AvailableCommandsPacket extends DataPacket {
                             type |= ARG_FLAG_ENUM | enums.indexOf(parameter.enumData);
                         } else {
                             CommandParam commandParam = COMMAND_PARAMS.getType(parameter.type.getId()); //正常来说应该传入最新版的数字id
-                            int id = getCommandParams(protocol).getId(commandParam);
-                            type |= id;
+                            try {
+                                int id = getCommandParams(protocol).getId(commandParam);
+                                type |= id;
+                            } catch (IllegalArgumentException e) {
+                                type |= getCommandParams(protocol).getId(CommandParam.STRING);
+                            }
                         }
                     }
 
