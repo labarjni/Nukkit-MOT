@@ -4,7 +4,6 @@ import cn.nukkit.block.Block;
 import cn.nukkit.blockentity.BlockEntity;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.level.DimensionData;
-import cn.nukkit.level.DimensionEnum;
 import cn.nukkit.level.biome.Biome;
 import cn.nukkit.level.format.ChunkSection;
 import cn.nukkit.level.format.LevelProvider;
@@ -47,13 +46,13 @@ public class LevelDBChunk extends BaseChunk {
         this(level, chunkX, chunkZ, new LevelDBChunkSection[0], new int[SUB_CHUNK_2D_SIZE], null, null, null, null, ChunkState.NEW);
     }
 
-    public LevelDBChunk(@Nullable LevelProvider level, int chunkX, int chunkZ, @NotNull ChunkSection[] sections,
+    public LevelDBChunk(@Nullable LevelProvider provider, int chunkX, int chunkZ, @NotNull ChunkSection[] sections,
                         @Nullable int[] heightmap, @Nullable byte[] biomes2d, @Nullable PalettedBlockStorage[] biomes3d,
                         @Nullable List<CompoundTag> entities, @Nullable List<CompoundTag> blockEntities, @NotNull ChunkState state) {
-        this.provider = level;
+        this.provider = provider;
         this.setPosition(chunkX, chunkZ);
 
-        this.dimensionData = level == null ? DimensionEnum.OVERWORLD.getDimensionData() : level.getLevel().getDimensionData();
+        this.dimensionData = provider == null ? DimensionData.LEGACY_DIMENSION : provider.getLevel().getDimensionData();
         int minSectionY = this.dimensionData.getMinSectionY();
         int maxSectionY = this.dimensionData.getMaxSectionY();
         this.sections = new LevelDBChunkSection[this.dimensionData.getHeight() >> 4];
@@ -74,8 +73,7 @@ public class LevelDBChunk extends BaseChunk {
                 this.heightMap[i] = (byte) heightmap[i];
             }
         } else {
-            Arrays.fill(this.heightMap, (byte)-1);
-            this.recalculateHeightMap();
+            Arrays.fill(this.heightMap, (byte) 255);
         }
 
         if (biomes2d != null && biomes2d.length == SUB_CHUNK_2D_SIZE) {
@@ -304,41 +302,44 @@ public class LevelDBChunk extends BaseChunk {
 
     @Override
     public int getBlockSkyLight(int x, int y, int z) {
-        ChunkSection section = this.getSection(y >> 4);
-        if (section instanceof LevelDBChunkSection levelDBChunkSection) {
-            if (levelDBChunkSection.skyLight != null) {
-                return section.getBlockSkyLight(x, y & 0x0f, z);
-            } else if (!levelDBChunkSection.hasSkyLight) {
-                return 0;
-            } else {
-                int height = getHighestBlockAt(x, z);
-                if (height < y) {
-                    return 15;
-                } else if (height == y) {
-                    return Block.transparent[getBlockId(x, y, z)] ? 15 : 0;
-                } else {
-                    return section.getBlockSkyLight(x, y & 0x0f, z);
-                }
-            }
-        } else {
+        ChunkSection section0 = this.getSection(y >> 4);
+        if (!(section0 instanceof LevelDBChunkSection)) {
+            return section0.getBlockSkyLight(x, y & 0x0f, z);
+        }
+
+        LevelDBChunkSection section = (LevelDBChunkSection) section0;
+        if (section.skyLight != null) {
             return section.getBlockSkyLight(x, y & 0x0f, z);
+        } else if (!section.hasSkyLight) {
+            return 0;
+        } else {
+            int height = this.getHighestBlockAt(x, z);
+            if (height < y) {
+                return 15;
+            } else if (height == y) {
+                return Block.isBlockTransparentById(this.getBlockId(x, y, z)) ? 15 : 0;
+            } else {
+                return section.getBlockSkyLight(x, y & 0x0f, z);
+            }
         }
     }
 
     @Override
     public int getBlockLight(int x, int y, int z) {
-        ChunkSection section = this.getSection(y >> 4);
-        if (section instanceof LevelDBChunkSection levelDBChunkSection) {
-            if (levelDBChunkSection.blockLight != null) {
-                return section.getBlockLight(x, y & 0x0f, z);
-            } else if (!levelDBChunkSection.hasBlockLight) {
-                return 0;
-            } else {
-                return section.getBlockLight(x, y & 0x0f, z);
-            }
+        ChunkSection section0 = this.getSection(y >> 4);
+
+        if (!(section0 instanceof LevelDBChunkSection section)) {
+            return section0.getBlockLight(x, y & 0x0f, z);
+        }
+
+        if (section.blockLight != null) {
+            return section.getBlockLight(x, y & 0x0f, z);
+        } else if (!section.hasBlockLight) {
+            return 0;
         } else {
             return section.getBlockLight(x, y & 0x0f, z);
         }
+
     }
 
     @Override

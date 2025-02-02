@@ -69,7 +69,7 @@ public class BlockCoralBlock extends BlockSolidMeta {
     
     @Override
     public double getHardness() {
-        return 7;
+        return 1.5;
     }
     
     @Override
@@ -103,6 +103,7 @@ public class BlockCoralBlock extends BlockSolidMeta {
                     }
                 }
                 BlockFadeEvent event = new BlockFadeEvent(this, new BlockCoralBlock(this.getDamage() | 0x8));
+                event.call();
                 if (!event.isCancelled()) {
                     this.setDead(true);
                     this.getLevel().setBlock(this, event.getNewState(), true, true);

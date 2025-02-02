@@ -6,6 +6,7 @@ import cn.nukkit.nbt.NBTIO;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.nbt.tag.FloatTag;
 import cn.nukkit.nbt.tag.ListTag;
+import cn.nukkit.network.protocol.types.camera.CameraAimAssistPreset;
 import cn.nukkit.network.protocol.types.camera.CameraAudioListener;
 import cn.nukkit.network.protocol.types.camera.CameraPreset;
 import cn.nukkit.utils.BinaryStream;
@@ -108,14 +109,42 @@ public class CameraPresetsPacket extends DataPacket {
         this.putOptionalNull(preset.getPitch(), this::putLFloat);
         this.putOptionalNull(preset.getYaw(), this::putLFloat);
         if (this.protocol >= ProtocolInfo.v1_21_20) {
+            if (this.protocol >= ProtocolInfo.v1_21_30) {
+                this.putOptionalNull(preset.getRotationSpeed(), this::putLFloat);
+                this.putOptionalNull(preset.getSnapToTarget(), (snapToTarget) -> this.putBoolean(snapToTarget.getAsBoolean()));
+                if (this.protocol >= ProtocolInfo.v1_21_40) {
+                    this.putOptionalNull(preset.getHorizontalRotationLimit(), vector2f -> this.putVector2f(vector2f));
+                    this.putOptionalNull(preset.getVerticalRotationLimit(), vector2f -> this.putVector2f(vector2f));
+                    this.putOptional(o -> o != null && o.isPresent(), preset.getContinueTargeting(), (optional) -> this.putBoolean(optional.getAsBoolean()));
+                }
+            }
+            if (this.protocol >= ProtocolInfo.v1_21_50) {
+                this.putOptionalNull(preset.getBlockListeningRadius(), this::putLFloat);
+            }
             this.putOptionalNull(preset.getViewOffset(), (viewOffset) -> {
                 this.putLFloat(viewOffset.getX());
                 this.putLFloat(viewOffset.getY());
             });
+            if (this.protocol >= ProtocolInfo.v1_21_30) {
+                this.putOptionalNull(preset.getEntityOffset(), this::putVector3f);
+            }
             this.putOptionalNull(preset.getRadius(), this::putLFloat);
         }
         this.putOptionalNull(preset.getListener(), (listener) -> this.putByte((byte) listener.ordinal()));
         this.putOptional(o -> o != null && o.isPresent(), preset.getPlayEffect(), (optional) -> this.putBoolean(optional.getAsBoolean()));
+        if (this.protocol >= ProtocolInfo.v1_21_40) {
+            this.putOptional(o -> o != null && o.isPresent(), preset.getAlignTargetAndCameraForward(), (optional) -> this.putBoolean(optional.getAsBoolean()));
+        }
+        if (this.protocol >= ProtocolInfo.v1_21_50) {
+            this.putOptionalNull(preset.getAimAssistPreset(), this::putCameraAimAssist);
+        }
+    }
+
+    protected void putCameraAimAssist(CameraAimAssistPreset aimAssist) {
+        this.putOptionalNull(aimAssist.getIdentifier(), this::putString);
+        this.putOptionalNull(aimAssist.getTargetMode(), this::putLInt);
+        this.putOptionalNull(aimAssist.getAngle(), vector2f -> this.putVector2f(vector2f));
+        this.putOptionalNull(aimAssist.getDistance(), this::putLFloat);
     }
 
     protected CameraPreset getPreset() {
@@ -130,15 +159,53 @@ public class CameraPresetsPacket extends DataPacket {
         Float pitch = this.getOptional(null, BinaryStream::getLFloat);
         Float yaw = this.getOptional(null, BinaryStream::getLFloat);
 
+        Float blockListeningRadius = null;
         Vector2f viewOffset = null;
         Float radius = null;
+        Float rotationSpeed = null;
+        OptionalBoolean snapToTarget = OptionalBoolean.empty();
+        Vector2f horizontalRotationLimit = null;
+        Vector2f verticalRotationLimit = null;
+        OptionalBoolean continueTargeting = OptionalBoolean.empty();
+        Vector3f entityOffset = null;
         if (this.protocol >= ProtocolInfo.v1_21_20) {
-            viewOffset = this.getOptional(null, binaryStream -> new Vector2f(binaryStream.getLFloat(), binaryStream.getLFloat()));
+            if (this.protocol >= ProtocolInfo.v1_21_30) {
+                rotationSpeed = this.getOptional(null, BinaryStream::getLFloat);
+                snapToTarget = this.getOptional(OptionalBoolean.empty(), b -> OptionalBoolean.of(b.getBoolean()));
+                if (this.protocol >= ProtocolInfo.v1_21_40) {
+                    horizontalRotationLimit = this.getOptional(null, b -> this.getVector2f());
+                    verticalRotationLimit = this.getOptional(null, b -> this.getVector2f());
+                    continueTargeting = this.getOptional(OptionalBoolean.empty(), b -> OptionalBoolean.of(b.getBoolean()));
+                }
+            }
+            if (this.protocol >= ProtocolInfo.v1_21_50) {
+                blockListeningRadius = this.getOptional(null, b -> this.getLFloat());
+            }
+            viewOffset = this.getOptional(null, b -> this.getVector2f());
+            if (this.protocol >= ProtocolInfo.v1_21_30) {
+                entityOffset = this.getOptional(null, BinaryStream::getVector3f);
+            }
             radius = this.getOptional(null, BinaryStream::getLFloat);
         }
 
-        CameraAudioListener listener = this.getOptional(null, binaryStream -> CameraAudioListener.values()[binaryStream.getByte()]);
-        OptionalBoolean effects = this.getOptional(OptionalBoolean.empty(), binaryStream -> OptionalBoolean.of(binaryStream.getBoolean()));
-        return new CameraPreset(identifier, parentPreset, pos, yaw, pitch, viewOffset, radius, listener, effects);
+        CameraAudioListener listener = this.getOptional(null, b -> CameraAudioListener.values()[b.getByte()]);
+        OptionalBoolean effects = this.getOptional(OptionalBoolean.empty(), b -> OptionalBoolean.of(b.getBoolean()));
+        OptionalBoolean alignTargetAndCameraForward = OptionalBoolean.empty();
+        if (this.protocol >= ProtocolInfo.v1_21_40) {
+            alignTargetAndCameraForward = this.getOptional(OptionalBoolean.empty(), b -> OptionalBoolean.of(b.getBoolean()));
+        }
+        CameraAimAssistPreset aimAssist = null;
+        if (this.protocol >= ProtocolInfo.v1_21_50) {
+            aimAssist = this.getOptional(null, b -> this.getCameraAimAssist());
+        }
+        return new CameraPreset(identifier, parentPreset, pos, yaw, pitch, viewOffset, radius, listener, effects, rotationSpeed, snapToTarget, entityOffset, horizontalRotationLimit, verticalRotationLimit, continueTargeting, alignTargetAndCameraForward, blockListeningRadius, aimAssist);
+    }
+
+    protected CameraAimAssistPreset getCameraAimAssist() {
+        String identifier = this.getOptional(null, BinaryStream::getString);
+        Integer targetMode = this.getOptional(null, BinaryStream::getLInt);
+        Vector2f angle = this.getOptional(null, BinaryStream::getVector2f);
+        Float distance = this.getOptional(null, BinaryStream::getLFloat);
+        return new CameraAimAssistPreset(identifier, targetMode, angle, distance);
     }
 }

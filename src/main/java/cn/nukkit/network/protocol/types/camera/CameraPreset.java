@@ -39,18 +39,85 @@ public final class CameraPreset implements NamedDefinition {
     private Float radius;
     @Nullable
     private CameraAudioListener listener;
-    private OptionalBoolean playEffect;
+    private OptionalBoolean playEffect = OptionalBoolean.empty();
+    /**
+     * @since v729
+     */
+    private Float rotationSpeed;
+    /**
+     * @since v729
+     */
+    private OptionalBoolean snapToTarget = OptionalBoolean.empty();
+    /**
+     * @since v729
+     */
+    private Vector3f entityOffset;
+    /**
+     * @since v748
+     */
+    private Vector2f horizontalRotationLimit;
+    /**
+     * @since v748
+     */
+    private Vector2f verticalRotationLimit;
+    /**
+     * @since v748
+     */
+    private OptionalBoolean continueTargeting = OptionalBoolean.empty();
+    /**
+     * @since v748
+     */
+    private OptionalBoolean alignTargetAndCameraForward = OptionalBoolean.empty();
+    /**
+     * @since v766
+     */
+    private Float blockListeningRadius;
+    /**
+     * @since v766
+     */
+    private CameraAimAssistPreset aimAssistPreset;
 
     private int runtimeId;
 
-    public CameraPreset(String identifier, String parentPreset, @Nullable Vector3f pos, @Nullable Float yaw, @Nullable Float pitch, @Nullable CameraAudioListener listener, OptionalBoolean playEffect) {
+    @Deprecated
+    public CameraPreset(String identifier, String parentPreset, @Nullable Vector3f pos, @Nullable Float yaw, @Nullable Float pitch, Vector2f viewOffset, Float radius, @Nullable CameraAudioListener listener, OptionalBoolean playEffect, Float rotationSpeed, OptionalBoolean snapToTarget, Vector3f entityOffset, Vector2f horizontalRotationLimit, Vector2f verticalRotationLimit, OptionalBoolean continueTargeting, OptionalBoolean alignTargetAndCameraForward) {
         this.identifier = identifier;
         this.parentPreset = parentPreset;
         this.pos = pos;
         this.yaw = yaw;
         this.pitch = pitch;
+        this.viewOffset = viewOffset;
+        this.radius = radius;
         this.listener = listener;
         this.playEffect = playEffect;
+        this.rotationSpeed = rotationSpeed;
+        this.snapToTarget = snapToTarget;
+        this.entityOffset = entityOffset;
+        this.horizontalRotationLimit = horizontalRotationLimit;
+        this.verticalRotationLimit = verticalRotationLimit;
+        this.continueTargeting = continueTargeting;
+        this.alignTargetAndCameraForward = alignTargetAndCameraForward;
+    }
+
+    public CameraPreset(String identifier, String parentPreset, @Nullable Vector3f pos, @Nullable Float yaw, @Nullable Float pitch, Vector2f viewOffset, Float radius, @Nullable CameraAudioListener listener, OptionalBoolean playEffect, Float rotationSpeed, OptionalBoolean snapToTarget, Vector3f entityOffset, Vector2f horizontalRotationLimit, Vector2f verticalRotationLimit, OptionalBoolean continueTargeting, OptionalBoolean alignTargetAndCameraForward, Float blockListeningRadius, CameraAimAssistPreset aimAssistPreset) {
+        this.identifier = identifier;
+        this.parentPreset = parentPreset;
+        this.pos = pos;
+        this.yaw = yaw;
+        this.pitch = pitch;
+        this.viewOffset = viewOffset;
+        this.radius = radius;
+        this.listener = listener;
+        this.playEffect = playEffect;
+        this.rotationSpeed = rotationSpeed;
+        this.snapToTarget = snapToTarget;
+        this.entityOffset = entityOffset;
+        this.horizontalRotationLimit = horizontalRotationLimit;
+        this.verticalRotationLimit = verticalRotationLimit;
+        this.continueTargeting = continueTargeting;
+        this.alignTargetAndCameraForward = alignTargetAndCameraForward;
+        this.blockListeningRadius = blockListeningRadius;
+        this.aimAssistPreset = aimAssistPreset;
     }
 
     public CameraPreset(String identifier, String parentPreset, @Nullable Vector3f pos, @Nullable Float yaw, @Nullable Float pitch, @Nullable Vector2f viewOffset, @Nullable Float radius, @Nullable CameraAudioListener listener, OptionalBoolean playEffect) {

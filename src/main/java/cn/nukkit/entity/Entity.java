@@ -2,7 +2,10 @@ package cn.nukkit.entity;
 
 import cn.nukkit.Player;
 import cn.nukkit.Server;
-import cn.nukkit.block.*;
+import cn.nukkit.block.Block;
+import cn.nukkit.block.BlockFire;
+import cn.nukkit.block.BlockID;
+import cn.nukkit.block.BlockWater;
 import cn.nukkit.blockentity.BlockEntityPistonArm;
 import cn.nukkit.entity.custom.CustomEntity;
 import cn.nukkit.entity.custom.EntityDefinition;
@@ -47,6 +50,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import static cn.nukkit.network.protocol.SetEntityLinkPacket.*;
@@ -72,6 +76,10 @@ public abstract class Entity extends Location implements Metadatable {
     public static final int DATA_TYPE_LONG = 7;
     public static final int DATA_TYPE_VECTOR3F = 8;
 
+    /**
+     * 0~63 DATA_FLAGS
+     * 64~128 DATA_FLAGS_EXTENDED (DATA_FLAGS2)
+     */
     public static final int DATA_FLAGS = 0;
     public static final int DATA_HEALTH = 1; //int (minecart/boat)
     public static final int DATA_VARIANT = 2; //int
@@ -208,6 +216,10 @@ public abstract class Entity extends Location implements Metadatable {
     public static final int DATA_PLAYER_LAST_DEATH_DIMENSION = 128;
     public static final int DATA_PLAYER_HAS_DIED = 129;
     public static final int DATA_COLLISION_BOX = 130; //vector3f
+    /**
+     * @since v685
+     */
+    public static final int DATA_VISIBLE_MOB_EFFECTS = 131; //long
 
     // Flags
     public static final int DATA_FLAG_ONFIRE = 0;
@@ -432,6 +444,7 @@ public abstract class Entity extends Location implements Metadatable {
     public int lastUpdate;
     public int fireTicks = 0;
     public int inPortalTicks = 0;
+    public int freezingTicks = 0;//0 - 140
     public int inEndPortalTicks = 0;
     public Position portalPos = null;
 
@@ -520,6 +533,10 @@ public abstract class Entity extends Location implements Metadatable {
 
     protected float getBaseOffset() {
         return 0;
+    }
+
+    public int getFrostbiteInjury() {
+        return 1;
     }
 
     public Entity(FullChunk chunk, CompoundTag nbt) {
@@ -803,7 +820,7 @@ public abstract class Entity extends Location implements Metadatable {
     public void setCrawling(boolean value) {
         if (this.crawling != value) {
             this.crawling = value;
-            this.setDataFlag(DATA_FLAGS, DATA_FLAG_CRAWLING, value);
+            this.setDataFlag(DATA_FLAGS_EXTENDED, DATA_FLAG_CRAWLING, value);
             this.recalculateBoundingBox(true);
         }
     }
@@ -1016,6 +1033,8 @@ public abstract class Entity extends Location implements Metadatable {
         int[] color = new int[3];
         int count = 0;
         boolean ambient = true;
+        long effectsData = 0;
+        int packedEffectsCount = 0;
         for (Effect effect : this.effects.values()) {
             if (effect.isVisible()) {
                 int[] c = effect.getColor();
@@ -1025,6 +1044,10 @@ public abstract class Entity extends Location implements Metadatable {
                 count += effect.getAmplifier() + 1;
                 if (!effect.isAmbient()) {
                     ambient = false;
+                }
+                if (packedEffectsCount < 8) {
+                    effectsData = effectsData << 7 | ((effect.getId() & 0x3f) << 1) | (effect.isAmbient() ? 1 : 0);
+                    packedEffectsCount++;
                 }
             }
         }
@@ -1040,6 +1063,7 @@ public abstract class Entity extends Location implements Metadatable {
             this.setDataProperty(new IntEntityData(Entity.DATA_POTION_COLOR, 0));
             this.setDataProperty(new ByteEntityData(Entity.DATA_POTION_AMBIENT, 0));
         }
+        this.setDataProperty(new LongEntityData(Entity.DATA_VISIBLE_MOB_EFFECTS, effectsData));
     }
 
     public static Entity createEntity(String name, Position pos, Object... args) {
@@ -1383,7 +1407,7 @@ public abstract class Entity extends Location implements Metadatable {
 
         addEntity.links = new EntityLink[this.passengers.size()];
         for (int i = 0; i < addEntity.links.length; i++) {
-            addEntity.links[i] = new EntityLink(this.id, this.passengers.get(i).id, i == 0 ? EntityLink.TYPE_RIDER : TYPE_PASSENGER, false, false);
+            addEntity.links[i] = new EntityLink(this.id, this.passengers.get(i).id, i == 0 ? EntityLink.TYPE_RIDER : TYPE_PASSENGER, false, false, 0f);
         }
 
         return addEntity;
@@ -1881,7 +1905,7 @@ public abstract class Entity extends Location implements Metadatable {
         pk.yaw = yaw;
         pk.teleport = false;
         pk.onGround = this.onGround;
-        Server.broadcastPacket(hasSpawned.values().stream().filter(p -> p.protocol >= ProtocolInfo.v1_19_0).collect(Collectors.toList()), pk);
+        Server.broadcastPacket(hasSpawned.values().stream().filter(p -> p.protocol >= ProtocolInfo.v1_7_0).collect(Collectors.toList()), pk);
     }
 
     @Override
@@ -2135,41 +2159,54 @@ public abstract class Entity extends Location implements Metadatable {
     }
 
     public void fall(float fallDistance) {
-        if (fallDistance > 0.75 && !this.hasEffect(Effect.SLOW_FALLING)) {
-            Block down = this.level.getBlock(this.floor().down());
-            if (!this.noFallDamage) {
-                float damage = (float) Math.floor(fallDistance - 3 - (this.hasEffect(Effect.JUMP) ? this.getEffect(Effect.JUMP).getAmplifier() + 1 : 0));
+        if (fallDistance > 0.75) {
+            int block = this.level.getBlockIdAt(this.chunk, this.getFloorX(), this.getFloorY(), this.getFloorZ());
+            if (Block.isWater(block)) {
+                this.level.addLevelSoundEvent(this, LevelSoundEventPacket.SOUND_SPLASH, ThreadLocalRandom.current().nextInt(600000, 800000), "minecraft:player", false, false);
+                return; // TODO: Some waterlogged blocks prevent fall damage
+            }
+            if (!this.hasEffect(Effect.SLOW_FALLING)) {
+                Block down = this.level.getBlock(this.chunk, this.getFloorX(), this.getFloorY() - 1, this.getFloorZ(), 0, true);
+                int floor = down.getId();
 
-                if (down.getId() == BlockID.HAY_BALE) {
-                    damage -= damage * 0.8f;
-                }
+                if (!this.noFallDamage) {
+                    float damage = (float) Math.floor(fallDistance - 3 - (this.hasEffect(Effect.JUMP) ? this.getEffect(Effect.JUMP).getAmplifier() + 1 : 0));
 
-                if (isPlayer) {
-                    final int level = ((Player) this).getInventory().getBootsFast().getEnchantmentLevel(Enchantment.ID_PROTECTION_FALL);
-                    if (level != 0) {
-                        damage -= damage / 100 * (level * 12);
+                    if (floor == BlockID.HAY_BALE || block == BlockID.HAY_BALE) {
+                        damage -= (damage * 0.8f);
+                    } else if (floor == BlockID.BED_BLOCK || block == BlockID.BED_BLOCK) {
+                        damage -= (damage * 0.5f);
+                    } else if (floor == BlockID.SLIME_BLOCK || floor == BlockID.COBWEB || floor == BlockID.SCAFFOLDING || floor == BlockID.SWEET_BERRY_BUSH) {
+                        damage = 0;
+                    }
+
+                    if (isPlayer) {
+                        final int level = ((Player) this).getInventory().getBootsFast().getEnchantmentLevel(Enchantment.ID_PROTECTION_FALL);
+                        if (level != 0) {
+                            damage -= damage / 100 * (level * 12);
+                        }
+                    }
+
+                    if (damage > 0 && (!this.isPlayer || level.getGameRules().getBoolean(GameRule.FALL_DAMAGE))) {
+                        this.attack(new EntityDamageEvent(this, DamageCause.FALL, damage));
                     }
                 }
 
-                if (damage > 0 && (!this.isPlayer || level.getGameRules().getBoolean(GameRule.FALL_DAMAGE))) {
-                    this.attack(new EntityDamageEvent(this, DamageCause.FALL, damage));
-                }
-            }
+                if (down.getId() == BlockID.FARMLAND) {
+                    Event ev;
 
-            if (down.getId() == BlockID.FARMLAND) {
-                Event ev;
+                    if (this.isPlayer) {
+                        ev = new PlayerInteractEvent((Player) this, null, down, null, Action.PHYSICAL);
+                    } else {
+                        ev = new EntityInteractEvent(this, down);
+                    }
 
-                if (this.isPlayer) {
-                    ev = new PlayerInteractEvent((Player) this, null, down, null, Action.PHYSICAL);
-                } else {
-                    ev = new EntityInteractEvent(this, down);
+                    this.server.getPluginManager().callEvent(ev);
+                    if (ev.isCancelled()) {
+                        return;
+                    }
+                    this.level.setBlock(down, Block.get(BlockID.DIRT), true, true);
                 }
-
-                this.server.getPluginManager().callEvent(ev);
-                if (ev.isCancelled()) {
-                    return;
-                }
-                this.level.setBlock(down, Block.get(BlockID.DIRT), true, true);
             }
         }
     }
@@ -2310,7 +2347,7 @@ public abstract class Entity extends Location implements Metadatable {
 
     public boolean isInsideOfWater() {
         Block block = level.getBlock(this.getFloorX(), this.getFloorY(), this.getFloorZ());
-        return block.isWater() || block.getWaterloggingLevel() > 0 && block.getLevelBlockAtLayer(1).isWater();
+        return block.isWater() || block.getWaterloggingType() != Block.WaterloggingType.NO_WATERLOGGING && block.getLevelBlockAtLayer(1).isWater();
     }
 
     public boolean isInsideOfSolid() {
@@ -2324,7 +2361,7 @@ public abstract class Entity extends Location implements Metadatable {
 
         AxisAlignedBB bb = block.getBoundingBox();
 
-        return bb != null && block.isSolid() && !block.isTransparent() && bb.intersectsWith(this.boundingBox) && !(block instanceof BlockSlab); // The instanceof BlockSlab check is a hack to fix issues with the solid slab hack
+        return bb != null && block.isSolid() && !block.isTransparent() && bb.intersectsWith(this.boundingBox);
     }
 
     public boolean isInsideOfFire() {
@@ -2567,9 +2604,15 @@ public abstract class Entity extends Location implements Metadatable {
 
         Vector3 vector = new Vector3(0, 0, 0);
         boolean portal = false;
+        boolean powderSnow = false;
 
         for (Block block : this.getCollisionBlocks()) {
             if (block.getId() == Block.NETHER_PORTAL) {
+                portal = true;
+                continue;
+            }
+
+            if (block.getId() == Block.POWDER_SNOW) {
                 portal = true;
                 continue;
             }
@@ -2584,7 +2627,7 @@ public abstract class Entity extends Location implements Metadatable {
         } else {
             this.inPortalTicks = 0;
         }
-
+        
         if (vector.lengthSquared() > 0) {
             vector = vector.normalize();
             double d = 0.014d;
@@ -2883,6 +2926,10 @@ public abstract class Entity extends Location implements Metadatable {
         return true;
     }
 
+    protected boolean removeDataProperty(int id) {
+        return this.dataProperties.remove(id) != null;
+    }
+
     public boolean setDataPropertyAndSendOnlyToSelf(EntityData data) {
         if (!Objects.equals(data, this.dataProperties.get(data.getId()))) {
             this.dataProperties.put(data);
@@ -3172,6 +3219,34 @@ public abstract class Entity extends Location implements Metadatable {
 
     public List<StringTag> getAllTags() {
         return this.namedTag.getList("Tags", StringTag.class).getAll();
+    }
+
+    public float getFreezingEffectStrength() {
+        return getDataPropertyFloat(DATA_FREEZING_EFFECT_STRENGTH);
+    }
+
+    public void setFreezingEffectStrength(float strength) {
+        if (strength < 0 || strength > 1)
+            throw new IllegalArgumentException("Freezing Effect Strength must be between 0 and 1");
+        this.setDataProperty(new FloatEntityData(DATA_FREEZING_EFFECT_STRENGTH, strength));
+    }
+
+    public int getFreezingTicks() {
+        return this.freezingTicks;
+    }
+
+    public void setFreezingTicks(int ticks) {
+        if (ticks < 0) this.freezingTicks = 0;
+        else if (ticks > 140) this.freezingTicks = 140;
+        else this.freezingTicks = ticks;
+        setFreezingEffectStrength(ticks / 140f);
+    }
+
+    public void addFreezingTicks(int increments) {
+        if (freezingTicks + increments < 0) this.freezingTicks = 0;
+        else if (freezingTicks + increments > 140) this.freezingTicks = 140;
+        else this.freezingTicks += increments;
+        setFreezingEffectStrength(this.freezingTicks / 140f);
     }
 
     private boolean validateAndSetIntProperty(String identifier, int value) {

@@ -1,7 +1,7 @@
 package cn.nukkit;
 
 import cn.nukkit.block.Block;
-import cn.nukkit.block.customblock.CustomBlockManager;
+import cn.nukkit.block.custom.CustomBlockManager;
 import cn.nukkit.blockentity.*;
 import cn.nukkit.command.*;
 import cn.nukkit.console.NukkitConsole;
@@ -20,7 +20,6 @@ import cn.nukkit.entity.weather.EntityLightning;
 import cn.nukkit.event.HandlerList;
 import cn.nukkit.event.level.LevelInitEvent;
 import cn.nukkit.event.level.LevelLoadEvent;
-import cn.nukkit.event.server.BatchPacketsEvent;
 import cn.nukkit.event.server.PlayerDataSerializeEvent;
 import cn.nukkit.event.server.QueryRegenerateEvent;
 import cn.nukkit.event.server.ServerStopEvent;
@@ -160,6 +159,12 @@ public class Server {
 
     private int maxPlayers;
     private boolean autoSave = true;
+    /**
+     * Automatic compression of the world
+     */
+    private boolean autoCompaction = true;
+    private int autoCompactionTicks = 60 * 30 * 20;
+
     private RCON rcon;
 
     private final EntityMetadataStore entityMetadata;
@@ -539,9 +544,21 @@ public class Server {
      */
     public boolean enableRawOres;
     /**
+     * Enable 1.21 paintings
+     */
+    public boolean enableNewPaintings;
+    /**
      * A number of datagram packets each address can send within one RakNet tick (10ms)
      */
     public int rakPacketLimit;
+    /**
+     * Temporary disable world saving to allow safe backup of leveldb worlds.
+     */
+    public boolean holdWorldSave;
+    /**
+     * Enable RakNet cookies for additional security
+     */
+    public boolean enableRakSendCookie;
 
     Server(final String filePath, String dataPath, String pluginPath, boolean loadPlugins, boolean debug) {
         Preconditions.checkState(instance == null, "Already initialized!");
@@ -643,6 +660,9 @@ public class Server {
         this.maxPlayers = this.getPropertyInt("max-players", 50);
         this.setAutoSave(this.getPropertyBoolean("auto-save", true));
 
+        this.autoCompaction = this.getPropertyBoolean("level-auto-compaction", true);
+        this.autoCompactionTicks = Math.max(60 * 20, this.getPropertyInt("level-auto-compaction-ticks", 60 * 30 * 20));
+
         if (this.isHardcore && this.difficulty < 3) {
             this.setDifficulty(3);
         } else {
@@ -715,10 +735,10 @@ public class Server {
 
         this.pluginManager.loadInternalPlugin();
         if (loadPlugins) {
+            this.pluginManager.loadPlugins(this.pluginPath);
             if (this.enableSpark) {
                 SparkInstaller.initSpark(this);
             }
-            this.pluginManager.loadPlugins(this.pluginPath);
             this.enablePlugins(PluginLoadOrder.STARTUP);
         }
 
@@ -740,6 +760,7 @@ public class Server {
         Generator.addGenerator(Flat.class, "flat", Generator.TYPE_FLAT);
         Generator.addGenerator(Normal.class, "normal", Generator.TYPE_INFINITE);
         Generator.addGenerator(Normal.class, "default", Generator.TYPE_INFINITE);
+        Generator.addGenerator(OldNormal.class, "oldnormal", Generator.TYPE_INFINITE);
         Generator.addGenerator(Nether.class, "nether", Generator.TYPE_NETHER);
         Generator.addGenerator(End.class, "the_end", Generator.TYPE_THE_END);
         Generator.addGenerator(cn.nukkit.level.generator.Void.class, "void", Generator.TYPE_VOID);
@@ -948,22 +969,11 @@ public class Server {
     }
 
     public void batchPackets(Player[] players, DataPacket[] packets) {
-        this.batchPackets(players, packets, false);
+        this.batchingHelper.batchPackets(players, packets);
     }
 
+    @Deprecated
     public void batchPackets(Player[] players, DataPacket[] packets, boolean forceSync) {
-        if (players == null || packets == null || players.length == 0 || packets.length == 0) {
-            return;
-        }
-
-        if (callBatchPkEv) {
-            BatchPacketsEvent ev = new BatchPacketsEvent(players, packets, forceSync);
-            pluginManager.callEvent(ev);
-            if (ev.isCancelled()) {
-                return;
-            }
-        }
-
         this.batchingHelper.batchPackets(players, packets);
     }
 
@@ -1041,10 +1051,10 @@ public class Server {
         }
 
         this.pluginManager.registerInterface(JavaPluginLoader.class);
+        this.pluginManager.loadPlugins(this.pluginPath);
         if (this.enableSpark) {
             SparkInstaller.initSpark(this);
         }
-        this.pluginManager.loadPlugins(this.pluginPath);
         this.enablePlugins(PluginLoadOrder.STARTUP);
         this.enablePlugins(PluginLoadOrder.POSTWORLD);
     }
@@ -1069,6 +1079,10 @@ public class Server {
 
             ServerStopEvent serverStopEvent = new ServerStopEvent();
             pluginManager.callEvent(serverStopEvent);
+
+            if (this.holdWorldSave) {
+                this.getLogger().warning("World save hold was not released! Any backup currently being taken may be invalid");
+            }
 
             if (this.rcon != null) {
                 this.getLogger().debug("Closing RCON...");
@@ -1114,6 +1128,11 @@ public class Server {
                 this.getLogger().debug("Closing name lookup DB...");
                 nameLookup.close();
             }
+
+            if (this.watchdog != null) {
+                this.getLogger().debug("Stopping Watchdog...");
+                this.watchdog.kill();
+            }
         } catch (Exception e) {
             log.fatal("Exception happened while shutting down, exiting the process", e);
             System.exit(1);
@@ -1139,18 +1158,21 @@ public class Server {
         this.forceShutdown();
     }
 
+    private static final byte[] QUERY_PREFIX = {(byte) 0xfe, (byte) 0xfd};
+
+    /**
+     * Internal: Handle query
+     * @param address sender address
+     * @param payload payload
+     */
     public void handlePacket(InetSocketAddress address, ByteBuf payload) {
         try {
-            if (!payload.isReadable(3)) {
+            if (this.queryHandler == null || !payload.isReadable(3)) {
                 return;
             }
             byte[] prefix = new byte[2];
             payload.readBytes(prefix);
-
-            if (!Arrays.equals(prefix, new byte[]{(byte) 0xfe, (byte) 0xfd})) {
-                return;
-            }
-            if (this.queryHandler != null) {
+            if (Arrays.equals(prefix, QUERY_PREFIX)) {
                 this.queryHandler.handle(address, payload);
             }
         } catch (Exception e) {
@@ -1162,6 +1184,9 @@ public class Server {
 
     private int lastLevelGC;
 
+    /**
+     * Internal: Tick the server
+     */
     public void tickProcessor() {
         this.nextTick = System.currentTimeMillis();
         try {
@@ -1304,7 +1329,13 @@ public class Server {
     }
 
     public void sendRecipeList(Player player) {
-        if (player.protocol >= ProtocolInfo.v1_21_20) {
+        if (player.protocol >= ProtocolInfo.v1_21_50_26) {
+            player.dataPacket(CraftingManager.packet766);
+        } else if (player.protocol >= ProtocolInfo.v1_21_40) {
+            player.dataPacket(CraftingManager.packet748);
+        } else if (player.protocol >= ProtocolInfo.v1_21_30) {
+            player.dataPacket(CraftingManager.packet729);
+        } else if (player.protocol >= ProtocolInfo.v1_21_20) {
             player.dataPacket(CraftingManager.packet712);
         } else if (player.protocol >= ProtocolInfo.v1_21_0) {
             player.dataPacket(CraftingManager.packet685);
@@ -1629,6 +1660,19 @@ public class Server {
         }
     }
 
+    public boolean isAutoCompactionEnabled() {
+        return this.autoCompaction;
+    }
+
+    public void setAutoCompactionTicks(int ticks) {
+        Preconditions.checkArgument(ticks > 0, "ticks");
+        this.autoCompactionTicks = ticks;
+    }
+
+    public int getAutoCompactionTicks() {
+        return this.autoCompactionTicks;
+    }
+
     public String getLevelType() {
         return this.getPropertyString("level-type", "default");
     }
@@ -1893,7 +1937,7 @@ public class Server {
             Optional<UUID> uuid = lookupName(name);
             return getOfflinePlayerDataInternal(uuid.map(UUID::toString).orElse(name), true, create);
         } else {
-            return getOfflinePlayerDataInternal(name, true, create);
+            return getOfflinePlayerDataInternal(name.toLowerCase(), true, create);
         }
     }
 
@@ -2698,7 +2742,7 @@ public class Server {
      * @return is operator
      */
     public boolean isOp(String name) {
-        return this.operators.exists(name, true);
+        return name != null && this.operators.exists(name, true);
     }
 
     /**
@@ -2982,6 +3026,9 @@ public class Server {
         BlockEntity.registerBlockEntity(BlockEntity.DECORATED_POT, BlockEntityDecoratedPot.class);
         BlockEntity.registerBlockEntity(BlockEntity.TARGET, BlockEntityTarget.class);
         BlockEntity.registerBlockEntity(BlockEntity.BRUSHABLE_BLOCK, BlockEntityBrushableBlock.class);
+        BlockEntity.registerBlockEntity(BlockEntity.CONDUIT, BlockEntityConduit.class);
+
+        // Persistent container, not on vanilla
         BlockEntity.registerBlockEntity(BlockEntity.PERSISTENT_CONTAINER, PersistentDataContainerBlockEntity.class);
     }
 
@@ -3043,7 +3090,7 @@ public class Server {
      */
     private void loadSettings() {
         this.forceLanguage = this.getPropertyBoolean("force-language", false);
-        this.networkCompressionLevel = Math.max(Math.min(this.getPropertyInt("compression-level", 4), 9), 0);
+        this.networkCompressionLevel = Math.max(Math.min(this.getPropertyInt("compression-level", 5), 9), 0);
         this.chunkCompressionLevel = Math.max(Math.min(this.getPropertyInt("chunk-compression-level", 7), 9), 1);
         this.autoTickRate = this.getPropertyBoolean("auto-tick-rate", true);
         this.autoTickRateLimit = this.getPropertyInt("auto-tick-rate-limit", 20);
@@ -3151,7 +3198,9 @@ public class Server {
         this.levelDbCache = this.getPropertyInt("leveldb-cache-mb", 80);
         this.useNativeLevelDB = this.getPropertyBoolean("use-native-leveldb", false);
         this.enableRawOres = this.getPropertyBoolean("enable-raw-ores", true);
+        this.enableNewPaintings = this.getPropertyBoolean("enable-new-paintings", true);
         this.rakPacketLimit = this.getPropertyInt("rak-packet-limit", RakConstants.DEFAULT_PACKET_LIMIT);
+        this.enableRakSendCookie = this.getPropertyBoolean("enable-rak-send-cookie", true);
     }
 
     /**
@@ -3203,6 +3252,9 @@ public class Server {
             put("rcon.port", 25575);
 
             put("auto-save", true);
+            put("level-auto-compaction", true);
+            put("level-auto-compaction-ticks", 60 * 30 * 20);
+
             put("force-resources", false);
             put("force-resources-allow-client-packs", false);
             put("xbox-auth", true);
@@ -3226,10 +3278,11 @@ public class Server {
             put("async-workers", "auto");
 
             put("zlib-provider", 2);
-            put("compression-level", 4);
+            put("compression-level", 5);
             put("compression-threshold", "256");
             put("use-snappy-compression", false);
             put("rak-packet-limit", RakConstants.DEFAULT_PACKET_LIMIT);
+            put("enable-rak-send-cookie", true);
             put("timeout-milliseconds", 25000);
 
             put("auto-tick-rate", true);
@@ -3296,6 +3349,7 @@ public class Server {
             put("leveldb-cache-mb", 80);
             put("use-native-leveldb", false);
             put("enable-raw-ores", true);
+            put("enable-new-paintings", true);
         }
     }
 

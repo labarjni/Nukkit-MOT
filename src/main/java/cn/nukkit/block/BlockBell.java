@@ -271,6 +271,10 @@ public class BlockBell extends BlockTransparentMeta implements Faceable, BlockEn
         if (support instanceof BlockCauldron) {
             return attachmentFace == BlockFace.UP;
         }
+
+        if (attachmentFace == BlockFace.UP) {
+            return Block.canStayOnFullSolid(support);
+        }
         return false;
     }
 
@@ -378,8 +382,8 @@ public class BlockBell extends BlockTransparentMeta implements Faceable, BlockEn
     }
 
     @Override
-    public int getWaterloggingLevel() {
-        return 1;
+    public WaterloggingType getWaterloggingType() {
+        return WaterloggingType.WHEN_PLACED_IN_WATER;
     }
 
     @Override

@@ -2,9 +2,12 @@ package cn.nukkit.level.format.leveldb.structure;
 
 import cn.nukkit.block.Block;
 import cn.nukkit.block.BlockID;
+import cn.nukkit.block.custom.container.BlockStorageContainer;
 import cn.nukkit.level.format.ChunkSection;
 import cn.nukkit.level.format.generic.EmptyChunkSection;
+import cn.nukkit.level.format.leveldb.BlockStateMapping;
 import cn.nukkit.nbt.tag.CompoundTag;
+import cn.nukkit.network.protocol.ProtocolInfo;
 import cn.nukkit.utils.Binary;
 import cn.nukkit.utils.BinaryStream;
 import cn.nukkit.utils.Utils;
@@ -13,6 +16,8 @@ import lombok.extern.log4j.Log4j2;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -25,7 +30,7 @@ import static cn.nukkit.level.format.generic.EmptyChunkSection.EMPTY_ID_ARRAY;
 @Log4j2
 public class LevelDBChunkSection implements ChunkSection {
 
-    private LevelDBChunk parent;
+    private WeakReference<LevelDBChunk> parent;
 
     protected final int y;
     protected StateBlockStorage[] storages;
@@ -50,7 +55,7 @@ public class LevelDBChunkSection implements ChunkSection {
     }
 
     public LevelDBChunkSection(LevelDBChunk parent, int y) {
-        this.parent = parent;
+        this.parent = new WeakReference<>(parent);
         this.y = y;
         this.storages = new StateBlockStorage[]{ new StateBlockStorage(), new StateBlockStorage() };
     }
@@ -60,7 +65,7 @@ public class LevelDBChunkSection implements ChunkSection {
     }
 
     public LevelDBChunkSection(LevelDBChunk parent, int y, @Nullable StateBlockStorage[] storages, byte[] blockLight, byte[] skyLight, byte[] compressedLight, boolean hasBlockLight, boolean hasSkyLight) {
-        this.parent = parent;
+        this.parent = new WeakReference<>(parent);
         this.y = y;
 
         if (storages == null || storages.length == 0) {
@@ -105,11 +110,11 @@ public class LevelDBChunkSection implements ChunkSection {
 
     @Nullable
     public LevelDBChunk getParent() {
-        return parent;
+        return parent.get();
     }
 
     public void setParent(LevelDBChunk parent) {
-        this.parent = parent;
+        this.parent = new WeakReference<>(parent);
     }
 
     @Override
@@ -166,7 +171,7 @@ public class LevelDBChunkSection implements ChunkSection {
             storage.set(x, y, z, fullId);
 
             dirty = true;
-            parent.onSubChunkBlockChanged(this, layer, x, y, z, previous, fullId);
+            parent.get().onSubChunkBlockChanged(this, x, y, z, layer, previous, fullId);
         } finally {
             this.writeLock.unlock();
         }
@@ -217,7 +222,7 @@ public class LevelDBChunkSection implements ChunkSection {
             storage.set(x, y, z, fullId);
 
             dirty = true;
-            parent.onSubChunkBlockChanged(this, x, y, z, layer, previous, fullId);
+            parent.get().onSubChunkBlockChanged(this, x, y, z, layer, previous, fullId);
         } finally {
             this.writeLock.unlock();
         }
@@ -272,6 +277,7 @@ public class LevelDBChunkSection implements ChunkSection {
     @Override
     public Block getAndSetBlock(int x, int y, int z, int layer, Block block) {
         int fullId;
+        BlockStateSnapshot state = null;
         int previous;
         try {
             this.writeLock.lock();
@@ -287,10 +293,18 @@ public class LevelDBChunkSection implements ChunkSection {
 
                 storage = this.storages[layer];
 
+                if (block instanceof BlockStorageContainer container) {
+                    state = BlockStateMapping.get().getStateUnsafe(container.getStateNbt());
+                }
+
                 fullId = block.getFullId();
             } else {
                 storage = this.storages[layer];
                 previous = storage.get(x, y, z);
+
+                if (block instanceof BlockStorageContainer container) {
+                    state = BlockStateMapping.get().getStateUnsafe(container.getStateNbt());
+                }
 
                 fullId = block.getFullId();
 
@@ -299,10 +313,14 @@ public class LevelDBChunkSection implements ChunkSection {
                 }
             }
 
-            storage.set(x, y, z, fullId);
+            if (state != null) {
+                storage.set(x, y, z, state);
+            } else {
+                storage.set(x, y, z, fullId);
+            }
 
             dirty = true;
-            parent.onSubChunkBlockChanged(this, x, y, z, layer, previous, fullId);
+            parent.get().onSubChunkBlockChanged(this, x, y, z, layer, previous, fullId);
         } finally {
             this.writeLock.unlock();
         }
@@ -342,7 +360,7 @@ public class LevelDBChunkSection implements ChunkSection {
             storage.set(x, y, z, fullId);
 
             dirty = true;
-            parent.onSubChunkBlockChanged(this, x, y, z, layer, previous, fullId);
+            parent.get().onSubChunkBlockChanged(this, x, y, z, layer, previous, fullId);
             return true;
         } finally {
             this.writeLock.unlock();
@@ -582,6 +600,29 @@ public class LevelDBChunkSection implements ChunkSection {
             byte[] merged = new byte[ids.length + data.length];
             System.arraycopy(ids, 0, merged, 0, ids.length);
             System.arraycopy(data, 0, merged, ids.length, data.length);
+            if (protocolId < ProtocolInfo.v1_2_0) {
+                ByteBuffer buffer = ByteBuffer.allocate(10240);
+                byte[] skyLight = new byte[2048];
+                byte[] blockLight = new byte[2048];
+                for (int x = 0; x < 16; x++) {
+                    for (int z = 0; z < 16; z++) {
+                        int i = (x << 7) | (z << 3);
+                        for (int y = 0; y < 16; y += 2) {
+                            int b1 = this.getBlockSkyLight(x, y, z);
+                            int b2 = this.getBlockSkyLight(x, y + 1, z);
+                            skyLight[i | (y >> 1)] = (byte) ((b2 << 4) | b1);
+                            b1 = this.getBlockLight(x, y, z);
+                            b2 = this.getBlockLight(x, y + 1, z);
+                            blockLight[i | (y >> 1)] = (byte) ((b2 << 4) | b1);
+                        }
+                    }
+                }
+                return buffer
+                        .put(merged)
+                        .put(skyLight)
+                        .put(blockLight)
+                        .array();
+            }
             return merged;
         } finally {
             this.readLock.unlock();
@@ -666,8 +707,7 @@ public class LevelDBChunkSection implements ChunkSection {
             }
 
             boolean dirty = false;
-            //TODO Optimize performance
-            /*boolean checkRemove = true;
+            boolean checkRemove = true;
             for (int i = this.storages.length - 1; i >= 0; i--) {
                 StateBlockStorage storage = this.storages[i];
                 if (storage == null) {
@@ -682,7 +722,7 @@ public class LevelDBChunkSection implements ChunkSection {
                         checkRemove = false;
                     }
                 }
-            }*/
+            }
 
             if (blockLight != null) {
                 byte[] arr1 = blockLight;

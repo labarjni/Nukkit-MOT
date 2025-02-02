@@ -4,9 +4,11 @@ import cn.nukkit.item.Item;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.math.Vector3f;
 import cn.nukkit.nbt.tag.CompoundTag;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * @author MagicDroidX
@@ -14,7 +16,15 @@ import java.util.Map;
  */
 public class EntityMetadata {
 
-    private Map<Integer, EntityData> map = new HashMap<>();
+    private Int2ObjectMap<EntityData> map;
+
+    public EntityMetadata() {
+        this.map = new Int2ObjectOpenHashMap<>();
+    }
+
+    private EntityMetadata(Int2ObjectMap<EntityData> map) {
+        this.map = map;
+    }
 
     public EntityData get(int id) {
         return this.getOrDefault(id, null);
@@ -38,6 +48,10 @@ public class EntityMetadata {
     public EntityMetadata put(EntityData data) {
         this.map.put(data.getId(), data);
         return this;
+    }
+
+    public EntityData remove(int id) {
+        return this.map.remove(id);
     }
 
     public int getByte(int id) {
@@ -117,16 +131,11 @@ public class EntityMetadata {
     }
 
     public Map<Integer, EntityData> getMap() {
-        return new HashMap<>(map);
-    }
-
-    private EntityMetadata replace(Map<Integer, EntityData> map) {
-        this.map = map;
-        return this;
+        return new TreeMap<>(this.map); // Ordered
     }
 
     @Override
     public EntityMetadata clone() {
-        return new EntityMetadata().replace(this.getMap());
+        return new EntityMetadata(new Int2ObjectOpenHashMap<>(this.map));
     }
 }

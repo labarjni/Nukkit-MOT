@@ -85,7 +85,67 @@ public enum AuthInputAction {
     /**
      * @since v685
      */
-    BLOCK_BREAKING_DELAY_ENABLED
+    BLOCK_BREAKING_DELAY_ENABLED,
+     /**
+     * @since v729
+     */
+    HORIZONTAL_COLLISION,
+    /**
+     * @since v729
+     */
+    VERTICAL_COLLISION,
+    /**
+     * @since v729
+     */
+    DOWN_LEFT,
+    /**
+     * @since v729
+     */
+    DOWN_RIGHT,
+    /**
+     * @since v748
+     */
+    START_USING_ITEM,
+    /**
+     * @since v748
+     */
+    CAMERA_RELATIVE_MOVEMENT_ENABLED,
+    /**
+     * @since v748
+     */
+    ROT_CONTROLLED_BY_MOVE_DIRECTION,
+    /**
+     * @since v748
+     */
+    START_SPIN_ATTACK,
+    /**
+     * @since v748
+     */
+    STOP_SPIN_ATTACK,
+    /**
+     * @since v766
+     */
+    JUMP_RELEASED_RAW,
+    /**
+     * @since v766
+     */
+    JUMP_PRESSED_RAW,
+    /**
+     * @since v766
+     */
+    JUMP_CURRENT_RAW,
+    /**
+     * @since v766
+     */
+    SNEAK_RELEASED_RAW,
+    /**
+     * @since v766
+     */
+    SNEAK_PRESSED_RAW,
+    /**
+     * @since v766
+     */
+    SNEAK_CURRENT_RAW
     ;
 
     private static final AuthInputAction[] VALUES = values();

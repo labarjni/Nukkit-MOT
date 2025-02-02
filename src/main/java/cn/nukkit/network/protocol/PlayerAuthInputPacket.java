@@ -5,6 +5,7 @@ import cn.nukkit.math.Vector2f;
 import cn.nukkit.math.Vector3f;
 import cn.nukkit.network.protocol.types.*;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 
 import java.util.EnumMap;
@@ -13,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 
 @ToString
+@Setter
 @Getter
 public class PlayerAuthInputPacket extends DataPacket {
 
@@ -27,11 +29,18 @@ public class PlayerAuthInputPacket extends DataPacket {
     private InputMode inputMode;
     private ClientPlayMode playMode;
     private AuthInteractionModel interactionModel;
+    /**
+     * @deprecated since v748
+     */
     private Vector3f vrGazeDirection;
     private long tick;
     private Vector3f delta;
     // private ItemStackRequest itemStackRequest;
     private Map<PlayerActionType, PlayerBlockActionData> blockActionData = new EnumMap<>(PlayerActionType.class);
+    /**
+     * @since v748
+     */
+    private Vector2f interactRotation;
     /**
      * @since 575
      */
@@ -44,6 +53,14 @@ public class PlayerAuthInputPacket extends DataPacket {
      * @since v662 1.20.70
      */
     private Vector2f vehicleRotation;
+    /**
+     * @since v748
+     */
+    private Vector3f cameraOrientation;
+    /**
+     * @since v766
+     */
+    private Vector2f rawMoveVector;
 
     @Override
     public byte pid() {
@@ -71,8 +88,12 @@ public class PlayerAuthInputPacket extends DataPacket {
             this.interactionModel = AuthInteractionModel.fromOrdinal((int) this.getUnsignedVarInt());
         }
 
-        if (this.playMode == ClientPlayMode.REALITY) {
-            this.vrGazeDirection = this.getVector3f();
+        if (protocol >= ProtocolInfo.v1_21_40) {
+            this.interactRotation = this.getVector2f();
+        } else {
+            if (this.playMode == ClientPlayMode.REALITY) {
+                this.vrGazeDirection = this.getVector3f();
+            }
         }
 
         this.tick = this.getUnsignedVarLong();
@@ -113,6 +134,13 @@ public class PlayerAuthInputPacket extends DataPacket {
             }
 
             this.analogMoveVector = this.getVector2f();
+
+            if (protocol >= ProtocolInfo.v1_21_40) {
+                this.cameraOrientation = this.getVector3f();
+            }
+            if (protocol >= ProtocolInfo.v1_21_50) {
+                this.rawMoveVector = this.getVector2f();
+            }
         }
     }
 
