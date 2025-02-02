@@ -120,18 +120,6 @@ public final class CameraPreset implements NamedDefinition {
         this.aimAssistPreset = aimAssistPreset;
     }
 
-    public CameraPreset(String identifier, String parentPreset, @Nullable Vector3f pos, @Nullable Float yaw, @Nullable Float pitch, @Nullable Vector2f viewOffset, @Nullable Float radius, @Nullable CameraAudioListener listener, OptionalBoolean playEffect) {
-        this.identifier = identifier;
-        this.parentPreset = parentPreset;
-        this.pos = pos;
-        this.yaw = yaw;
-        this.pitch = pitch;
-        this.viewOffset = viewOffset;
-        this.radius = radius;
-        this.listener = listener;
-        this.playEffect = playEffect;
-    }
-
     public String getParentPreset() {
         return parentPreset == null ? "" : parentPreset;
     }
