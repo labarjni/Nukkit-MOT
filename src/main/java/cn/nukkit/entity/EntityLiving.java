@@ -197,7 +197,7 @@ public abstract class EntityLiving extends Entity implements EntityDamageable {
             double deltaX = damager.getX() - this.getX();
             double deltaZ = damager.getZ() - this.getZ();
             ((EntityLiving) damager).attackTime = source.getAttackCooldown();
-            ((EntityLiving) damager).knockBack(deltaX, deltaZ);
+            ((EntityLiving) damager).knockBack(deltaX, deltaZ, 0.3);
         }
 
         onBlock(damager, source, event.getAnimation());
@@ -208,10 +208,6 @@ public abstract class EntityLiving extends Entity implements EntityDamageable {
         if (animate) {
             this.getLevel().addSoundToViewers(this, Sound.ITEM_SHIELD_BLOCK);
         }
-    }
-
-    public void knockBack(double x, double z) {
-        this.knockBack(x, z, 0.3);
     }
 
     public void knockBack(double x, double z, double base) {
@@ -482,8 +478,7 @@ public abstract class EntityLiving extends Entity implements EntityDamageable {
                     return block;
                 }
             }
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) {}
 
         return null;
     }
@@ -495,7 +490,7 @@ public abstract class EntityLiving extends Entity implements EntityDamageable {
     public float getMovementSpeed() {
         return this.movementSpeed;
     }
-
+    
     public int getAirTicks() {
         return this.airTicks;
     }

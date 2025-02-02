@@ -36,7 +36,6 @@ public class DropItemProcessor_v113 extends DataPacketProcessor<DropItemPacketV1
         PlayerDropItemEvent dropItemEvent = new PlayerDropItemEvent(player, item);
         Server.getInstance().getPluginManager().callEvent(dropItemEvent);
         if (dropItemEvent.isCancelled()) {
-            player.getUIInventory().clearAll();
             inventory.sendContents(player);
             return;
         }
