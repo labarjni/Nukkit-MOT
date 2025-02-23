@@ -2,9 +2,9 @@ name: Java CI with Maven
 
 on:
   push:
-    branches: [ dev/zhmurkov ]
+    branches: [ fix/redstone ]
   pull_request:
-    branches: [ dev/zhmurkov ]
+    branches: [ fix/redstone ]
 
 jobs:
   build:
