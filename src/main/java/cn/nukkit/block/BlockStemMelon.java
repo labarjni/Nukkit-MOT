@@ -1,18 +1,23 @@
 package cn.nukkit.block;
 
 import cn.nukkit.Server;
+import cn.nukkit.api.PowerNukkitOnly;
+import cn.nukkit.api.Since;
 import cn.nukkit.event.block.BlockGrowEvent;
 import cn.nukkit.item.Item;
 import cn.nukkit.item.ItemSeedsMelon;
 import cn.nukkit.level.Level;
 import cn.nukkit.math.BlockFace;
 import cn.nukkit.math.BlockFace.Plane;
+import cn.nukkit.math.NukkitRandom;
 import cn.nukkit.utils.Faceable;
-import cn.nukkit.utils.Utils;
 
 /**
  * Created by Pub4Game on 15.01.2016.
+ *
+ * @apiNote Implements {@link Faceable} only on PowerNukkit since 1.3.0.0-PN
  */
+@PowerNukkitOnly("Implements Faceable only on PowerNukkit since 1.3.0.0-PN")
 public class BlockStemMelon extends BlockCrops implements Faceable {
 
     public BlockStemMelon() {
@@ -35,12 +40,11 @@ public class BlockStemMelon extends BlockCrops implements Faceable {
 
     @Override
     public BlockFace getBlockFace() {
-        return BlockFace.fromHorizontalIndex(this.getDamage() & 0x7);
+        return BlockFace.fromIndex(getDamage() >> 3 & 0b111);
     }
 
-    @Override
     public void setBlockFace(BlockFace face) {
-        this.setDamage(face.getIndex() & this.getDamage() & 0x7);
+        setDamage(getDamage() & ~(0b111 << 3) | (face.getIndex() << 3));
     }
 
     @Override
@@ -50,14 +54,9 @@ public class BlockStemMelon extends BlockCrops implements Faceable {
                 this.getLevel().useBreakOn(this);
                 return Level.BLOCK_UPDATE_NORMAL;
             }
-            BlockFace blockFace = getBlockFace();
-            if (blockFace.getAxis().isHorizontal() && getSide(blockFace).getId() != BlockID.MELON_BLOCK) {
-                setBlockFace(BlockFace.DOWN);
-                getLevel().setBlock(this, this);
-                return Level.BLOCK_UPDATE_NORMAL;
-            }
         } else if (type == Level.BLOCK_UPDATE_RANDOM) {
-            if (Utils.rand(1, 2) == 1) {
+            NukkitRandom random = new NukkitRandom();
+            if (random.nextRange(1, 2) == 1 && getLevel().getFullLight(this) >= MINIMUM_LIGHT_LEVEL) {
                 if (this.getDamage() < 0x07) {
                     Block block = this.clone();
                     block.setDamage(block.getDamage() + 1);
@@ -74,16 +73,16 @@ public class BlockStemMelon extends BlockCrops implements Faceable {
                             return Level.BLOCK_UPDATE_RANDOM;
                         }
                     }
-
-                    BlockFace sideFace = BlockFace.Plane.HORIZONTAL.random(Utils.nukkitRandom);
+                    BlockFace sideFace = Plane.HORIZONTAL.random(random);
                     Block side = this.getSide(sideFace);
                     Block d = side.down();
                     if (side.getId() == AIR && (d.getId() == FARMLAND || d.getId() == GRASS || d.getId() == DIRT)) {
-                        BlockGrowEvent ev = new BlockGrowEvent(side, Block.get(MELON_BLOCK));
+                        BlockGrowEvent ev = new BlockGrowEvent(side, Block.get(BlockID.MELON_BLOCK));
                         Server.getInstance().getPluginManager().callEvent(ev);
                         if (!ev.isCancelled()) {
                             this.getLevel().setBlock(side, ev.getNewState(), true);
                             setBlockFace(sideFace);
+                            this.getLevel().setBlock(this, this, true);
                         }
                     }
                 }
@@ -100,9 +99,9 @@ public class BlockStemMelon extends BlockCrops implements Faceable {
 
     @Override
     public Item[] getDrops(Item item) {
-        if (this.getDamage() < 4) return Item.EMPTY_ARRAY;
+        NukkitRandom random = new NukkitRandom();
         return new Item[]{
-                new ItemSeedsMelon(0, Utils.rand(0, 48) >> 4)
+                new ItemSeedsMelon(0, random.nextRange(0, 3))
         };
     }
 }
