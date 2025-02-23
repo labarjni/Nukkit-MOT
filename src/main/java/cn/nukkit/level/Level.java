@@ -1818,14 +1818,14 @@ public class Level implements ChunkManager, Metadatable {
         FullChunk chunk = this.getChunk((int) pos.x >> 4, (int) pos.z >> 4, false);
         int level = 0;
         if (chunk != null) {
-            level = chunk.getBlockSkyLight((int) pos.x & 0x0f, (int) pos.y & 0xff, (int) pos.z & 0x0f);
-            level -= this.skyLightSubtracted;
-
+            level = chunk.getBlockSkyLight((int) pos.x & 0x0f, ensureY((int) pos.y), (int) pos.z & 0x0f);
+            level -= (int) this.skyLightSubtracted;
             if (level < 15) {
-                level = Math.max(chunk.getBlockLight((int) pos.x & 0x0f, (int) pos.y & 0xff, (int) pos.z & 0x0f), level);
+                level = Math.max(chunk.getBlockLight(
+                                (int) pos.x & 0x0f, ensureY((int) pos.y), (int) pos.z & 0x0f),
+                        level);
             }
         }
-
         return level;
     }
 
