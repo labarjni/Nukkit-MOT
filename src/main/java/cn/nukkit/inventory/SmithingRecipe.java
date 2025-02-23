@@ -113,7 +113,7 @@ public class SmithingRecipe extends ShapelessRecipe {
 
     @Override
     public void registerToCraftingManager(CraftingManager manager) {
-        manager.registerSmithingRecipe(ProtocolInfo.CURRENT_PROTOCOL, this);
+        manager.registerSmithingRecipe(this);
     }
 
     @Override
