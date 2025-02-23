@@ -92,7 +92,7 @@ public class BlockObserver extends BlockSolidMeta implements Faceable {
 
     @Override
     public BlockFace getBlockFace() {
-        return BlockFace.values()[0];
+        return BlockFace.fromIndex(this.getDamage() & FACE_BIT);
     }
 
     @Override
@@ -122,7 +122,7 @@ public class BlockObserver extends BlockSolidMeta implements Faceable {
 
     @Override
     public int onUpdate(int type) {
-        if (type == Level.BLOCK_UPDATE_SCHEDULED) {
+        if (type == Level.BLOCK_UPDATE_SCHEDULED ) {
             RedstoneUpdateEvent ev = new RedstoneUpdateEvent(this);
             PluginManager pluginManager = level.getServer().getPluginManager();
             pluginManager.callEvent(ev);
