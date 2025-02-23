@@ -35,12 +35,12 @@ public class BlockStemMelon extends BlockCrops implements Faceable {
 
     @Override
     public BlockFace getBlockFace() {
-        return BlockFace.fromHorizontalIndex(this.getDamage() & 0x7);
+        return BlockFace.fromHorizontalIndex(this.getDamage() & 0x07);
     }
 
     @Override
     public void setBlockFace(BlockFace face) {
-        this.setDamage(face.getIndex() & this.getDamage() & 0x7);
+        this.setDamage(face.getIndex() & this.getDamage() & 0x07);
     }
 
     @Override
@@ -48,6 +48,12 @@ public class BlockStemMelon extends BlockCrops implements Faceable {
         if (type == Level.BLOCK_UPDATE_NORMAL) {
             if (this.down().getId() != FARMLAND) {
                 this.getLevel().useBreakOn(this);
+                return Level.BLOCK_UPDATE_NORMAL;
+            }
+            BlockFace blockFace = getBlockFace();
+            if (blockFace.getAxis().isHorizontal() && getSide(blockFace).getId() != BlockID.MELON_BLOCK) {
+                setBlockFace(BlockFace.DOWN);
+                getLevel().setBlock(this, this);
                 return Level.BLOCK_UPDATE_NORMAL;
             }
         } else if (type == Level.BLOCK_UPDATE_RANDOM) {
@@ -78,7 +84,6 @@ public class BlockStemMelon extends BlockCrops implements Faceable {
                         if (!ev.isCancelled()) {
                             this.getLevel().setBlock(side, ev.getNewState(), true);
                             setBlockFace(sideFace);
-                            this.getLevel().setBlock(this, this, true);
                         }
                     }
                 }
