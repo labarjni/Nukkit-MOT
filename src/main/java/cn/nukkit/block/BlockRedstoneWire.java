@@ -218,7 +218,7 @@ public class BlockRedstoneWire extends BlockFlowable {
     }
 
     private boolean canBePlacedOn(Block b) {
-        return (b.isSolid() && !b.isTransparent() && b.getId() != GLOWSTONE) || b.getId() == HOPPER_BLOCK;
+        return (b.isSolid() && b.getId() != GLOWSTONE) || b.getId() == HOPPER_BLOCK;
     }
 
     @Override
