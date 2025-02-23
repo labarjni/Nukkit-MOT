@@ -14,10 +14,7 @@ import cn.nukkit.utils.Faceable;
 
 /**
  * Created by Pub4Game on 15.01.2016.
- *
- * @apiNote Implements {@link Faceable} only on PowerNukkit since 1.3.0.0-PN
  */
-@PowerNukkitOnly("Implements Faceable only on PowerNukkit since 1.3.0.0-PN")
 public class BlockStemMelon extends BlockCrops implements Faceable {
 
     public BlockStemMelon() {
