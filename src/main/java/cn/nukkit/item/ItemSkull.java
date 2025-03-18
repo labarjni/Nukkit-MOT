@@ -1,7 +1,6 @@
 package cn.nukkit.item;
 
 import cn.nukkit.block.Block;
-import cn.nukkit.network.protocol.ProtocolInfo;
 
 /**
  * Created by Snake1999 on 2016/2/3.
@@ -63,10 +62,5 @@ public class ItemSkull extends Item {
     @Override
     public boolean canBePutInHelmetSlot() {
         return true;
-    }
-
-    @Override
-    public boolean isSupportedOn(int protocolId) {
-        return this.getDamage() < 6 || protocolId >= ProtocolInfo.v1_20_0_23;
     }
 }

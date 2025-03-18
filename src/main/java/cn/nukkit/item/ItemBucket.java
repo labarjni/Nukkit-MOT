@@ -15,8 +15,6 @@ import cn.nukkit.math.BlockFace;
 import cn.nukkit.math.BlockFace.Plane;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.network.protocol.LevelSoundEventPacket;
-import cn.nukkit.network.protocol.ProtocolInfo;
-import cn.nukkit.network.protocol.ProtocolInfo;
 import cn.nukkit.network.protocol.UpdateBlockPacket;
 
 import java.util.concurrent.ThreadLocalRandom;
@@ -332,19 +330,5 @@ public class ItemBucket extends Item {
                 }
             }
         }
-    }
-
-    @Override
-    public boolean isSupportedOn(int protocolId) {
-        int damage = this.getDamage();
-        if (damage <= 10) {
-            return true;
-        }
-
-        if (damage == POWDER_SNOW_BUCKET || damage == AXOLOTL_BUCKET) {
-            return protocolId >= ProtocolInfo.v1_17_0;
-        }
-
-        return protocolId >= ProtocolInfo.v1_19_0;
     }
 }

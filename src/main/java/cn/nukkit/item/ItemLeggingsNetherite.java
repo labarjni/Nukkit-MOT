@@ -1,7 +1,5 @@
 package cn.nukkit.item;
 
-import cn.nukkit.network.protocol.ProtocolInfo;
-
 public class ItemLeggingsNetherite extends ItemArmor {
 
     public ItemLeggingsNetherite() {
@@ -39,10 +37,5 @@ public class ItemLeggingsNetherite extends ItemArmor {
     @Override
     public int getToughness() {
         return 2;
-    }
-
-    @Override
-    public boolean isSupportedOn(int protocolId) {
-        return protocolId >= ProtocolInfo.v1_16_0;
     }
 }

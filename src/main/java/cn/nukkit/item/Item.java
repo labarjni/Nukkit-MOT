@@ -2050,13 +2050,7 @@ public class Item implements Cloneable, BlockID, ItemID, ItemNamespaceId, Protoc
      * @return 是否支持 whether supported
      */
     public boolean isSupportedOn(int protocolId) {
-        int itemId = this.getId();
-
-        if (itemId >= 0 && itemId <= 255) {
-            return true;
-        }
-
-        return RuntimeItems.getMapping(protocolId).isRegistered(itemId, this.getDamage());
+        return true;
     }
 
     /**

@@ -9,6 +9,6 @@ public class ItemEchoShard extends StringItemBase {
 
     @Override
     public boolean isSupportedOn(int protocolId) {
-        return protocolId >= ProtocolInfo.v1_19_0_29;
+        return protocolId >= ProtocolInfo.v1_19_0;
     }
 }

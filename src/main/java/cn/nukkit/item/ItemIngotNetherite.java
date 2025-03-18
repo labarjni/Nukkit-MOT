@@ -1,7 +1,6 @@
 package cn.nukkit.item;
 
 import cn.nukkit.item.trim.ItemTrimMaterialType;
-import cn.nukkit.network.protocol.ProtocolInfo;
 
 public class ItemIngotNetherite extends Item implements ItemTrimMaterial {
 
@@ -20,10 +19,5 @@ public class ItemIngotNetherite extends Item implements ItemTrimMaterial {
     @Override
     public ItemTrimMaterialType getMaterial() {
         return ItemTrimMaterialType.MATERIAL_NETHERITE;
-    }
-
-    @Override
-    public boolean isSupportedOn(int protocolId) {
-        return protocolId >= ProtocolInfo.v1_16_0;
     }
 }
