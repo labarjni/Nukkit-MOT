@@ -3,7 +3,6 @@ package cn.nukkit.block.properties;
 import cn.nukkit.block.custom.properties.BlockProperty;
 import cn.nukkit.block.custom.properties.BooleanBlockProperty;
 import cn.nukkit.block.custom.properties.EnumBlockProperty;
-import cn.nukkit.block.properties.enums.CrackedState;
 import cn.nukkit.math.BlockFace;
 
 public interface VanillaProperties {
@@ -21,6 +20,4 @@ public interface VanillaProperties {
 
     BlockProperty<BlockFace> STAIRS_DIRECTION = new EnumBlockProperty<>("weirdo_direction", false,
             new BlockFace[]{ BlockFace.EAST, BlockFace.WEST, BlockFace.SOUTH, BlockFace.NORTH }).ordinal(true);
-
-    EnumBlockProperty<CrackedState> CRACKED_STATE = new EnumBlockProperty<>("cracked_state", false, CrackedState.class);
 }

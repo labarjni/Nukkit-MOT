@@ -21,7 +21,7 @@ public class BlockDoubleSlabBamboo extends BlockSolidMeta {
 
     @Override
     public double getHardness() {
-        return 2;
+        return 3.5;
     }
 
     @Override
