@@ -64,8 +64,6 @@ public class BlockStemPumpkin extends BlockCrops {
                         Server.getInstance().getPluginManager().callEvent(ev);
                         if (!ev.isCancelled()) {
                             this.getLevel().setBlock(side, ev.getNewState(), true, true);
-
-                            this.getLevel().setBlock(this, Block.get(this.getId(), 6), true, true);
                         }
                     }
                 }
