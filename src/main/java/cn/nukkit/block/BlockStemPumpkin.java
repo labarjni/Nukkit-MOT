@@ -57,7 +57,10 @@ public class BlockStemPumpkin extends BlockCrops {
                             return Level.BLOCK_UPDATE_RANDOM;
                         }
                     }
-                    Block side = this.getSide(Plane.HORIZONTAL.random(Utils.nukkitRandom));
+
+                    BlockFace randomFace = Plane.HORIZONTAL.random(Utils.nukkitRandom);
+
+                    Block side = this.getSide(randomFace);
                     Block d = side.down();
                     if (side.getId() == AIR && (d.getId() == FARMLAND || d.getId() == GRASS || d.getId() == DIRT)) {
                         BlockGrowEvent ev = new BlockGrowEvent(side, Block.get(PUMPKIN));
@@ -65,8 +68,8 @@ public class BlockStemPumpkin extends BlockCrops {
                         if (!ev.isCancelled()) {
                             this.getLevel().setBlock(side, ev.getNewState(), true, true);
 
-                            this.getLevel().setBlock(this, Block.get(this.getId(), 0), true, true);
-                            this.getLevel().setBlock(this, Block.get(this.getId(), 7), true, true);
+                            this.getLevel().setBlock(this.getSide(randomFace, 0), Block.get(this.getId(), 0), true, true);
+                            this.getLevel().setBlock(this.getSide(randomFace, 0), Block.get(this.getId(), 7), true, true);
                         }
                     }
                 }
