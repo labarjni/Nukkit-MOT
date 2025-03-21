@@ -6685,24 +6685,23 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         pk.protocol = protocol;
         pk.tryEncode();
 
+        BatchPacket batch = new BatchPacket();
+        byte[][] batchPayload = new byte[2][];
         byte[] buf = pk.getBuffer();
-        BinaryStream batched = new BinaryStream(new byte[5 + buf.length]).reset();
-        batched.putUnsignedVarInt(buf.length);
-        batched.put(buf);
+        batchPayload[0] = Binary.writeUnsignedVarInt(buf.length);
+        batchPayload[1] = buf;
         try {
-            byte[] bytes = batched.getBuffer();
-            BatchPacket compress = new BatchPacket();
             if (Server.getInstance().useSnappy && protocol >= ProtocolInfo.v1_19_30_23) {
-                compress.payload = SnappyCompression.compress(bytes);
+                batch.payload = SnappyCompression.compress(Binary.appendBytes(batchPayload));
             } else if (protocol >= ProtocolInfo.v1_16_0) {
-                compress.payload = Zlib.deflateRaw(bytes, Server.getInstance().networkCompressionLevel);
+                batch.payload = Zlib.deflateRaw(Binary.appendBytes(batchPayload), Server.getInstance().networkCompressionLevel);
             } else {
-                compress.payload = Zlib.deflatePre16Packet(bytes, Server.getInstance().networkCompressionLevel);
+                batch.payload = Zlib.deflatePre16Packet(Binary.appendBytes(batchPayload), Server.getInstance().networkCompressionLevel);
             }
-            return compress;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+        return batch;
     }
 
     /**
