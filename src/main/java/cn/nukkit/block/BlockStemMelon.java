@@ -64,6 +64,8 @@ public class BlockStemMelon extends BlockCrops {
                         Server.getInstance().getPluginManager().callEvent(ev);
                         if (!ev.isCancelled()) {
                             this.getLevel().setBlock(side, ev.getNewState(), true, true);
+                            this.getLevel().setBlock(this, Block.get(MELON_BLOCK, 0), true, true);
+                            this.getLevel().setBlock(this, Block.get(MELON_BLOCK, 7), true, true);
                         }
                     }
                 }
