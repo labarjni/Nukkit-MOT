@@ -41,7 +41,7 @@ public class BlockStemMelon extends BlockCrops {
             }
         } else if (type == Level.BLOCK_UPDATE_RANDOM) {
             if (Utils.rand(1, 2) == 1) {
-                if (this.getDamage() < 0x06) {
+                if (this.getDamage() < 0x07) {
                     Block block = this.clone();
                     block.setDamage(block.getDamage() + 1);
                     BlockGrowEvent ev = new BlockGrowEvent(this, block);
@@ -65,8 +65,7 @@ public class BlockStemMelon extends BlockCrops {
                         if (!ev.isCancelled()) {
                             this.getLevel().setBlock(side, ev.getNewState(), true, true);
 
-                            this.getLevel().setBlock(this, Block.get(this.getId(), 0), true, true);
-                            this.getLevel().setBlock(this, Block.get(this.getId(), 7), true, true);
+                            this.getLevel().setBlock(this, Block.get(this.getId(), 8), true, true);
                         }
                     }
                 }
