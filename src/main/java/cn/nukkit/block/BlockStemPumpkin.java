@@ -70,7 +70,7 @@ public class BlockStemPumpkin extends BlockCrops {
                         if (!ev.isCancelled()) {
                             this.getLevel().setBlock(side, ev.getNewState(), true, true);
 
-                            this.setDamage(getDamage() + sideFace.getIndex()); // Attached Pumpkin Stem
+                            this.setDamage(0x08 + sideFace.getIndex()); // Attached Pumpkin Stem
 
                             this.getLevel().setBlock(this, this, true, true);
                         }
