@@ -7,12 +7,13 @@ import cn.nukkit.item.ItemSeedsMelon;
 import cn.nukkit.level.Level;
 import cn.nukkit.math.BlockFace;
 import cn.nukkit.math.BlockFace.Plane;
+import cn.nukkit.utils.Faceable;
 import cn.nukkit.utils.Utils;
 
 /**
  * Created by Pub4Game on 15.01.2016.
  */
-public class BlockStemMelon extends BlockCrops {
+public class BlockStemMelon extends BlockCrops implements Faceable {
 
     public BlockStemMelon() {
         this(0);
@@ -30,6 +31,15 @@ public class BlockStemMelon extends BlockCrops {
     @Override
     public String getName() {
         return "Melon Stem";
+    }
+
+    public BlockFace getBlockFace() {
+        return BlockFace.fromIndex(getDamage() >> 3 & 0b111);
+    }
+
+    @Override
+    public void setBlockFace(BlockFace face) {
+        setDamage(getDamage() & ~(0b111 << 3) | (face.getIndex() << 3));
     }
 
     @Override
@@ -57,14 +67,16 @@ public class BlockStemMelon extends BlockCrops {
                             return Level.BLOCK_UPDATE_RANDOM;
                         }
                     }
-                    Block side = this.getSide(Plane.HORIZONTAL.random(Utils.nukkitRandom));
+
+                    BlockFace sideFace = Plane.HORIZONTAL.random(Utils.nukkitRandom);
+                    Block side = this.getSide(sideFace);
                     Block d = side.down();
                     if (side.getId() == AIR && (d.getId() == FARMLAND || d.getId() == GRASS || d.getId() == DIRT)) {
                         BlockGrowEvent ev = new BlockGrowEvent(side, Block.get(MELON_BLOCK));
                         Server.getInstance().getPluginManager().callEvent(ev);
                         if (!ev.isCancelled()) {
                             this.getLevel().setBlock(side, ev.getNewState(), true, true);
-
+                            setBlockFace(sideFace);
                             this.getLevel().setBlock(this, Block.get(this.getId(), 8), true, true);
                         }
                     }

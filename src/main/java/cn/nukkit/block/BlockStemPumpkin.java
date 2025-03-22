@@ -1,18 +1,20 @@
 package cn.nukkit.block;
 
 import cn.nukkit.Server;
+import cn.nukkit.block.properties.VanillaProperties;
 import cn.nukkit.event.block.BlockGrowEvent;
 import cn.nukkit.item.Item;
 import cn.nukkit.item.ItemSeedsPumpkin;
 import cn.nukkit.level.Level;
 import cn.nukkit.math.BlockFace;
 import cn.nukkit.math.BlockFace.Plane;
+import cn.nukkit.utils.Faceable;
 import cn.nukkit.utils.Utils;
 
 /**
  * Created by Pub4Game on 15.01.2016.
  */
-public class BlockStemPumpkin extends BlockCrops {
+public class BlockStemPumpkin extends BlockCrops implements Faceable {
 
     public BlockStemPumpkin() {
         this(0);
@@ -30,6 +32,15 @@ public class BlockStemPumpkin extends BlockCrops {
     @Override
     public String getName() {
         return "Pumpkin Stem";
+    }
+
+    public BlockFace getBlockFace() {
+        return BlockFace.fromIndex(getDamage() >> 3 & 0b111);
+    }
+
+    @Override
+    public void setBlockFace(BlockFace face) {
+        setDamage(getDamage() & ~(0b111 << 3) | (face.getIndex() << 3));
     }
 
     @Override
@@ -58,17 +69,16 @@ public class BlockStemPumpkin extends BlockCrops {
                         }
                     }
 
-                    BlockFace randomFace = Plane.HORIZONTAL.random(Utils.nukkitRandom);
-
-                    Block side = this.getSide(randomFace);
+                    BlockFace sideFace = Plane.HORIZONTAL.random(Utils.nukkitRandom);
+                    Block side = this.getSide(sideFace);
                     Block d = side.down();
                     if (side.getId() == AIR && (d.getId() == FARMLAND || d.getId() == GRASS || d.getId() == DIRT)) {
                         BlockGrowEvent ev = new BlockGrowEvent(side, Block.get(PUMPKIN));
                         Server.getInstance().getPluginManager().callEvent(ev);
                         if (!ev.isCancelled()) {
                             this.getLevel().setBlock(side, ev.getNewState(), true, true);
-
-                            this.getLevel().setBlock(this.getSide(randomFace, 0), Block.get(this.getId(), 8), true, true);
+                            setBlockFace(sideFace);
+                            this.getLevel().setBlock(this, Block.get(this.getId(), 8), true, true);
                         }
                     }
                 }
