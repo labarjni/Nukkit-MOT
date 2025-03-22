@@ -93,8 +93,8 @@ public class BlockStemPumpkin extends BlockCrops implements Faceable, BlockPrope
                         if (!ev.isCancelled()) {
                             this.getLevel().setBlock(side, ev.getNewState(), true, true);
 
-                            setBlockFace(sideFace);
                             this.setDamage(0x08); // Attached Pumpkin Stem
+                            setBlockFace(sideFace);
                             this.getLevel().setBlock(this, this, true, true);
                         }
                     }
