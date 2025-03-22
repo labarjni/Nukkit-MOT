@@ -81,7 +81,7 @@ public class BlockStemMelon extends BlockCrops implements BlockPropertiesHelper 
                         if (!ev.isCancelled()) {
                             this.getLevel().setBlock(side, ev.getNewState(), true, true);
 
-                            this.setDamage(0x08 + sideFace.getIndex()); // Attached Melon Stem
+                            this.setDamage(8 + sideFace.getIndex()); // Attached Melon Stem
                             this.getLevel().setBlock(this, this, true, true);
                         }
                     }

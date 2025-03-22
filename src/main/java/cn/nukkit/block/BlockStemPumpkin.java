@@ -80,7 +80,10 @@ public class BlockStemPumpkin extends BlockCrops implements BlockPropertiesHelpe
                         if (!ev.isCancelled()) {
                             this.getLevel().setBlock(side, ev.getNewState(), true, true);
 
-                            this.setDamage(0x08 + sideFace.getIndex()); // Attached Pumpkin Stem
+                            this.setDamage(8 + sideFace.getIndex()); // Attached Pumpkin Stem
+                            System.out.println(8 + sideFace.getIndex());
+                            System.out.println(sideFace.getIndex());
+
                             this.getLevel().setBlock(this, this, true, true);
                         }
                     }
