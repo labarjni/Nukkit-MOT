@@ -55,8 +55,9 @@ public class BlockStemPumpkin extends BlockCrops implements Faceable, BlockPrope
 
     @Override
     public void setBlockFace(BlockFace face) {
-        this.setPropertyValue(VanillaProperties.FACING_DIRECTION, face);
+//        this.setPropertyValue(VanillaProperties.FACING_DIRECTION, face);
         this.setDamage(getDamage() + face.getHorizontalIndex());
+        System.out.println(getDamage() + face.getHorizontalIndex());
     }
 
     @Override
