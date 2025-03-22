@@ -90,7 +90,9 @@ public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropert
                         Server.getInstance().getPluginManager().callEvent(ev);
                         if (!ev.isCancelled()) {
                             this.getLevel().setBlock(side, ev.getNewState(), true, true);
+
                             setBlockFace(sideFace);
+                            this.setDamage(0x08); // Attached Melon Stem
                             this.getLevel().setBlock(this, this, true, true);
                         }
                     }
