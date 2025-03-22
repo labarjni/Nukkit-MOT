@@ -41,7 +41,7 @@ public class BlockStemPumpkin extends BlockCrops {
             }
         } else if (type == Level.BLOCK_UPDATE_RANDOM) {
             if (Utils.rand(1, 2) == 1) {
-                if (this.getDamage() < 0x07) {
+                if (this.getDamage() < 0x06) {
                     Block block = this.clone();
                     block.setDamage(block.getDamage() + 1);
                     BlockGrowEvent ev = new BlockGrowEvent(this, block);

@@ -77,7 +77,7 @@ public abstract class BlockCrops extends BlockFlowable {
             }
         } else if (type == Level.BLOCK_UPDATE_RANDOM) {
             if (Utils.random.nextInt(2) == 1) {
-                if (this.getDamage() < 0x07) {
+                if (this.getDamage() < 0x06) {
                     BlockCrops block = (BlockCrops) this.clone();
                     block.setDamage(block.getDamage() + 1);
                     BlockGrowEvent ev = new BlockGrowEvent(this, block);
