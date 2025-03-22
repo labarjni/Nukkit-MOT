@@ -11,17 +11,16 @@ import cn.nukkit.item.ItemSeedsMelon;
 import cn.nukkit.level.Level;
 import cn.nukkit.math.BlockFace;
 import cn.nukkit.math.BlockFace.Plane;
-import cn.nukkit.utils.Faceable;
 import cn.nukkit.utils.Utils;
 
 /**
  * Created by Pub4Game on 15.01.2016.
  */
-public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropertiesHelper {
+public class BlockStemMelon extends BlockCrops implements BlockPropertiesHelper {
 
     private static final IntBlockProperty GROWTH = new IntBlockProperty("growth", false, 7, 0);
 
-    private static final BlockProperties PROPERTIES = new BlockProperties(GROWTH, VanillaProperties.FACING_DIRECTION);
+    private static final BlockProperties PROPERTIES = new BlockProperties(GROWTH);
 
     public BlockStemMelon() {
         this(0);
@@ -44,17 +43,6 @@ public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropert
     @Override
     public BlockProperties getBlockProperties() {
         return PROPERTIES;
-    }
-
-    @Override
-    public BlockFace getBlockFace() {
-        return this.getPropertyValue(VanillaProperties.FACING_DIRECTION);
-    }
-
-    @Override
-    public void setBlockFace(BlockFace face) {
-        this.setPropertyValue(VanillaProperties.FACING_DIRECTION, face);
-        this.setDamage(getDamage() + face.getHorizontalIndex());
     }
 
     @Override
@@ -93,8 +81,7 @@ public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropert
                         if (!ev.isCancelled()) {
                             this.getLevel().setBlock(side, ev.getNewState(), true, true);
 
-                            this.setDamage(0x08); // Attached Melon Stem
-                            setBlockFace(sideFace);
+                            this.setDamage(0x08 + sideFace.getIndex()); // Attached Melon Stem
                             this.getLevel().setBlock(this, this, true, true);
                         }
                     }
