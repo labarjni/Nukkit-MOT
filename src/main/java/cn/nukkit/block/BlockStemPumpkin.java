@@ -94,9 +94,4 @@ public class BlockStemPumpkin extends BlockCrops {
                 new ItemSeedsPumpkin(0, Utils.rand(0, 48) >> 4)
         };
     }
-
-    @Override
-    public String getIdentifier() {
-        return "";
-    }
 }

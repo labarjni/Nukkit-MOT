@@ -94,9 +94,4 @@ public class BlockStemMelon extends BlockCrops {
                 new ItemSeedsMelon(0, Utils.rand(0, 48) >> 4)
         };
     }
-
-    @Override
-    public String getIdentifier() {
-        return "";
-    }
 }
