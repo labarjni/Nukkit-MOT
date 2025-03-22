@@ -40,11 +40,11 @@ public abstract class BlockCrops extends BlockFlowable {
     public boolean onActivate(Item item, Player player) {
         // Bone meal
         if (item.getId() == Item.DYE && item.getDamage() == 0x0f) {
-            if (this.getDamage() < 6) {
+            if (this.getDamage() < 7) {
                 BlockCrops block = (BlockCrops) this.clone();
                 block.setDamage(block.getDamage() + Utils.random.nextInt(3) + 2);
-                if (block.getDamage() > 6) {
-                    block.setDamage(6);
+                if (block.getDamage() > 7) {
+                    block.setDamage(7);
                 }
                 BlockGrowEvent ev = new BlockGrowEvent(this, block);
                 Server.getInstance().getPluginManager().callEvent(ev);
@@ -77,7 +77,7 @@ public abstract class BlockCrops extends BlockFlowable {
             }
         } else if (type == Level.BLOCK_UPDATE_RANDOM) {
             if (Utils.random.nextInt(2) == 1) {
-                if (this.getDamage() < 0x06) {
+                if (this.getDamage() < 0x07) {
                     BlockCrops block = (BlockCrops) this.clone();
                     block.setDamage(block.getDamage() + 1);
                     BlockGrowEvent ev = new BlockGrowEvent(this, block);
