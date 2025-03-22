@@ -2,6 +2,7 @@ package cn.nukkit.block;
 
 import cn.nukkit.Server;
 import cn.nukkit.block.custom.properties.BlockProperties;
+import cn.nukkit.block.custom.properties.IntBlockProperty;
 import cn.nukkit.block.properties.BlockPropertiesHelper;
 import cn.nukkit.block.properties.VanillaProperties;
 import cn.nukkit.event.block.BlockGrowEvent;
@@ -20,6 +21,10 @@ import java.util.Properties;
  */
 public class BlockStemPumpkin extends BlockCrops implements Faceable, BlockPropertiesHelper {
 
+    private static final IntBlockProperty GROWTH = new IntBlockProperty("growth", false, 7, 0);
+
+    private static final BlockProperties PROPERTIES = new BlockProperties(GROWTH, VanillaProperties.FACING_DIRECTION);
+
     public BlockStemPumpkin() {
         this(0);
     }
@@ -36,6 +41,11 @@ public class BlockStemPumpkin extends BlockCrops implements Faceable, BlockPrope
     @Override
     public String getName() {
         return "Pumpkin Stem";
+    }
+
+    @Override
+    public BlockProperties getBlockProperties() {
+        return PROPERTIES;
     }
 
     @Override
@@ -104,11 +114,6 @@ public class BlockStemPumpkin extends BlockCrops implements Faceable, BlockPrope
         return new Item[]{
                 new ItemSeedsPumpkin(0, Utils.rand(0, 48) >> 4)
         };
-    }
-
-    @Override
-    public BlockProperties getBlockProperties() {
-        return null;
     }
 
     @Override

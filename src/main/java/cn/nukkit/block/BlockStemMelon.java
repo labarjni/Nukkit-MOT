@@ -2,6 +2,7 @@ package cn.nukkit.block;
 
 import cn.nukkit.Server;
 import cn.nukkit.block.custom.properties.BlockProperties;
+import cn.nukkit.block.custom.properties.IntBlockProperty;
 import cn.nukkit.block.properties.BlockPropertiesHelper;
 import cn.nukkit.block.properties.VanillaProperties;
 import cn.nukkit.event.block.BlockGrowEvent;
@@ -17,6 +18,10 @@ import cn.nukkit.utils.Utils;
  * Created by Pub4Game on 15.01.2016.
  */
 public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropertiesHelper {
+
+    private static final IntBlockProperty GROWTH = new IntBlockProperty("growth", false, 7, 0);
+
+    private static final BlockProperties PROPERTIES = new BlockProperties(GROWTH, VanillaProperties.FACING_DIRECTION);
 
     public BlockStemMelon() {
         this(0);
@@ -34,6 +39,11 @@ public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropert
     @Override
     public String getName() {
         return "Melon Stem";
+    }
+
+    @Override
+    public BlockProperties getBlockProperties() {
+        return PROPERTIES;
     }
 
     @Override
@@ -102,11 +112,6 @@ public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropert
         return new Item[]{
                 new ItemSeedsMelon(0, Utils.rand(0, 48) >> 4)
         };
-    }
-
-    @Override
-    public BlockProperties getBlockProperties() {
-        return null;
     }
 
     @Override
