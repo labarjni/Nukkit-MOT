@@ -1,0 +1,22 @@
+{
+  "extras": [
+    {
+      "id": 105,
+      "data": 7,
+      "runtimeId": 7479,
+      "states": {
+        "facing_direction": 0,
+        "growth": 7
+      }
+    },
+    {
+      "id": 104,
+      "data": 7,
+      "runtimeId": 11594,
+      "states": {
+        "facing_direction": 0,
+        "growth": 7
+      }
+    }
+  ]
+}
