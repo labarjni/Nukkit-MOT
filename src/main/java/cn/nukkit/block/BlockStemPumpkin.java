@@ -1,6 +1,8 @@
 package cn.nukkit.block;
 
 import cn.nukkit.Server;
+import cn.nukkit.block.custom.properties.BlockProperties;
+import cn.nukkit.block.properties.BlockPropertiesHelper;
 import cn.nukkit.block.properties.VanillaProperties;
 import cn.nukkit.event.block.BlockGrowEvent;
 import cn.nukkit.item.Item;
@@ -11,10 +13,12 @@ import cn.nukkit.math.BlockFace.Plane;
 import cn.nukkit.utils.Faceable;
 import cn.nukkit.utils.Utils;
 
+import java.util.Properties;
+
 /**
  * Created by Pub4Game on 15.01.2016.
  */
-public class BlockStemPumpkin extends BlockCrops implements Faceable {
+public class BlockStemPumpkin extends BlockCrops implements Faceable, BlockPropertiesHelper {
 
     public BlockStemPumpkin() {
         this(0);
@@ -34,13 +38,14 @@ public class BlockStemPumpkin extends BlockCrops implements Faceable {
         return "Pumpkin Stem";
     }
 
+    @Override
     public BlockFace getBlockFace() {
-        return BlockFace.fromIndex(getDamage() >> 3 & 0b111);
+        return this.getPropertyValue(VanillaProperties.FACING_DIRECTION);
     }
 
     @Override
     public void setBlockFace(BlockFace face) {
-        setDamage(getDamage() & ~(0b111 << 3) | (face.getIndex() << 3));
+        this.setPropertyValue(VanillaProperties.FACING_DIRECTION, face);
     }
 
     @Override
@@ -78,7 +83,7 @@ public class BlockStemPumpkin extends BlockCrops implements Faceable {
                         if (!ev.isCancelled()) {
                             this.getLevel().setBlock(side, ev.getNewState(), true, true);
                             setBlockFace(sideFace);
-                            this.getLevel().setBlock(this, Block.get(this.getId(), 8), true, true);
+                            this.getLevel().setBlock(this, this, true, true);
                         }
                     }
                 }
@@ -99,5 +104,15 @@ public class BlockStemPumpkin extends BlockCrops implements Faceable {
         return new Item[]{
                 new ItemSeedsPumpkin(0, Utils.rand(0, 48) >> 4)
         };
+    }
+
+    @Override
+    public BlockProperties getBlockProperties() {
+        return null;
+    }
+
+    @Override
+    public String getIdentifier() {
+        return "";
     }
 }
