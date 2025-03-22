@@ -56,6 +56,7 @@ public class BlockStemPumpkin extends BlockCrops implements Faceable, BlockPrope
     @Override
     public void setBlockFace(BlockFace face) {
         this.setPropertyValue(VanillaProperties.FACING_DIRECTION, face);
+        this.setDamage(getDamage() + face.getHorizontalIndex());
     }
 
     @Override
@@ -67,9 +68,10 @@ public class BlockStemPumpkin extends BlockCrops implements Faceable, BlockPrope
             }
         } else if (type == Level.BLOCK_UPDATE_RANDOM) {
             if (Utils.rand(1, 2) == 1) {
-                if (this.getDamage() < 0x07) {
+                if (this.getPropertyValue(GROWTH) < 7) {
+                    setPropertyValue(GROWTH, this.getPropertyValue(GROWTH) + 1);
+
                     Block block = this.clone();
-                    block.setDamage(block.getDamage() + 1);
                     BlockGrowEvent ev = new BlockGrowEvent(this, block);
                     Server.getInstance().getPluginManager().callEvent(ev);
                     if (!ev.isCancelled()) {
@@ -93,8 +95,8 @@ public class BlockStemPumpkin extends BlockCrops implements Faceable, BlockPrope
                         if (!ev.isCancelled()) {
                             this.getLevel().setBlock(side, ev.getNewState(), true, true);
 
+                            this.setDamage(0x08); // Attached Pumpkin Stem
                             setBlockFace(sideFace);
-                            this.setDamage(0x08 & this.getDamage()); // Attached Pumpkin Stem
                             this.getLevel().setBlock(this, this, true, true);
                         }
                     }
