@@ -156,9 +156,7 @@ public class ItemCrossbow extends ItemBow {
         Item chargedItem = getChargedItem();
 
         if (!chargedItem.isNull() && Server.getInstance().getTick() - this.loadTick > 10) {
-
             int penetrationLevel = getEnchantmentLevel(Enchantment.ID_CROSSBOW_PIERCING);
-
             Vector3 aimDir = Vector3.directionFromRotation(player.pitch, player.yaw);
             ThreadLocalRandom random = ThreadLocalRandom.current();
 
