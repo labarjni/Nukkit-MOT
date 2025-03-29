@@ -35,6 +35,11 @@ public class BlockWheat extends BlockCrops {
     }
 
     @Override
+    public String getIdentifier() {
+        return "minecraft:wheat_block";
+    }
+
+    @Override
     public Item[] getDrops(Item item) {
         if (this.getDamage() >= 0x07) {
             return new Item[]{
@@ -46,10 +51,5 @@ public class BlockWheat extends BlockCrops {
                     new ItemSeedsWheat()
             };
         }
-    }
-
-    @Override
-    public String getIdentifier() {
-        return "";
     }
 }

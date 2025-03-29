@@ -23,9 +23,7 @@ public abstract class BlockCrops extends BlockFlowable implements BlockPropertie
 
     private static final IntBlockProperty GROWTH = new IntBlockProperty("growth", false, 7, 0);
 
-    private static final EnumBlockProperty<BlockFace> ATTACHED_SIDE = new EnumBlockProperty<>("attached_side", false, BlockFace.class);
-
-    private static final BlockProperties PROPERTIES = new BlockProperties(GROWTH, ATTACHED_SIDE);
+    private static final BlockProperties PROPERTIES = new BlockProperties(GROWTH);
 
     public static final int MINIMUM_LIGHT_LEVEL = 9;
 

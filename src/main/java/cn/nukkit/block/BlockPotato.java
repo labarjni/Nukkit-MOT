@@ -35,6 +35,11 @@ public class BlockPotato extends BlockCrops {
     }
 
     @Override
+    public String getIdentifier() {
+        return "minecraft:potato_block";
+    }
+
+    @Override
     public Item[] getDrops(Item item) {
         if (getDamage() >= 0x07) {
             if (Utils.random.nextDouble() < 0.02) {
@@ -52,10 +57,5 @@ public class BlockPotato extends BlockCrops {
                     Item.get(ItemID.POTATO)
             };
         }
-    }
-
-    @Override
-    public String getIdentifier() {
-        return "";
     }
 }

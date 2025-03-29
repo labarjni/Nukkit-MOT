@@ -60,6 +60,11 @@ public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropert
     }
 
     @Override
+    public String getIdentifier() {
+        return "minecraft:melon_stem";
+    }
+
+    @Override
     public int onUpdate(int type) {
         if (type == Level.BLOCK_UPDATE_NORMAL) {
             if (this.down().getId() != FARMLAND) {
@@ -97,8 +102,9 @@ public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropert
                         if (!ev.isCancelled()) {
                             this.getLevel().setBlock(side, ev.getNewState(), true, true);
 
-                            this.setBlockFace(sideFace);
                             setPropertyValue(ATTACHED_SIDE, sideFace);
+                            System.out.println(this.getDamage());
+                            this.setBlockFace(sideFace);
                             this.getLevel().setBlock(this, this, true, true);
                         }
                     }
@@ -120,10 +126,5 @@ public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropert
         return new Item[]{
                 new ItemSeedsMelon(0, Utils.rand(0, 48) >> 4)
         };
-    }
-
-    @Override
-    public String getIdentifier() {
-        return "";
     }
 }
