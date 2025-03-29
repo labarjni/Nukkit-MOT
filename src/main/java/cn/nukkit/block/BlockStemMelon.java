@@ -47,11 +47,11 @@ public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropert
 
     @Override
     public BlockFace getBlockFace() {
-        return BlockFace.fromIndex(this.getDamage() - 0x08);
+        return BlockFace.fromIndex(this.getDamage() - 8);
     }
 
     public void setBlockFace(BlockFace face) {
-        this.setDamage(0x08 + face.getIndex());
+        this.setDamage(8 + face.getIndex());
     }
 
     @Override
@@ -106,6 +106,7 @@ public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropert
                             this.getLevel().setBlock(side, ev.getNewState(), true, true);
 
                             this.setBlockFace(sideFace);
+                            System.out.println(this.getDamage());
                             this.getLevel().setBlock(this, this, true, true);
                         }
                     }
