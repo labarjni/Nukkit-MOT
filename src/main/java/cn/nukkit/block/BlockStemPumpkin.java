@@ -56,19 +56,22 @@ public class BlockStemPumpkin extends BlockCrops implements Faceable {
             }
         } else if (type == Level.BLOCK_UPDATE_RANDOM) {
             if (Utils.rand(1, 2) == 1) {
-                if (this.getDamage() < 0x07) {
+                if (this.getPropertyValue(GROWTH) < 7) {
+
+                    this.setPropertyValue(GROWTH, this.getPropertyValue(GROWTH) + 1);
+
                     Block block = this.clone();
-                    block.setDamage(block.getDamage() + 1);
                     BlockGrowEvent ev = new BlockGrowEvent(this, block);
                     Server.getInstance().getPluginManager().callEvent(ev);
+
                     if (!ev.isCancelled()) {
                         this.getLevel().setBlock(this, ev.getNewState(), true, true);
                     }
                     return Level.BLOCK_UPDATE_RANDOM;
                 } else {
                     for (BlockFace face : Plane.HORIZONTAL) {
-                        Block b = this.getSide(face);
-                        if (b.getId() == PUMPKIN) {
+                        Block block = this.getSide(face);
+                        if (block.getId() == PUMPKIN) {
                             return Level.BLOCK_UPDATE_RANDOM;
                         }
                     }

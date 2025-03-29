@@ -5,6 +5,7 @@ import cn.nukkit.item.Item;
 import cn.nukkit.item.ItemMelon;
 import cn.nukkit.item.ItemTool;
 import cn.nukkit.item.enchantment.Enchantment;
+import cn.nukkit.level.Level;
 import cn.nukkit.math.BlockFace;
 import cn.nukkit.utils.BlockColor;
 import cn.nukkit.utils.Utils;
@@ -18,11 +19,7 @@ import cn.nukkit.block.properties.BlockPropertiesHelper;
  * Package cn.nukkit.block in project Nukkit .
  */
 
-public class BlockMelon extends BlockSolid implements BlockPropertiesHelper {
-
-    private static final EnumBlockProperty<BlockFace> ATTACHED_SIDE = new EnumBlockProperty<>("attached_side", false, BlockFace.class);
-
-    private static final BlockProperties PROPERTIES = new BlockProperties(ATTACHED_SIDE);
+public class BlockMelon extends BlockSolid {
 
     @Override
     public int getId() {
@@ -45,16 +42,6 @@ public class BlockMelon extends BlockSolid implements BlockPropertiesHelper {
     }
 
     @Override
-    public BlockProperties getBlockProperties() {
-        return PROPERTIES;
-    }
-
-    @Override
-    public String getIdentifier() {
-        return "minecraft:melon_block";
-    }
-
-    @Override
     public Item[] getDrops(Item item) {
         if (item.hasEnchantment(Enchantment.ID_SILK_TOUCH)) {
             return new Item[]{this.toItem()};
@@ -74,18 +61,16 @@ public class BlockMelon extends BlockSolid implements BlockPropertiesHelper {
 
     @Override
     public boolean onBreak(Item item) {
-        System.out.println(this.getDamage());
-        BlockFace stemFace = this.getPropertyValue(ATTACHED_SIDE);
-        System.out.println(stemFace);
-        if (stemFace != null) {
-            Block block = this.getSide(stemFace);
-            System.out.println(block.getName());
-            if (this.getSide(stemFace) instanceof BlockStemMelon stemMelon) {
-                System.out.println(1);
-                stemMelon.setPropertyValue(BlockCrops.GROWTH, 7);
-                this.getLevel().setBlock(stemMelon, stemMelon, true, true);
+        for (BlockFace face : BlockFace.Plane.HORIZONTAL) {
+            Block block = this.getSide(face);
+            if (block instanceof BlockStemMelon stemMelon) {
+               if (stemMelon.getBlockFace() == face.getOpposite()) {
+                   stemMelon.setPropertyValue(BlockCrops.GROWTH, 7);
+                   this.getLevel().setBlock(stemMelon, stemMelon, true, true);
+               }
             }
         }
+
         return super.onBreak(item);
     }
 
