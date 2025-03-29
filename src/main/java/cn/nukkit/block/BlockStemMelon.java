@@ -11,10 +11,10 @@ import cn.nukkit.math.BlockFace.Plane;
 import cn.nukkit.utils.Faceable;
 import cn.nukkit.utils.Utils;
 
-import cn.nukkit.block.properties.BlockPropertiesHelper;
 import cn.nukkit.block.custom.properties.BlockProperties;
 import cn.nukkit.block.custom.properties.EnumBlockProperty;
 import cn.nukkit.block.custom.properties.IntBlockProperty;
+import cn.nukkit.block.properties.BlockPropertiesHelper;
 
 /**
  * Created by Pub4Game on 15.01.2016.
@@ -69,11 +69,12 @@ public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropert
         } else if (type == Level.BLOCK_UPDATE_RANDOM) {
             if (Utils.rand(1, 2) == 1) {
                 if (this.getPropertyValue(GROWTH) < 7) {
+
+                    this.setPropertyValue(GROWTH, this.getPropertyValue(GROWTH) + 1);
+
                     Block block = this.clone();
                     BlockGrowEvent ev = new BlockGrowEvent(this, block);
                     Server.getInstance().getPluginManager().callEvent(ev);
-
-                    this.setPropertyValue(GROWTH, this.getPropertyValue(GROWTH) + 1);
 
                     if (!ev.isCancelled()) {
                         this.getLevel().setBlock(this, ev.getNewState(), true, true);

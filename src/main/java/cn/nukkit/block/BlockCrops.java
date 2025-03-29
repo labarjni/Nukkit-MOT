@@ -10,11 +10,22 @@ import cn.nukkit.math.BlockFace;
 import cn.nukkit.utils.BlockColor;
 import cn.nukkit.utils.Utils;
 
+import cn.nukkit.block.custom.properties.BlockProperties;
+import cn.nukkit.block.custom.properties.EnumBlockProperty;
+import cn.nukkit.block.custom.properties.IntBlockProperty;
+import cn.nukkit.block.properties.BlockPropertiesHelper;
+
 /**
  * @author MagicDroidX
  * Nukkit Project
  */
-public abstract class BlockCrops extends BlockFlowable {
+public abstract class BlockCrops extends BlockFlowable implements BlockPropertiesHelper {
+
+    private static final IntBlockProperty GROWTH = new IntBlockProperty("growth", false, 7, 0);
+
+    private static final EnumBlockProperty<BlockFace> ATTACHED_SIDE = new EnumBlockProperty<>("attached_side", false, BlockFace.class);
+
+    private static final BlockProperties PROPERTIES = new BlockProperties(GROWTH, ATTACHED_SIDE);
 
     public static final int MINIMUM_LIGHT_LEVEL = 9;
 
@@ -25,6 +36,11 @@ public abstract class BlockCrops extends BlockFlowable {
     @Override
     public boolean canBeActivated() {
         return true;
+    }
+
+    @Override
+    public BlockProperties getBlockProperties() {
+        return PROPERTIES;
     }
 
     @Override
@@ -77,9 +93,11 @@ public abstract class BlockCrops extends BlockFlowable {
             }
         } else if (type == Level.BLOCK_UPDATE_RANDOM) {
             if (Utils.random.nextInt(2) == 1) {
-                if (this.getDamage() < 0x07) {
+                if (this.getPropertyValue(GROWTH) < 7) {
+
+                    this.setPropertyValue(GROWTH, this.getPropertyValue(GROWTH) + 1);
+
                     BlockCrops block = (BlockCrops) this.clone();
-                    block.setDamage(block.getDamage() + 1);
                     BlockGrowEvent ev = new BlockGrowEvent(this, block);
                     Server.getInstance().getPluginManager().callEvent(ev);
 
