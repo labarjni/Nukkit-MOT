@@ -74,8 +74,11 @@ public class BlockMelon extends BlockSolid implements BlockPropertiesHelper {
 
     @Override
     public boolean onBreak(Item item) {
-        if (this.getPropertyValue(ATTACHED_SIDE) != null) {
-            if (this.getSide(this.getPropertyValue(ATTACHED_SIDE)) instanceof BlockStemMelon stemMelon) {
+        BlockFace stemFace = this.getPropertyValue(ATTACHED_SIDE);
+        System.out.println(stemFace);
+        if (stemFace != null) {
+            if (this.getSide(stemFace) instanceof BlockStemMelon stemMelon) {
+                System.out.println(1);
                 stemMelon.setPropertyValue(BlockCrops.GROWTH, 7);
                 this.getLevel().setBlock(stemMelon, stemMelon, true, true);
             }
