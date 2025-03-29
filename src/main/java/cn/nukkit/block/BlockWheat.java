@@ -47,4 +47,9 @@ public class BlockWheat extends BlockCrops {
             };
         }
     }
+
+    @Override
+    public String getIdentifier() {
+        return "";
+    }
 }

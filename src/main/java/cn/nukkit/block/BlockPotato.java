@@ -53,4 +53,9 @@ public class BlockPotato extends BlockCrops {
             };
         }
     }
+
+    @Override
+    public String getIdentifier() {
+        return "";
+    }
 }

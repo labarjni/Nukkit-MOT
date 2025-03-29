@@ -43,4 +43,9 @@ public class BlockCarrot extends BlockCrops {
     public Item toItem() {
         return new ItemCarrot();
     }
+
+    @Override
+    public String getIdentifier() {
+        return "";
+    }
 }

@@ -100,4 +100,9 @@ public class BlockStemPumpkin extends BlockCrops implements Faceable {
                 new ItemSeedsPumpkin(0, Utils.rand(0, 48) >> 4)
         };
     }
+
+    @Override
+    public String getIdentifier() {
+        return "";
+    }
 }

@@ -44,4 +44,9 @@ public class BlockBeetroot extends BlockCrops {
             };
         }
     }
+
+    @Override
+    public String getIdentifier() {
+        return "";
+    }
 }
