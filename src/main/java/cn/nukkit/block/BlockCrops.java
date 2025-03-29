@@ -11,7 +11,6 @@ import cn.nukkit.utils.BlockColor;
 import cn.nukkit.utils.Utils;
 
 import cn.nukkit.block.custom.properties.BlockProperties;
-import cn.nukkit.block.custom.properties.EnumBlockProperty;
 import cn.nukkit.block.custom.properties.IntBlockProperty;
 import cn.nukkit.block.properties.BlockPropertiesHelper;
 
@@ -21,9 +20,9 @@ import cn.nukkit.block.properties.BlockPropertiesHelper;
  */
 public abstract class BlockCrops extends BlockFlowable implements BlockPropertiesHelper {
 
-    private static final IntBlockProperty GROWTH = new IntBlockProperty("growth", false, 7, 0);
+    protected static final IntBlockProperty GROWTH = new IntBlockProperty("growth", false, 7, 0);
 
-    private static final BlockProperties PROPERTIES = new BlockProperties(GROWTH);
+    protected static final BlockProperties PROPERTIES = new BlockProperties(GROWTH);
 
     public static final int MINIMUM_LIGHT_LEVEL = 9;
 

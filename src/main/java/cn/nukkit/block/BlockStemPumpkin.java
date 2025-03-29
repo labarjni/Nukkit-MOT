@@ -35,11 +35,16 @@ public class BlockStemPumpkin extends BlockCrops implements Faceable {
 
     @Override
     public BlockFace getBlockFace() {
-        return BlockFace.fromIndex(this.getDamage() - 0x08);
+        return BlockFace.fromIndex(this.getDamage() - 8);
     }
 
     public void setBlockFace(BlockFace face) {
-        this.setDamage(0x08 + face.getIndex());
+        this.setDamage(8 + face.getIndex());
+    }
+
+    @Override
+    public String getIdentifier() {
+        return "minecraft:pumpkin_stem";
     }
 
     @Override
@@ -99,10 +104,5 @@ public class BlockStemPumpkin extends BlockCrops implements Faceable {
         return new Item[]{
                 new ItemSeedsPumpkin(0, Utils.rand(0, 48) >> 4)
         };
-    }
-
-    @Override
-    public String getIdentifier() {
-        return "";
     }
 }

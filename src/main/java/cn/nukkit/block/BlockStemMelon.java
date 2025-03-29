@@ -13,7 +13,6 @@ import cn.nukkit.utils.Utils;
 
 import cn.nukkit.block.custom.properties.BlockProperties;
 import cn.nukkit.block.custom.properties.EnumBlockProperty;
-import cn.nukkit.block.custom.properties.IntBlockProperty;
 import cn.nukkit.block.properties.BlockPropertiesHelper;
 
 /**
@@ -21,11 +20,7 @@ import cn.nukkit.block.properties.BlockPropertiesHelper;
  */
 public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropertiesHelper {
 
-    private static final IntBlockProperty GROWTH = new IntBlockProperty("growth", false, 7, 0);
-
     private static final EnumBlockProperty<BlockFace> ATTACHED_SIDE = new EnumBlockProperty<>("attached_side", false, BlockFace.class);
-
-    private static final BlockProperties PROPERTIES = new BlockProperties(GROWTH);
 
     public BlockStemMelon() {
         this(0);
@@ -106,7 +101,7 @@ public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropert
                             this.getLevel().setBlock(side, ev.getNewState(), true, true);
 
                             this.setBlockFace(sideFace);
-                            System.out.println(this.getDamage());
+
                             this.getLevel().setBlock(this, this, true, true);
                         }
                     }
