@@ -4,14 +4,10 @@ import cn.nukkit.item.Item;
 import cn.nukkit.item.ItemCarrot;
 import cn.nukkit.utils.Utils;
 
-import cn.nukkit.block.custom.properties.IntBlockProperty;
-
 /**
  * @author Nukkit Project Team
  */
 public class BlockCarrot extends BlockCrops {
-
-    protected static final IntBlockProperty GROWTH = new IntBlockProperty("growth", false, 7, 0);
 
     public BlockCarrot(int meta) {
         super(meta);

@@ -5,14 +5,10 @@ import cn.nukkit.item.ItemID;
 import cn.nukkit.item.ItemPotato;
 import cn.nukkit.utils.Utils;
 
-import cn.nukkit.block.custom.properties.IntBlockProperty;
-
 /**
  * Created by Pub4Game on 15.01.2016.
  */
 public class BlockPotato extends BlockCrops {
-
-    protected static final IntBlockProperty GROWTH = new IntBlockProperty("growth", false, 7, 0);
 
     public BlockPotato(int meta) {
         super(meta);

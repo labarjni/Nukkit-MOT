@@ -1,5 +1,6 @@
 package cn.nukkit.block;
 
+import cn.nukkit.block.custom.properties.IntBlockProperty;
 import cn.nukkit.item.Item;
 import cn.nukkit.item.ItemMelon;
 import cn.nukkit.item.ItemTool;
@@ -73,6 +74,12 @@ public class BlockMelon extends BlockSolid implements BlockPropertiesHelper {
 
     @Override
     public boolean onBreak(Item item) {
+        if (this.getPropertyValue(ATTACHED_SIDE) != null) {
+            if (this.getSide(this.getPropertyValue(ATTACHED_SIDE)) instanceof BlockStemMelon stemMelon) {
+                stemMelon.setPropertyValue(BlockCrops.GROWTH, 7);
+                this.getLevel().setBlock(stemMelon, stemMelon, true, true);
+            }
+        }
         return super.onBreak(item);
     }
 

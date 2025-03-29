@@ -3,15 +3,11 @@ package cn.nukkit.block;
 import cn.nukkit.item.Item;
 import cn.nukkit.utils.Utils;
 
-import cn.nukkit.block.custom.properties.IntBlockProperty;
-
 /**
  * Created on 2015/11/22 by xtypr.
  * Package cn.nukkit.block in project Nukkit .
  */
 public class BlockBeetroot extends BlockCrops {
-
-    protected static final IntBlockProperty GROWTH = new IntBlockProperty("growth", false, 7, 0);
 
     public BlockBeetroot() {
         this(0);

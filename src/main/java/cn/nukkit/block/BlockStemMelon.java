@@ -22,6 +22,8 @@ public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropert
 
     private static final EnumBlockProperty<BlockFace> ATTACHED_SIDE = new EnumBlockProperty<>("attached_side", false, BlockFace.class);
 
+    protected static final BlockProperties PROPERTIES = new BlockProperties(GROWTH);
+
     public BlockStemMelon() {
         this(0);
     }
@@ -84,7 +86,7 @@ public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropert
                     for (BlockFace face : Plane.HORIZONTAL) {
                         Block b = this.getSide(face);
                         if (b.getId() == MELON_BLOCK) {
-                            return Level.BLOCK_UPDATE_RANDOM;
+                            return Level.BLOCK_UPDATE_NORMAL;
                         }
                     }
 
