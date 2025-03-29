@@ -70,6 +70,7 @@ public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropert
             }
         } else if (type == Level.BLOCK_UPDATE_RANDOM) {
             if (Utils.rand(1, 2) == 1) {
+                System.out.println(this.getDamage());
                 if (this.getPropertyValue(GROWTH) < 7) {
 
                     this.setPropertyValue(GROWTH, this.getPropertyValue(GROWTH) + 1);
@@ -86,7 +87,7 @@ public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropert
                     for (BlockFace face : Plane.HORIZONTAL) {
                         Block b = this.getSide(face);
                         if (b.getId() == MELON_BLOCK) {
-                            return Level.BLOCK_UPDATE_NORMAL;
+                            return Level.BLOCK_UPDATE_RANDOM;
                         }
                     }
 
