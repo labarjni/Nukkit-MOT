@@ -25,7 +25,7 @@ public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropert
 
     private static final EnumBlockProperty<BlockFace> ATTACHED_SIDE = new EnumBlockProperty<>("attached_side", false, BlockFace.class);
 
-    private static final BlockProperties PROPERTIES = new BlockProperties(GROWTH, ATTACHED_SIDE);
+    private static final BlockProperties PROPERTIES = new BlockProperties(GROWTH);
 
     public BlockStemMelon() {
         this(0);
@@ -51,15 +51,7 @@ public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropert
     }
 
     public void setBlockFace(BlockFace face) {
-        int i = switch (face.getName()) {
-            case "south" -> 24;
-            case "west" -> 32;
-            case "north" -> 16;
-            case "east" -> 40;
-            default -> 0;
-        };
-
-        this.setDamage((0x08 + face.getIndex()) - i);
+        this.setDamage(0x08 + face.getIndex());
     }
 
     @Override
@@ -105,17 +97,15 @@ public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropert
                     Block side = this.getSide(sideFace);
                     Block d = side.down();
                     if (side.getId() == AIR && (d.getId() == FARMLAND || d.getId() == GRASS || d.getId() == DIRT)) {
-                        BlockGrowEvent ev = new BlockGrowEvent(side, Block.get(MELON_BLOCK));
+                        BlockMelon melonBlock = (BlockMelon) Block.get(MELON_BLOCK);
+                        melonBlock.setPropertyValue(ATTACHED_SIDE, sideFace);
+
+                        BlockGrowEvent ev = new BlockGrowEvent(side, melonBlock);
                         Server.getInstance().getPluginManager().callEvent(ev);
                         if (!ev.isCancelled()) {
                             this.getLevel().setBlock(side, ev.getNewState(), true, true);
 
-                            System.out.println(this.getDamage());
-                            setPropertyValue(ATTACHED_SIDE, sideFace);
-                            System.out.println(this.getDamage());
-                            System.out.println(this.getPropertyValue(ATTACHED_SIDE));
                             this.setBlockFace(sideFace);
-                            System.out.println(this.getPropertyValue(ATTACHED_SIDE));
                             this.getLevel().setBlock(this, this, true, true);
                         }
                     }
