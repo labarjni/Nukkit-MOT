@@ -22,8 +22,6 @@ public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropert
 
     private static final EnumBlockProperty<BlockFace> ATTACHED_SIDE = new EnumBlockProperty<>("attached_side", false, BlockFace.class);
 
-    protected static final BlockProperties PROPERTIES = new BlockProperties(GROWTH);
-
     public BlockStemMelon() {
         this(0);
     }
