@@ -7,13 +7,25 @@ import cn.nukkit.item.ItemSeedsMelon;
 import cn.nukkit.level.Level;
 import cn.nukkit.math.BlockFace;
 import cn.nukkit.math.BlockFace.Plane;
+
 import cn.nukkit.utils.Faceable;
 import cn.nukkit.utils.Utils;
+
+import cn.nukkit.block.properties.BlockPropertiesHelper;
+import cn.nukkit.block.custom.properties.BlockProperties;
+import cn.nukkit.block.custom.properties.EnumBlockProperty;
+import cn.nukkit.block.custom.properties.IntBlockProperty;
 
 /**
  * Created by Pub4Game on 15.01.2016.
  */
-public class BlockStemMelon extends BlockCrops implements Faceable {
+public class BlockStemMelon extends BlockCrops implements Faceable, BlockPropertiesHelper {
+
+    private static final IntBlockProperty GROWTH = new IntBlockProperty("growth", false, 7, 0);
+
+    private static final EnumBlockProperty<BlockFace> ATTACHED_SIDE = new EnumBlockProperty<>("attached_side", false, BlockFace.class);
+
+    private static final BlockProperties PROPERTIES = new BlockProperties(GROWTH, ATTACHED_SIDE);
 
     public BlockStemMelon() {
         this(0);
@@ -43,6 +55,11 @@ public class BlockStemMelon extends BlockCrops implements Faceable {
     }
 
     @Override
+    public BlockProperties getBlockProperties() {
+        return PROPERTIES;
+    }
+
+    @Override
     public int onUpdate(int type) {
         if (type == Level.BLOCK_UPDATE_NORMAL) {
             if (this.down().getId() != FARMLAND) {
@@ -51,11 +68,13 @@ public class BlockStemMelon extends BlockCrops implements Faceable {
             }
         } else if (type == Level.BLOCK_UPDATE_RANDOM) {
             if (Utils.rand(1, 2) == 1) {
-                if (this.getDamage() < 0x07) {
+                if (this.getPropertyValue(GROWTH) < 7) {
                     Block block = this.clone();
-                    block.setDamage(block.getDamage() + 1);
                     BlockGrowEvent ev = new BlockGrowEvent(this, block);
                     Server.getInstance().getPluginManager().callEvent(ev);
+
+                    this.setPropertyValue(GROWTH, this.getPropertyValue(GROWTH) + 1);
+
                     if (!ev.isCancelled()) {
                         this.getLevel().setBlock(this, ev.getNewState(), true, true);
                     }
@@ -76,6 +95,7 @@ public class BlockStemMelon extends BlockCrops implements Faceable {
                         Server.getInstance().getPluginManager().callEvent(ev);
                         if (!ev.isCancelled()) {
                             this.getLevel().setBlock(side, ev.getNewState(), true, true);
+                            setPropertyValue(ATTACHED_SIDE, sideFace);
 
                             this.setBlockFace(sideFace);
                             this.getLevel().setBlock(this, this, true, true);
@@ -99,5 +119,10 @@ public class BlockStemMelon extends BlockCrops implements Faceable {
         return new Item[]{
                 new ItemSeedsMelon(0, Utils.rand(0, 48) >> 4)
         };
+    }
+
+    @Override
+    public String getIdentifier() {
+        return "";
     }
 }
