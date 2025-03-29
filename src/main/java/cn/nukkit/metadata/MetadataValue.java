@@ -12,7 +12,7 @@ public abstract class MetadataValue {
 
     protected final WeakReference<Plugin> owningPlugin;
 
-    protected MetadataValue(Plugin owningPlugin) {
+    protected MetadataValue() {
         this.owningPlugin = new WeakReference<>(owningPlugin);
     }
 
