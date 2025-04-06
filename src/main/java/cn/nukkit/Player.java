@@ -2848,7 +2848,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                         .findFirst()
                 )
                 .map(pack -> new ResourcePack[]{pack})
-                .orElse(new ResourcePack[0]);
+                .orElse(ResourcePack.EMPTY_ARRAY);
 
         infoPacket.mustAccept = this.server.getForceResources();
         this.dataPacket(infoPacket);
