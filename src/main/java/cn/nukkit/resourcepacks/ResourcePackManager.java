@@ -96,11 +96,11 @@ public class ResourcePackManager {
             int minor = minEngineVersion.get(1).getAsInt();
             int patch = minEngineVersion.get(2).getAsInt();
 
-            String baseKey = major + "_" + minor + "_" + patch;
+            String baseKey = major + "." + minor + "." + patch;
 
             if (minEngineVersion.size() >= 4) {
                 int extra = minEngineVersion.get(3).getAsInt();
-                String fullKey = baseKey + "_" + extra;
+                String fullKey = baseKey + "." + extra;
                 if (PROTOCOL_MAP.containsKey(fullKey)) {
                     return PROTOCOL_MAP.get(fullKey);
                 }
@@ -118,13 +118,13 @@ public class ResourcePackManager {
 
         private static int findClosestProtocol(int major, int minor, int patch) {
             for (int p = patch; p >= 0; p--) {
-                String key = major + "_" + minor + "_" + p;
+                String key = major + "." + minor + "." + p;
                 if (PROTOCOL_MAP.containsKey(key)) {
                     return PROTOCOL_MAP.get(key);
                 }
             }
 
-            String minorKey = major + "_" + minor + "_0";
+            String minorKey = major + "." + minor + ".0";
             if (PROTOCOL_MAP.containsKey(minorKey)) {
                 return PROTOCOL_MAP.get(minorKey);
             }
