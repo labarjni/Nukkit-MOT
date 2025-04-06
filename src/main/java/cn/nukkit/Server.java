@@ -3108,7 +3108,6 @@ public class Server {
             }
         }
 
-
         this.xboxAuth = this.getPropertyBoolean("xbox-auth", true);
         this.bedSpawnpoints = this.getPropertyBoolean("bed-spawnpoints", true);
         this.achievementsEnabled = this.getPropertyBoolean("achievements", true);
@@ -3130,6 +3129,7 @@ public class Server {
             case "replacing" -> this.spaceMode = 2;
             default -> this.spaceMode = 1;
         }
+
         this.lightUpdates = this.getPropertyBoolean("light-updates", false);
         this.queryPlugins = this.getPropertyBoolean("query-plugins", false);
         this.flyChecks = this.getPropertyBoolean("allow-flight", false);
