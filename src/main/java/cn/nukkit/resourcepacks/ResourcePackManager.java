@@ -110,9 +110,6 @@ public class ResourcePackManager {
                 return PROTOCOL_MAP.get(baseKey);
             }
 
-            System.out.println(baseKey);
-            System.out.println(PROTOCOL_MAP);
-
             return findClosestProtocol(major, minor, patch);
         }
 
