@@ -44,8 +44,9 @@ public abstract class AbstractResourcePack implements ResourcePack {
     public int getPackProtocol() {
         if (protocol == 0) {
             var header = this.manifest.getAsJsonObject("header");
-            JsonArray minEngineVersion = header.get("min-engine-version").getAsJsonArray();
-            protocol = header.has("protocol") ? ResourcePackManager.ProtocolConverter.convertToProtocol(minEngineVersion) : ProtocolInfo.SUPPORTED_PROTOCOLS.get(0);
+            protocol = header.has("min_engine_version") ?
+                    ResourcePackManager.ProtocolConverter.convertToProtocol(header.get("min_engine_version").getAsJsonArray())
+                    : ProtocolInfo.SUPPORTED_PROTOCOLS.get(0);
         }
         return protocol;
     }
