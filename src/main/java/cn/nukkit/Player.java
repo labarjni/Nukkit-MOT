@@ -2839,20 +2839,16 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
         infoPacket.resourcePackEntries = mvResourcePacks.isEmpty()
                 ? this.server.getResourcePackManager().getResourceStack()
-                : Arrays.stream(this.server.getResourcePackManager().getResourceStack())
-                .filter(pack -> mvResourcePacks.containsKey(pack.getPackId()))
-                .collect(Collectors.groupingBy(
-                        ResourcePack::getPackId,
-                        Collectors.maxBy(Comparator.comparingInt(
-                                pack -> protocol >= mvResourcePacks.get(pack.getPackId())
-                                        ? mvResourcePacks.get(pack.getPackId())
-                                        : Integer.MIN_VALUE
-                        ))
-                ))
-                .values().stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .toArray(ResourcePack[]::new);
+                : mvResourcePacks.entrySet().stream()
+                .filter(entry -> entry.getValue() <= protocol)
+                .max(Entry.comparingByValue())
+                .map(Entry::getKey)
+                .flatMap(id -> Arrays.stream(this.server.getResourcePackManager().getResourceStack())
+                        .filter(pack -> id.equals(pack.getPackId()))
+                        .findFirst()
+                )
+                .map(pack -> new ResourcePack[]{pack})
+                .orElse(new ResourcePack[0]);
 
         infoPacket.mustAccept = this.server.getForceResources();
         this.dataPacket(infoPacket);
