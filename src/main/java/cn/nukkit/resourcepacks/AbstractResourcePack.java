@@ -1,16 +1,17 @@
 package cn.nukkit.resourcepacks;
 
-import cn.nukkit.network.protocol.ProtocolInfo;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import java.util.UUID;
 
+import cn.nukkit.network.protocol.ProtocolInfo;
+
 public abstract class AbstractResourcePack implements ResourcePack {
 
     protected JsonObject manifest;
     private UUID id = null;
-    private Integer protocol = null;
+    private int protocol = 0;
 
     protected boolean verifyManifest() {
         if (this.manifest.has("format_version") && this.manifest.has("header") && this.manifest.has("modules")) {
@@ -41,9 +42,10 @@ public abstract class AbstractResourcePack implements ResourcePack {
 
     @Override
     public int getPackProtocol() {
-        if (protocol == null) {
+        if (protocol == 0) {
             var header = this.manifest.getAsJsonObject("header");
-            protocol = header.has("protocol") ? header.get("protocol").getAsInt() : ProtocolInfo.SUPPORTED_PROTOCOLS.get(0);
+            JsonArray minEngineVersion = header.get("min-engine-version").getAsJsonArray();
+            protocol = header.has("protocol") ? ResourcePackManager.ProtocolConverter.convertToProtocol(minEngineVersion) : ProtocolInfo.SUPPORTED_PROTOCOLS.get(0);
         }
         return protocol;
     }
