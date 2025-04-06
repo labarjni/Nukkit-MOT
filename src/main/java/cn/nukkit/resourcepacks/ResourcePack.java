@@ -10,6 +10,8 @@ public interface ResourcePack {
 
     UUID getPackId();
 
+    int getPackProtocol();
+
     String getPackVersion();
 
     int getPackSize();
