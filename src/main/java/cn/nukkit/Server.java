@@ -423,6 +423,13 @@ public class Server {
      */
     public boolean opInGame;
     /**
+     * Action mode if there is a space in the nickname.
+        0 - disabled (kick player on login)
+        1 - ignore (ignore) [default]
+        2 - replace (replacing the space with an underscore)
+     */
+    public int spaceMode;
+    /**
      * Sky light updates enabled.
      */
     public boolean lightUpdates;
@@ -458,6 +465,10 @@ public class Server {
      * More vanilla like portal logics enabled.
      */
     public boolean vanillaPortals;
+    /**
+     * Ticks before activating the portal.
+     */
+    public int portalTicks;
     /**
      * Persona skins allowed.
      */
@@ -3075,6 +3086,9 @@ public class Server {
         this.vanillaBossBar = this.getPropertyBoolean("vanilla-bossbars", false);
         this.stopInGame = this.getPropertyBoolean("stop-in-game", false);
         this.opInGame = this.getPropertyBoolean("op-in-game", false);
+
+        this.spaceMode = this.getPropertyInt("space-name-mode", 1);
+
         this.lightUpdates = this.getPropertyBoolean("light-updates", false);
         this.queryPlugins = this.getPropertyBoolean("query-plugins", false);
         this.flyChecks = this.getPropertyBoolean("allow-flight", false);
@@ -3103,7 +3117,10 @@ public class Server {
         this.chunksPerTick = this.getPropertyInt("chunk-sending-per-tick", 4);
         this.spawnThreshold = this.getPropertyInt("spawn-threshold", 56);
         this.savePlayerDataByUuid = this.getPropertyBoolean("save-player-data-by-uuid", true);
+
         this.vanillaPortals = this.getPropertyBoolean("vanilla-portals", true);
+        this.portalTicks = this.getPropertyInt("portal-ticks", 80);
+
         this.personaSkins = this.getPropertyBoolean("persona-skins", true);
         this.cacheChunks = this.getPropertyBoolean("cache-chunks", false);
         this.callEntityMotionEv = this.getPropertyBoolean("call-entity-motion-event", true);
@@ -3212,6 +3229,7 @@ public class Server {
             put("explosion-break-blocks", true);
             put("stop-in-game", false);
             put("op-in-game", true);
+            put("space-name-mode", 1);
             put("xp-bottles-on-creative", true);
             put("spawn-eggs", true);
             put("forced-safety-enchant", true);
@@ -3256,6 +3274,7 @@ public class Server {
             put("nether", true);
             put("end", true);
             put("vanilla-portals", true);
+            put("portal-ticks", 80);
             put("multi-nether-worlds", "");
             put("anti-xray-worlds", "");
 

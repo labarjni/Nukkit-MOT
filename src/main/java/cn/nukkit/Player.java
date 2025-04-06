@@ -1897,7 +1897,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                 this.portalPos = portalPos;
             }
 
-            if (this.inPortalTicks == 80 || (this.server.vanillaPortals && this.inPortalTicks == 25 && this.gamemode == CREATIVE)) {
+            if (this.inPortalTicks == this.server.portalTicks || (this.server.vanillaPortals && this.inPortalTicks == 25 && this.gamemode == CREATIVE)) {
                 EntityPortalEnterEvent ev = new EntityPortalEnterEvent(this, EntityPortalEnterEvent.PortalType.NETHER);
                 this.getServer().getPluginManager().callEvent(ev);
 
@@ -3087,7 +3087,27 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
                 this.protocol = loginPacket.getProtocol();
 
-                this.unverifiedUsername = TextFormat.clean(loginPacket.username);
+                switch (this.server.spaceMode) {
+                    case 0:
+                        if (TextFormat.clean(loginPacket.username).contains(" ")) {
+                            this.close("", "Invalid name (please remove spaces)");
+                            return;
+                        }
+                        this.unverifiedUsername = TextFormat.clean(loginPacket.username);
+                        break;
+                    case 2:
+                        if (protocol >= ProtocolInfo.v1_16_0) {
+                            this.unverifiedUsername = TextFormat.clean(loginPacket.username)
+                                    .replace(" ", "_");
+                        } else {
+                            // There are compatibility issues in <1.16, ignore
+                            this.unverifiedUsername = TextFormat.clean(loginPacket.username);
+                        }
+                        break;
+                    default:
+                        this.unverifiedUsername = TextFormat.clean(loginPacket.username);
+                        break;
+                }
 
                 if (!ProtocolInfo.SUPPORTED_PROTOCOLS.contains(this.protocol)) {
                     this.close("", "You are running unsupported Minecraft version");
