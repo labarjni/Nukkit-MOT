@@ -121,6 +121,9 @@ public class BlockSkull extends BlockTransparentMeta implements Faceable, BlockE
             }
         }
 
+        System.out.println(item.getDamage()
+        );
+
         BlockEntitySkull blockEntity = (BlockEntitySkull) BlockEntity.createBlockEntity(BlockEntity.SKULL, this.getChunk(), nbt);
         blockEntity.spawnToAll();
 
