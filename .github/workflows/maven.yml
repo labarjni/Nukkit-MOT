@@ -17,15 +17,6 @@ jobs:
       with:
         java-version: 17
         distribution: 'temurin'
-    - name: Download Maven
-      run: |
-        curl -sL https://downloads.apache.org/maven/maven-3/3.9.10/binaries/apache-maven-3.9.10-bin.zip -o maven.zip
-        apt-get update
-        apt-get -y install unzip
-        unzip -d /usr/share maven.zip
-        rm maven.zip
-        ln -s /usr/share/apache-maven-3.9.10/bin/mvn /usr/bin/mvn
-        echo "M2_HOME=/usr/share/apache-maven-3.9.10" | tee -a /etc/environment
     - name: Cache Maven packages
       uses: actions/cache@v4
       with:
@@ -34,11 +25,7 @@ jobs:
         restore-keys: ${{ runner.os }}-m2
     - name: Build projects
       run: mvn -B package --file pom.xml
-    - run: mkdir staging && cp target/*.jar staging
-    - uses: actions/upload-artifact@v4
-      with:
-        name: Nukkit-MOT
-        path: staging
+    - run: mkdir /root/staging && cp target/*.jar /root/staging
     # 生成信息
     - name: Get Short SHA
       id: vars
