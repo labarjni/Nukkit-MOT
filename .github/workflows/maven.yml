@@ -25,7 +25,7 @@ jobs:
         restore-keys: ${{ runner.os }}-m2
     - name: Build projects
       run: mvn -B package --file pom.xml
-    - run: mkdir /root/staging && cp target/*.jar /root/staging
+    - run: cp target/*.jar /root/staging
     # 生成信息
     - name: Get Short SHA
       id: vars
