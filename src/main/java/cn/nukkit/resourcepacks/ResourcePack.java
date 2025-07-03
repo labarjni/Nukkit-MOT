@@ -1,5 +1,7 @@
 package cn.nukkit.resourcepacks;
 
+import cn.nukkit.network.protocol.ProtocolInfo;
+
 import java.util.UUID;
 
 public interface ResourcePack {

@@ -36,18 +36,17 @@ public class DropItemProcessor_v113 extends DataPacketProcessor<DropItemPacketV1
         PlayerDropItemEvent dropItemEvent = new PlayerDropItemEvent(player, item);
         Server.getInstance().getPluginManager().callEvent(dropItemEvent);
         if (dropItemEvent.isCancelled()) {
+            player.getUIInventory().clearAll();
             inventory.sendContents(player);
-            return;
+        } else {
+            if (!player.isCreative()) {
+                inventory.removeItem(item);
+            }
+
+            Vector3 motion = player.getDirectionVector().multiply(0.4);
+            player.level.dropItem(player.add(0.0, 1.3, 0.0), item, motion, 40);
+            player.stopAction();
         }
-
-        if (!player.isCreative()) {
-            inventory.removeItem(item);
-        }
-        Vector3 motion = player.getDirectionVector().multiply(0.4);
-
-        player.level.dropItem(player.add(0, 1.3, 0), item, motion, 40);
-
-        player.stopAction();
     }
 
     @Override

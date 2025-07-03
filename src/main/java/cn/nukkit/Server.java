@@ -3291,6 +3291,8 @@ public class Server {
             put("multi-nether-worlds", "");
             put("anti-xray-worlds", "");
 
+            put("multi-version-packs", "");
+
             put("do-not-tick-worlds", "");
             put("worlds-entity-spawning-disabled", "");
             put("load-all-worlds", true);
