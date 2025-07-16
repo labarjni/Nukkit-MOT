@@ -2842,7 +2842,14 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
         infoPacket.resourcePackEntries = Arrays.stream(this.server.getResourcePackManager().getResourceStack())
                 .filter(pack -> pack.getPackProtocol() <= protocol)
-                .toArray(ResourcePack[]::new);
+                .collect(Collectors.collectingAndThen(
+                        Collectors.groupingBy(
+                                ResourcePack::getPackProtocol,
+                                TreeMap::new,
+                                Collectors.toList()
+                        ),
+                        map -> map.isEmpty() ? ResourcePack.EMPTY_ARRAY : map.lastEntry().getValue().toArray(ResourcePack[]::new)
+                ));
 
         infoPacket.mustAccept = this.server.getForceResources();
         this.dataPacket(infoPacket);
