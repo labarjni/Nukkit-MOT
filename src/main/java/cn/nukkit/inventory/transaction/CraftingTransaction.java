@@ -142,43 +142,18 @@ public class CraftingTransaction extends InventoryTransaction {
          * So people don't whine about messy desync issues when someone cancels CraftItemEvent, or when a crafting
          * transaction goes wrong.
          */
-        ContainerClosePacket pk = new ContainerClosePacket();
-        pk.windowId = ContainerIds.NONE;
-        pk.wasServerInitiated = true;
-        pk.type = ContainerType.NONE;
-        source.getServer().getScheduler().scheduleDelayedTask(InternalPlugin.INSTANCE, () -> source.dataPacket(pk), 20);
+        ContainerClosePacket packet = new ContainerClosePacket();
+        packet.windowId = ContainerIds.NONE;
+        packet.wasServerInitiated = true;
+        packet.type = ContainerType.NONE;
+        source.getServer().getScheduler().scheduleDelayedTask(InternalPlugin.INSTANCE, () -> source.dataPacket(packet), 20);
 
         this.source.resetCraftingGridType();
     }
 
-    @Override
-    public boolean execute() {
-        if (super.execute()) {
-            if (Server.getInstance().achievementsEnabled) {
-                switch (this.primaryOutput.getId()) {
-                    case Item.CRAFTING_TABLE -> source.awardAchievement("buildWorkBench");
-                    case Item.WOODEN_PICKAXE -> source.awardAchievement("buildPickaxe");
-                    case Item.FURNACE -> source.awardAchievement("buildFurnace");
-                    case Item.WOODEN_HOE -> source.awardAchievement("buildHoe");
-                    case Item.BREAD -> source.awardAchievement("makeBread");
-                    case Item.CAKE -> source.awardAchievement("bakeCake");
-                    case Item.STONE_PICKAXE, Item.GOLDEN_PICKAXE,
-                        Item.IRON_PICKAXE, Item.DIAMOND_PICKAXE -> source.awardAchievement("buildBetterPickaxe");
-                    case Item.WOODEN_SWORD -> source.awardAchievement("buildSword");
-                    case Item.DIAMOND -> source.awardAchievement("diamond");
-                }
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
     public boolean checkForCraftingPart(List<InventoryAction> actions) {
         for (InventoryAction action : actions) {
-            if (action instanceof SlotChangeAction) {
-                SlotChangeAction slotChangeAction = (SlotChangeAction) action;
+            if (action instanceof SlotChangeAction slotChangeAction) {
                 if (slotChangeAction.getInventory().getType() == InventoryType.UI) {
                     if (slotChangeAction.getSlot() == 50) {
                         if (!slotChangeAction.getSourceItem().equals(slotChangeAction.getTargetItem())) {

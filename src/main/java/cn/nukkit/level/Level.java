@@ -2834,8 +2834,6 @@ public class Level implements ChunkManager, Metadatable {
                             player.getInventory().setItemInHand(item);
                         }
 
-                        player.awardAchievement("spawnWither");
-
                         EntityWither wither = (EntityWither) Entity.createEntity("Wither", spawnPos);
                         wither.stayTime = 220;
                         wither.spawnToAll();
