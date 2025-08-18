@@ -3,7 +3,10 @@ package cn.nukkit.inventory.transaction;
 import cn.nukkit.Player;
 import cn.nukkit.Server;
 import cn.nukkit.event.inventory.CraftItemEvent;
-import cn.nukkit.inventory.*;
+import cn.nukkit.inventory.BigCraftingGrid;
+import cn.nukkit.inventory.CraftingRecipe;
+import cn.nukkit.inventory.InventoryType;
+import cn.nukkit.inventory.Recipe;
 import cn.nukkit.inventory.transaction.action.InventoryAction;
 import cn.nukkit.inventory.transaction.action.SlotChangeAction;
 import cn.nukkit.item.Item;
@@ -98,7 +101,7 @@ public class CraftingTransaction extends InventoryTransaction {
 
     @Override
     public boolean canExecute() {
-        CraftingManager craftingManager = source.getServer().getCraftingManager();
+        /*CraftingManager craftingManager = source.getServer().getCraftingManager();
         Inventory inventory;
         if (craftingType == Player.CRAFTING_SMITHING) {
             inventory = source.getWindowById(Player.SMITHING_WINDOW_ID);
@@ -116,7 +119,8 @@ public class CraftingTransaction extends InventoryTransaction {
             } else {
                 setTransactionRecipe(craftingManager.matchRecipe(source.protocol, inputs, this.primaryOutput, this.secondaryOutputs));
             }
-        }
+        }*/
+        this.setTransactionRecipe(source.getServer().getCraftingManager().matchRecipe(source.protocol, this.inputs, this.primaryOutput, this.secondaryOutputs));
         return this.getTransactionRecipe() != null && super.canExecute();
     }
 

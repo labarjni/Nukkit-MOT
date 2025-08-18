@@ -3,6 +3,7 @@ package cn.nukkit.inventory;
 import cn.nukkit.GameVersion;
 import cn.nukkit.Player;
 import cn.nukkit.Server;
+import cn.nukkit.block.Block;
 import cn.nukkit.inventory.special.*;
 import cn.nukkit.item.Item;
 import cn.nukkit.item.ItemFirework;
@@ -110,7 +111,7 @@ public class CraftingManager {
     private final Object2DoubleOpenHashMap<Recipe> recipeXpMap = new Object2DoubleOpenHashMap<>();
 
     private static int RECIPE_COUNT = 0;
-    static int NEXT_NETWORK_ID = 1;
+    static int NEXT_NETWORK_ID = 1; // Reserve 1 for smithing_armor_trim
 
     public static final Comparator<Item> recipeComparator = (i1, i2) -> {
         if (i1.getId() > i2.getId()) {
@@ -119,7 +120,7 @@ public class CraftingManager {
             return -1;
         } else {
             if (!i1.isNull() && !i2.isNull()) {
-                int i = MinecraftNamespaceComparator.compareFNV(i1.getNamespaceId(ProtocolInfo.CURRENT_PROTOCOL), i2.getNamespaceId(ProtocolInfo.CURRENT_PROTOCOL));
+                int i = MinecraftNamespaceComparator.compareFNV(i1.getNamespaceId(GameVersion.getLastVersion()), i2.getNamespaceId(GameVersion.getLastVersion()));
                 if (i != 0) {
                     return i;
                 }
@@ -723,27 +724,74 @@ public class CraftingManager {
         pk.protocol = protocol;
         pk.gameVersion = gameVersion;
         for (Recipe recipe : this.getRecipes(protocol)) {
-            if (recipe instanceof ShapedRecipe) {
-                pk.addShapedRecipe((ShapedRecipe) recipe);
-            } else if (recipe instanceof ShapelessRecipe) {
-                pk.addShapelessRecipe((ShapelessRecipe) recipe);
+            if (recipe instanceof ShapedRecipe shapedRecipe) {
+                boolean isSupported = true;
+                for (Item item : shapedRecipe.getAllResults()) {
+                    if (!item.isSupportedOn(protocol)) {
+                        isSupported = false;
+                        break;
+                    }
+                }
+                if (isSupported) {
+                    for (Item ingredient : shapedRecipe.getIngredientList()) {
+                        if (!ingredient.isSupportedOn(protocol)) {
+                            isSupported = false;
+                            break;
+                        }
+                    }
+                }
+                if (isSupported) {
+                    pk.addShapedRecipe(shapedRecipe);
+                }
+            } else if (recipe instanceof ShapelessRecipe shapelessRecipe) {
+                boolean isSupported = true;
+                if (!shapelessRecipe.getResult().isSupportedOn(protocol)) {
+                    isSupported = false;
+                    break;
+                }
+                if (isSupported) {
+                    for (Item ingredient : shapelessRecipe.getIngredientList()) {
+                        if (!ingredient.isSupportedOn(protocol)) {
+                            isSupported = false;
+                            break;
+                        }
+                    }
+                }
+                if (isSupported) {
+                    pk.addShapelessRecipe(shapelessRecipe);
+                }
             }
         }
         for (SmithingRecipe recipe : this.getSmithingRecipes(protocol).values()) {
-            pk.addShapelessRecipe(recipe);
+            if (recipe.getIngredient().isSupportedOn(protocol)
+                    && recipe.getEquipment().isSupportedOn(protocol)
+                    && recipe.getTemplate().isSupportedOn(protocol)
+                    && recipe.getResult().isSupportedOn(protocol)) {
+                pk.addShapelessRecipe(recipe);
+            }
         }
         //TODO Fix 1.10.0 - 1.14.0 client crash
         if (protocol < ProtocolInfo.v1_10_0 || protocol > ProtocolInfo.v1_13_0) {
             for (FurnaceRecipe recipe : this.getFurnaceRecipes(protocol).values()) {
-                pk.addFurnaceRecipe(recipe);
+                if (recipe.getInput().isSupportedOn(protocol) && recipe.getResult().isSupportedOn(protocol)) {
+                    pk.addFurnaceRecipe(recipe);
+                }
             }
         }
         if (protocol >= ProtocolInfo.v1_13_0) {
             for (BrewingRecipe recipe : this.getBrewingRecipes(protocol).values()) {
-                pk.addBrewingRecipe(recipe);
+                if (recipe.getIngredient().isSupportedOn(protocol)
+                        && recipe.getInput().isSupportedOn(protocol)
+                        && recipe.getResult().isSupportedOn(protocol)) {
+                    pk.addBrewingRecipe(recipe);
+                }
             }
             for (ContainerRecipe recipe : this.getContainerRecipes(protocol).values()) {
-                pk.addContainerRecipe(recipe);
+                if (recipe.getIngredient().isSupportedOn(protocol)
+                        && recipe.getInput().isSupportedOn(protocol)
+                        && recipe.getResult().isSupportedOn(protocol)) {
+                    pk.addContainerRecipe(recipe);
+                }
             }
             if (protocol >= ProtocolInfo.v1_16_0) {
                 for (MultiRecipe recipe : this.getMultiRecipes().values()) {
@@ -1198,15 +1246,13 @@ public class CraftingManager {
     }
 
     private static int getItemHash(Item item, int meta) {
-        int id = item.getId() == Item.STRING_IDENTIFIED_ITEM ? item.getNetworkId(ProtocolInfo.CURRENT_PROTOCOL) : item.getId();
-        return (id << 12) | (meta & 0xfff);
+        int id = item.getId() == Item.STRING_IDENTIFIED_ITEM ? item.getNetworkId(GameVersion.getLastVersion()) : item.getId();
+        return (id << Block.DATA_BITS) | (meta & Block.DATA_MASK);
     }
 
     @Deprecated
     private static int getItemHash(int id, int meta) {
-        //return (id << 4) | (meta & 0xf);
-        //return (id << Block.DATA_BITS) | (meta & Block.DATA_MASK);
-        return (id << 12) | (meta & 0xfff);
+        return (id << Block.DATA_BITS) | (meta & Block.DATA_MASK);
     }
 
     public Map<Integer, Map<UUID, ShapedRecipe>> getShapedRecipes(int protocol) {
@@ -1370,8 +1416,8 @@ public class CraftingManager {
     }
 
     public void registerSmithingRecipe(int protocol, SmithingRecipe recipe) {
-        UUID multiItemHash = getMultiItemHash(recipe.getIngredientsAggregate());
         if (protocol >= ProtocolInfo.v1_20_0_23) {
+            UUID multiItemHash = getMultiItemHash(recipe.getIngredientsAggregate());
             this.smithingRecipes.put(multiItemHash, recipe);
         }
     }
@@ -1422,45 +1468,31 @@ public class CraftingManager {
 
     public CraftingRecipe matchRecipe(int protocol, List<Item> inputList, Item primaryOutput, List<Item> extraOutputList) {
         int outputHash = getItemHash(primaryOutput);
-        if (this.getShapedRecipes(protocol).containsKey(outputHash)) {
+
+        Map<UUID, ShapedRecipe> shapedRecipeMap = this.getShapedRecipes(protocol).get(outputHash);
+        if (shapedRecipeMap != null) {
             inputList.sort(recipeComparator);
-
             UUID inputHash = getMultiItemHash(inputList);
-
-            Map<UUID, ShapedRecipe> recipeMap = this.getShapedRecipes(protocol).get(outputHash);
-
-            if (recipeMap != null) {
-                ShapedRecipe recipe = recipeMap.get(inputHash);
-
-                if (recipe != null && (recipe.matchItems(inputList, extraOutputList) || matchItemsAccumulation(recipe, inputList, primaryOutput, extraOutputList))) {
-                    return recipe;
-                }
-
-                for (ShapedRecipe shapedRecipe : recipeMap.values()) {
-                    if (shapedRecipe.matchItems(inputList, extraOutputList) || matchItemsAccumulation(shapedRecipe, inputList, primaryOutput, extraOutputList)) {
-                        return shapedRecipe;
-                    }
+            ShapedRecipe recipe = shapedRecipeMap.get(inputHash);
+            if (recipe != null && (recipe.matchItems(inputList, extraOutputList) || matchItemsAccumulation(recipe, inputList, primaryOutput, extraOutputList))) {
+                return recipe;
+            }
+            for (ShapedRecipe shapedRecipe : shapedRecipeMap.values()) {
+                if (shapedRecipe.matchItems(inputList, extraOutputList) || matchItemsAccumulation(shapedRecipe, inputList, primaryOutput, extraOutputList)) {
+                    return shapedRecipe;
                 }
             }
         }
 
-        if (this.getShapelessRecipes(protocol).containsKey(outputHash)) {
+        Map<UUID, ShapelessRecipe> shapelessRecipeMap = this.getShapelessRecipes(protocol).get(outputHash);
+        if (shapelessRecipeMap != null) {
             inputList.sort(recipeComparator);
-
-            Map<UUID, ShapelessRecipe> recipes = this.getShapelessRecipes(protocol).get(outputHash);
-
-            if (recipes == null) {
-                return null;
-            }
-
             UUID inputHash = getMultiItemHash(inputList);
-            ShapelessRecipe recipe = recipes.get(inputHash);
-
+            ShapelessRecipe recipe = shapelessRecipeMap.get(inputHash);
             if (recipe != null && (recipe.matchItems(inputList, extraOutputList) || matchItemsAccumulation(recipe, inputList, primaryOutput, extraOutputList))) {
                 return recipe;
             }
-
-            for (ShapelessRecipe shapelessRecipe : recipes.values()) {
+            for (ShapelessRecipe shapelessRecipe : shapelessRecipeMap.values()) {
                 if (shapelessRecipe.matchItems(inputList, extraOutputList) || matchItemsAccumulation(shapelessRecipe, inputList, primaryOutput, extraOutputList)) {
                     return shapelessRecipe;
                 }
@@ -1491,33 +1523,28 @@ public class CraftingManager {
     @Nullable
     public SmithingRecipe matchSmithingRecipe(int protocol, List<Item> inputList) {
         inputList.sort(recipeComparator);
-        UUID inputHash = getMultiItemHash(inputList);
 
-        Map<UUID, SmithingRecipe> recipeMap = this.getSmithingRecipes(protocol);
+        SmithingRecipe recipe = this.getSmithingRecipes(protocol).get(getMultiItemHash(inputList));
+        if (recipe != null && recipe.matchItems(inputList)) {
+            return recipe;
+        }
 
-        if (recipeMap != null) {
-            SmithingRecipe recipe = recipeMap.get(inputHash);
-
-            if (recipe != null && recipe.matchItems(inputList)) {
-                return recipe;
+        ArrayList<Item> list = new ArrayList<>(inputList.size());
+        for (Item item : inputList) {
+            Item clone = item.clone();
+            clone.setCount(1);
+            if ((item.isTool() || item.isArmor()) && item.getDamage() > 0) {
+                clone.setDamage(0);
             }
+            list.add(clone);
+        }
 
-            ArrayList<Item> list = new ArrayList<>();
-            for (Item item : inputList) {
-                Item clone = item.clone();
-                clone.setCount(1);
-                if ((item.isTool() || item.isArmor()) && item.getDamage() > 0) {
-                    clone.setDamage(0);
-                }
-                list.add(clone);
-            }
-
-            for (SmithingRecipe smithingRecipe : recipeMap.values()) {
-                if (smithingRecipe.matchItems(list)) {
-                    return smithingRecipe;
-                }
+        for (SmithingRecipe smithingRecipe : this.getSmithingRecipes(protocol).values()) {
+            if (smithingRecipe.matchItems(list)) {
+                return smithingRecipe;
             }
         }
+
         return null;
     }
 
