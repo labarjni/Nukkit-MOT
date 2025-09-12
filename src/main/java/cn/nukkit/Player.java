@@ -1894,10 +1894,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                                 }
                             }
                         }
-
-                        if (this.teleport(pos, TeleportCause.END_PORTAL) && oldDimension == Level.DIMENSION_OVERWORLD) {
-                            this.awardAchievement("theEnd");
-                        }
                     }
                 }
             }
