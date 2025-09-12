@@ -43,7 +43,6 @@ public class EntityWither extends EntityFlyingMob implements EntityBoss, EntityS
     private boolean wasExplosion;
 
     private HashMap<UUID, DummyBossBar> dummyBossBars;
-    private float lastHealth;
 
     public EntityWither(FullChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
@@ -76,7 +75,6 @@ public class EntityWither extends EntityFlyingMob implements EntityBoss, EntityS
         super.initEntity();
 
         this.dummyBossBars = new HashMap<>();
-        this.lastHealth = witherMaxHealth();
 
         this.fireProof = true;
         this.setDamage(new int[]{0, 2, 4, 6});
@@ -250,16 +248,17 @@ public class EntityWither extends EntityFlyingMob implements EntityBoss, EntityS
     }
 
     private void updateBossBars() {
-        this.getViewers().forEach((id, player) -> {
-            if (this.dummyBossBars.containsKey(player.getUniqueId()) && this.lastHealth != this.health) {
-                DummyBossBar dummyBossBar = this.dummyBossBars.get(player.getUniqueId());
-                dummyBossBar.setLength((this.health / this.getMaxHealth()) * 100);
+        float progress = (this.health / this.getMaxHealth()) * 100;
 
-                this.lastHealth = this.health;
+        this.getViewers().forEach((id, player) -> {
+            if (this.dummyBossBars.containsKey(player.getUniqueId())) {
+                DummyBossBar dummyBossBar = this.dummyBossBars.get(player.getUniqueId());
+
+                if (dummyBossBar.getLength() != progress) dummyBossBar.setLength(progress);
             } else {
                 DummyBossBar dummyBossBar = new DummyBossBar.Builder(player)
                         .text(this.getName())
-                        .length((this.health / this.getMaxHealth()) * 100)
+                        .length(progress)
                         .build();
                 player.createBossBar(dummyBossBar);
 
@@ -269,14 +268,11 @@ public class EntityWither extends EntityFlyingMob implements EntityBoss, EntityS
     }
 
     private int witherMaxHealth() {
-        switch (this.getServer().getDifficulty()) {
-            case 2:
-                return 450;
-            case 3:
-                return 600;
-            default:
-                return 300;
-        }
+        return switch (this.getServer().getDifficulty()) {
+            case 2 -> 450;
+            case 3 -> 600;
+            default -> 300;
+        };
     }
 
     private void explode() {
