@@ -1,5 +1,6 @@
 package cn.nukkit.blockentity;
 
+import cn.nukkit.Nukkit;
 import cn.nukkit.Server;
 import cn.nukkit.block.Block;
 import cn.nukkit.level.Position;
@@ -134,7 +135,9 @@ public abstract class BlockEntity extends Position {
                 } catch (Exception ignored) {}
             }
         } else {
-            Server.getInstance().getLogger().warning("Tried to create block entity that doesn't exists: " + type);
+            if (Nukkit.DEBUG > 2) {
+                Server.getInstance().getLogger().warning("Tried to create block entity that doesn't exists: " + type);
+            }
         }
 
         return blockEntity;
