@@ -8,6 +8,8 @@ import cn.nukkit.utils.CameraPresetManager;
 import cn.nukkit.utils.Identifier;
 import com.google.common.collect.ImmutableList;
 
+import lombok.ToString;
+
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.Supplier;
@@ -15,6 +17,7 @@ import java.util.function.Supplier;
 /**
  * @author CreeperFace
  */
+@ToString
 public class CommandEnum {
 
     public static final CommandEnum ENUM_BOOLEAN = new CommandEnum("Boolean", ImmutableList.of("true", "false"));
