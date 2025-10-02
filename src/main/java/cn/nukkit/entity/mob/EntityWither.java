@@ -27,11 +27,14 @@ import cn.nukkit.nbt.tag.ListTag;
 import cn.nukkit.network.protocol.AddEntityPacket;
 import cn.nukkit.network.protocol.DataPacket;
 import cn.nukkit.potion.Effect;
+
 import cn.nukkit.utils.DummyBossBar;
 import cn.nukkit.utils.Utils;
+
 import org.apache.commons.math3.util.FastMath;
 
 import java.util.HashMap;
+
 import java.util.Set;
 import java.util.UUID;
 
@@ -45,6 +48,8 @@ public class EntityWither extends EntityFlyingMob implements EntityBoss, EntityS
     protected boolean exploded;
     protected boolean wasExplosion;
     protected int invul;
+
+    private HashMap<UUID, DummyBossBar> dummyBossBars;
 
     private HashMap<UUID, DummyBossBar> dummyBossBars;
 
@@ -210,12 +215,6 @@ public class EntityWither extends EntityFlyingMob implements EntityBoss, EntityS
         }
 
         if (!this.exploded && this.lastDamageCause != null && EntityDamageEvent.DamageCause.SUICIDE != this.lastDamageCause.getCause()) {
-            if (this.lastDamageCause instanceof EntityDamageByEntityEvent event) {
-                if (event.getDamager() instanceof Player player) {
-                    player.awardAchievement("killWither");
-                }
-            }
-
             this.exploded = true;
             this.explode();
         }

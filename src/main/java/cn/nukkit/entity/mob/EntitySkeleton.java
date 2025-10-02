@@ -8,14 +8,12 @@ import cn.nukkit.entity.EntitySmite;
 import cn.nukkit.entity.data.LongEntityData;
 import cn.nukkit.entity.projectile.EntityArrow;
 import cn.nukkit.entity.projectile.EntityProjectile;
-import cn.nukkit.event.entity.EntityDamageByChildEntityEvent;
 import cn.nukkit.event.entity.EntityShootBowEvent;
 import cn.nukkit.event.entity.ProjectileLaunchEvent;
 import cn.nukkit.item.Item;
 import cn.nukkit.item.ItemBow;
 import cn.nukkit.level.Location;
 import cn.nukkit.level.format.FullChunk;
-import cn.nukkit.math.Vector2;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.network.protocol.LevelSoundEventPacket;
 import cn.nukkit.network.protocol.MobArmorEquipmentPacket;
@@ -186,23 +184,5 @@ public class EntitySkeleton extends EntityWalkingMob implements EntitySmite {
             }
         }
         return hasTarget;
-    }
-
-    @Override
-    public void kill() {
-        if (!this.isAlive()) {
-            return;
-        }
-
-        super.kill();
-
-        if (this.lastDamageCause instanceof EntityDamageByChildEntityEvent) {
-            Entity damager;
-            if (((EntityDamageByChildEntityEvent) this.lastDamageCause).getChild() instanceof EntityArrow && (damager = ((EntityDamageByChildEntityEvent) this.lastDamageCause).getDamager()) instanceof Player) {
-                if (new Vector2(this.x, this.z).distance(new Vector2(damager.x, damager.z)) >= 50) {
-                    ((Player) damager).awardAchievement("snipeSkeleton");
-                }
-            }
-        }
     }
 }

@@ -2,13 +2,13 @@ name: Java CI with Maven
 
 on:
   push:
-    branches: [ master ]
+    branches: [ dev/zhmr ]
   pull_request:
-    branches: [ master ]
+    branches: [ dev/zhmr ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
     - uses: actions/checkout@v4
@@ -25,11 +25,7 @@ jobs:
         restore-keys: ${{ runner.os }}-m2
     - name: Build projects
       run: mvn -B package --file pom.xml
-    - run: mkdir staging && cp target/*.jar staging
-    - uses: actions/upload-artifact@v4
-      with:
-        name: Nukkit-MOT
-        path: staging
+    - run: cp target/*.jar /root/staging
     # 生成信息
     - name: Get Short SHA
       id: vars

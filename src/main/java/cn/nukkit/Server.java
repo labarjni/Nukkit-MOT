@@ -1971,7 +1971,6 @@ public class Server {
                             .add(new DoubleTag("2", spawn.z)))
                     .putString("Level", this.getDefaultLevel().getName())
                     .putList(new ListTag<>("Inventory"))
-                    .putCompound("Achievements", new CompoundTag())
                     .putInt("playerGameType", this.getGamemode())
                     .putList(new ListTag<DoubleTag>("Motion")
                             .add(new DoubleTag("0", 0))
