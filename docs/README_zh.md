@@ -18,7 +18,7 @@ Nukkit-MOT 是基于 [Nukkit](https://github.com/CloudburstMC/Nukkit) 开发的 
 注意：如需更高版本的特性支持，请使用 [PowerNukkitX](https://github.com/PowerNukkitX/PowerNukkitX)。
 
 ### Nukkit-MOT 的新特性
-1. 支持 1.2 – 1.21.110 版本（可在配置中设置最低协议版本）
+1. 支持 1.2 – 1.21.120 版本（可在配置中设置最低协议版本）
 2. 支持大多数实体的AI
 3. 支持下界（Nether）和末地（The End）世界
 4. 生成地牢和洞穴
@@ -77,7 +77,7 @@ dependencies {
 ## 致谢
 [<img src="https://raw.githubusercontent.com/CloudburstMC/Nukkit/master/.github/images/logo.png" width="18"/>]() [Nukkit](https://github.com/CloudburstMC/Nukkit)  
 [<img src="https://avatars.githubusercontent.com/u/26197131?v=4" width="18"/>]() [NukkitPetteriM1Edition](https://github.com/PetteriM1/NukkitPetteriM1Edition)  
-[<img src="https://www.powernukkitx.com/assets/image/PNX_LOGO_sm.png" width="18"/>]() [PowerNukkitX](https://github.com/PowerNukkitX/PowerNukkitX)
+[<img src="https://docs.powernukkitx.org/img/PNX_LOGO_sm.png" width="18"/>]() [PowerNukkitX](https://github.com/PowerNukkitX/PowerNukkitX)
 
 [<img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png" width="120"/>](https://jb.gg/OpenSourceSupport)  
 Thanks to [jetbrains](https://jb.gg/OpenSourceSupport) for providing development tools for this project for free!

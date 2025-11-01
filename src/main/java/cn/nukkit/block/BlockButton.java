@@ -7,6 +7,7 @@ import cn.nukkit.level.Level;
 import cn.nukkit.level.sound.ButtonClickSound;
 import cn.nukkit.math.BlockFace;
 import cn.nukkit.utils.Faceable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Created by CreeperFace on 27. 11. 2016.
@@ -45,7 +46,7 @@ public abstract class BlockButton extends BlockFlowable implements Faceable {
     }
 
     @Override
-    public boolean place(Item item, Block block, Block target, BlockFace face, double fx, double fy, double fz, Player player) {
+    public boolean place(@NotNull Item item, @NotNull Block block, @NotNull Block target, @NotNull BlockFace face, double fx, double fy, double fz, Player player) {
 
         this.setDamage(face.getIndex());
         if (!isSupportValid(this.getSide(this.getFacing().getOpposite()))) {
@@ -137,11 +138,18 @@ public abstract class BlockButton extends BlockFlowable implements Faceable {
 
     @Override
     public boolean onBreak(Item item) {
-        if (isActivated()) {
-            this.level.getServer().getPluginManager().callEvent(new BlockRedstoneEvent(this, 15, 0));
+        if (!super.onBreak(item)) {
+            return false;
         }
 
-        return super.onBreak(item);
+        if (isActivated()) {
+            this.level.getServer().getPluginManager().callEvent(new BlockRedstoneEvent(this, 15, 0));
+
+            this.level.updateAroundRedstone(this, null);
+            this.level.updateAroundRedstone(getSideVec(getFacing().getOpposite()), null);
+        }
+
+        return true;
     }
 
     @Override
