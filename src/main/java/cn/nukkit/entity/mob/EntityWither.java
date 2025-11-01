@@ -51,8 +51,6 @@ public class EntityWither extends EntityFlyingMob implements EntityBoss, EntityS
 
     private HashMap<UUID, DummyBossBar> dummyBossBars;
 
-    private HashMap<UUID, DummyBossBar> dummyBossBars;
-
     public EntityWither(FullChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
     }
