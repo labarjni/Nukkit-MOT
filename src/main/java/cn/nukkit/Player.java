@@ -2930,7 +2930,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                 for (String allowedName : slavicResourcePacks) {
                     if (pack.getPackName().equalsIgnoreCase(allowedName)) {
                         filteredPacks.add(pack);
-                        System.out.println("Добавлен для славян: " + pack.getPackName());
+                        System.out.println("Добавлен для языкового меньшинства: " + pack.getPackName());
                     }
                 }
             }
@@ -2945,7 +2945,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                 for (String allowedName : pendoResourcePacks) {
                     if (pack.getPackName().equalsIgnoreCase(allowedName)) {
                         filteredPacks.add(pack);
-                        System.out.println("Добавлен для не-славян: " + pack.getPackName());
+                        System.out.println("Добавлен для остальных: " + pack.getPackName());
                     }
                 }
             }
@@ -2953,9 +2953,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             infoPacket.resourcePackEntries = filteredPacks.toArray(ResourcePack.EMPTY_ARRAY);
         }
 
-        System.out.println("Итого отправляется " + infoPacket.resourcePackEntries.length + " ресурс-паков");
-
-        infoPacket.behaviourPackEntries = new ResourcePack[0]; // Отключаем поведенческие паки если не нужны
+        infoPacket.behaviourPackEntries = this.server.getResourcePackManager().getBehaviorStack(this.gameVersion);
         infoPacket.mustAccept = this.server.getForceResources();
         this.dataPacket(infoPacket);
     }
