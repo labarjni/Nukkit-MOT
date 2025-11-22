@@ -2561,11 +2561,18 @@ public class Level implements ChunkManager, Metadatable {
             breakTime -= 0.15;
 
             Item[] eventDrops;
-            if (isSilkTouch && target.canSilkTouch() || target.isDropOriginal(player)) {
+            if (isSilkTouch && target.canSilkTouch()) {
+                if (new java.util.Random().nextBoolean()) {
+                    eventDrops = new Item[]{target.toItem()};
+                } else {
+                    eventDrops = Item.EMPTY_ARRAY;
+                }
+            } else if (target.isDropOriginal(player)) {
                 eventDrops = new Item[]{target.toItem()};
             } else {
                 eventDrops = target.getDrops(player, item);
             }
+
             //TODO 直接加1000可能会影响其他判断，需要进一步改进
             boolean fastBreak = (player.lastBreak + breakTime * 1000) > Long.sum(System.currentTimeMillis(), 1000);
             BlockBreakEvent ev = new BlockBreakEvent(player, target, face, item, eventDrops, player.isCreative(), fastBreak);
@@ -2590,7 +2597,12 @@ public class Level implements ChunkManager, Metadatable {
         } else if (!target.isBreakable(item)) {
             return null;
         } else if (item.hasEnchantment(Enchantment.ID_SILK_TOUCH)) {
-            drops = new Item[]{target.toItem()};
+            // Шанс 50/50 для шелкового касания (вторая проверка - когда player == null)
+            if (new java.util.Random().nextBoolean()) {
+                drops = new Item[]{target.toItem()};
+            } else {
+                drops = new Item[]{};
+            }
         } else {
             drops = target.getDrops(null, item);
         }

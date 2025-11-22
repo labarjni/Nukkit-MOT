@@ -2908,19 +2908,23 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
         this.forceMovement = this.teleportPosition = this.getPosition();
 
+        String playerLanguage = this.getLoginChainData().getLanguageCode();
+        boolean isSlavic = "uk".equals(playerLanguage) || "ru".equals(playerLanguage);
+
         ResourcePacksInfoPacket infoPacket = new ResourcePacksInfoPacket();
 
-        infoPacket.resourcePackEntries = Arrays.stream(this.server.getResourcePackManager().getResourceStack())
-                .filter(pack -> pack.getPackProtocol() <= protocol)
-                .collect(Collectors.collectingAndThen(
-                        Collectors.groupingBy(
-                                ResourcePack::getPackProtocol,
-                                TreeMap::new,
-                                Collectors.toList()
-                        ),
-                        map -> map.isEmpty() ? ResourcePack.EMPTY_ARRAY : map.lastEntry().getValue().toArray(ResourcePack[]::new)
-                ));
+        if (!isSlavic) {
+            String[] slavicResourcePacks = {"Zhmurkov Pendos Edition"};
 
+            infoPacket.resourcePackEntries = Arrays.stream(this.server.getResourcePackManager()
+                            .getResourceStack(this.gameVersion))
+                    .filter(pack -> Arrays.asList(slavicResourcePacks).contains(pack.getPackName()))
+                    .toList().toArray(ResourcePack.EMPTY_ARRAY);
+        } else {
+            infoPacket.resourcePackEntries = this.server.getResourcePackManager().getResourceStack(this.gameVersion);
+        }
+
+        infoPacket.behaviourPackEntries = this.server.getResourcePackManager().getBehaviorStack(this.gameVersion);
         infoPacket.mustAccept = this.server.getForceResources();
         this.dataPacket(infoPacket);
     }
