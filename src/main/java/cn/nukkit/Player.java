@@ -2909,22 +2909,53 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         this.forceMovement = this.teleportPosition = this.getPosition();
 
         String playerLanguage = this.getLoginChainData().getLanguageCode();
-        boolean isSlavic = "uk".equals(playerLanguage) || "ru".equals(playerLanguage);
+        boolean isLanguageSupport = "uk_UA".equals(playerLanguage) || "ru_RU".equals(playerLanguage) || "en_US".equals(playerLanguage) || "en_UK".equals(playerLanguage);
+
+        System.out.println("Язык игрока: " + playerLanguage + ", isLanguageSupport: " + isLanguageSupport);
 
         ResourcePacksInfoPacket infoPacket = new ResourcePacksInfoPacket();
 
-        if (!isSlavic) {
-            String[] slavicResourcePacks = {"Zhmurkov Pendos Edition"};
+        ResourcePack[] allPacks = this.server.getResourcePackManager().getResourceStack(this.gameVersion);
 
-            infoPacket.resourcePackEntries = Arrays.stream(this.server.getResourcePackManager()
-                            .getResourceStack(this.gameVersion))
-                    .filter(pack -> Arrays.asList(slavicResourcePacks).contains(pack.getPackName()))
-                    .toList().toArray(ResourcePack.EMPTY_ARRAY);
-        } else {
-            infoPacket.resourcePackEntries = this.server.getResourcePackManager().getResourceStack(this.gameVersion);
+        System.out.println("Все доступные ресурс-паки:");
+        for (ResourcePack pack : allPacks) {
+            System.out.println(" - " + pack.getPackName() + " (ID: " + pack.getPackId() + ")");
         }
 
-        infoPacket.behaviourPackEntries = this.server.getResourcePackManager().getBehaviorStack(this.gameVersion);
+        if (isLanguageSupport) {
+            String[] slavicResourcePacks = {"Zhmurkov Pack"};
+
+            List<ResourcePack> filteredPacks = new ArrayList<>();
+            for (ResourcePack pack : allPacks) {
+                for (String allowedName : slavicResourcePacks) {
+                    if (pack.getPackName().equalsIgnoreCase(allowedName)) {
+                        filteredPacks.add(pack);
+                        System.out.println("Добавлен для славян: " + pack.getPackName());
+                    }
+                }
+            }
+
+            infoPacket.resourcePackEntries = filteredPacks.toArray(ResourcePack.EMPTY_ARRAY);
+
+        } else {
+            String[] pendoResourcePacks = {"Zhmurkov Pendos Edition"};
+
+            List<ResourcePack> filteredPacks = new ArrayList<>();
+            for (ResourcePack pack : allPacks) {
+                for (String allowedName : pendoResourcePacks) {
+                    if (pack.getPackName().equalsIgnoreCase(allowedName)) {
+                        filteredPacks.add(pack);
+                        System.out.println("Добавлен для не-славян: " + pack.getPackName());
+                    }
+                }
+            }
+
+            infoPacket.resourcePackEntries = filteredPacks.toArray(ResourcePack.EMPTY_ARRAY);
+        }
+
+        System.out.println("Итого отправляется " + infoPacket.resourcePackEntries.length + " ресурс-паков");
+
+        infoPacket.behaviourPackEntries = new ResourcePack[0]; // Отключаем поведенческие паки если не нужны
         infoPacket.mustAccept = this.server.getForceResources();
         this.dataPacket(infoPacket);
     }
