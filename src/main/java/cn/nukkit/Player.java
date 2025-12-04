@@ -1915,24 +1915,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         }
 
         if (this.server.isNetherAllowed()) {
-            if (this.server.vanillaPortals && (this.inPortalTicks == 40 || this.inPortalTicks == 10 && this.gamemode == CREATIVE) && this.portalPos == null) {
-                Position portalPos = this.level.calculatePortalMirror(this);
-                if (portalPos == null) {
-                    return;
-                }
-
-                for (int x = -1; x < 2; x++) {
-                    for (int z = -1; z < 2; z++) {
-                        int chunkX = (portalPos.getFloorX() >> 4) + x, chunkZ = (portalPos.getFloorZ() >> 4) + z;
-                        FullChunk chunk = portalPos.level.getChunk(chunkX, chunkZ, false);
-                        if (chunk == null || !(chunk.isGenerated() || chunk.isPopulated())) {
-                            portalPos.level.generateChunk(chunkX, chunkZ, true);
-                        }
-                    }
-                }
-                this.portalPos = portalPos;
-            }
-
             if (this.inPortalTicks == this.server.portalTicks || (this.server.vanillaPortals && this.inPortalTicks == 25 && this.gamemode == CREATIVE)) {
                 EntityPortalEnterEvent ev = new EntityPortalEnterEvent(this, EntityPortalEnterEvent.PortalType.NETHER);
 
@@ -2911,16 +2893,9 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         String playerLanguage = this.getLoginChainData().getLanguageCode();
         boolean isLanguageSupport = "uk_UA".equals(playerLanguage) || "ru_RU".equals(playerLanguage) || "en_US".equals(playerLanguage) || "en_UK".equals(playerLanguage);
 
-        System.out.println("Язык игрока: " + playerLanguage + ", isLanguageSupport: " + isLanguageSupport);
-
         ResourcePacksInfoPacket infoPacket = new ResourcePacksInfoPacket();
 
         ResourcePack[] allPacks = this.server.getResourcePackManager().getResourceStack(this.gameVersion);
-
-        System.out.println("Все доступные ресурс-паки:");
-        for (ResourcePack pack : allPacks) {
-            System.out.println(" - " + pack.getPackName() + " (ID: " + pack.getPackId() + ")");
-        }
 
         if (isLanguageSupport) {
             String[] slavicResourcePacks = {"Zhmurkov Pack"};
@@ -2930,7 +2905,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                 for (String allowedName : slavicResourcePacks) {
                     if (pack.getPackName().equalsIgnoreCase(allowedName)) {
                         filteredPacks.add(pack);
-                        System.out.println("Добавлен для языкового меньшинства: " + pack.getPackName());
                     }
                 }
             }
@@ -2938,14 +2912,13 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             infoPacket.resourcePackEntries = filteredPacks.toArray(ResourcePack.EMPTY_ARRAY);
 
         } else {
-            String[] pendoResourcePacks = {"Zhmurkov Pendos Edition"};
+            String[] pendosResourcePacks = {"Zhmurkov Pendos Edition"};
 
             List<ResourcePack> filteredPacks = new ArrayList<>();
             for (ResourcePack pack : allPacks) {
-                for (String allowedName : pendoResourcePacks) {
+                for (String allowedName : pendosResourcePacks) {
                     if (pack.getPackName().equalsIgnoreCase(allowedName)) {
                         filteredPacks.add(pack);
-                        System.out.println("Добавлен для остальных: " + pack.getPackName());
                     }
                 }
             }
