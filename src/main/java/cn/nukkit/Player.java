@@ -1831,7 +1831,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             return;
         }
 
-        boolean netherPortal = false;
+        boolean portal = false;
         boolean endPortal = false;
         boolean scaffolding = false;
         boolean powderSnow = false;
@@ -1839,7 +1839,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         for (Block block : this.getCollisionBlocks()) {
             switch (block.getId()) {
                 case Block.NETHER_PORTAL:
-                    netherPortal = true;
+                    portal = true;
                     continue;
                 case Block.END_PORTAL:
                     endPortal = true;
@@ -1869,8 +1869,13 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             this.inEndPortalTicks = 0;
         }
 
-        if (server.endEnabled && inEndPortalTicks == 1) {
+        if (server.endEnabled && inEndPortalTicks == (this.gamemode == CREATIVE ? 1 : 80)) {
             EntityPortalEnterEvent ev = new EntityPortalEnterEvent(this, EntityPortalEnterEvent.PortalType.END);
+
+            if (this.portalPos == null) {
+                ev.setCancelled();
+            }
+
             this.getServer().getPluginManager().callEvent(ev);
 
             if (!ev.isCancelled()) {
@@ -1907,18 +1912,69 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             }
         }
 
-        if (netherPortal) {
+        if (portal) {
             this.inPortalTicks++;
         } else {
             this.inPortalTicks = 0;
             this.portalPos = null;
         }
 
-        if (this.server.vanillaPortals && (this.inPortalTicks == 1) && this.portalPos == null) {
-            EntityPortalEnterEvent ev = new EntityPortalEnterEvent(this, EntityPortalEnterEvent.PortalType.NETHER);
-            this.getServer().getPluginManager().callEvent(ev);
+        if (this.server.isNetherAllowed()) {
+            if (this.server.vanillaPortals && (this.inPortalTicks == 40 || this.inPortalTicks == 10 && this.gamemode == CREATIVE) && this.portalPos == null) {
+                Position portalPos = this.level.calculatePortalMirror(this);
+                if (portalPos == null) {
+                    return;
+                }
 
-            return;
+                for (int x = -1; x < 2; x++) {
+                    for (int z = -1; z < 2; z++) {
+                        int chunkX = (portalPos.getFloorX() >> 4) + x, chunkZ = (portalPos.getFloorZ() >> 4) + z;
+                        FullChunk chunk = portalPos.level.getChunk(chunkX, chunkZ, false);
+                        if (chunk == null || !(chunk.isGenerated() || chunk.isPopulated())) {
+                            portalPos.level.generateChunk(chunkX, chunkZ, true);
+                        }
+                    }
+                }
+                this.portalPos = portalPos;
+            }
+
+            if (this.inPortalTicks == this.server.portalTicks || (this.server.vanillaPortals && this.inPortalTicks == 25 && this.gamemode == CREATIVE)) {
+                EntityPortalEnterEvent ev = new EntityPortalEnterEvent(this, EntityPortalEnterEvent.PortalType.NETHER);
+                this.getServer().getPluginManager().callEvent(ev);
+
+                if (ev.isCancelled()) {
+                    this.portalPos = null;
+                    return;
+                }
+
+                if (server.vanillaPortals) {
+                    this.inPortalTicks = 81;
+                    this.getServer().getScheduler().scheduleAsyncTask(InternalPlugin.INSTANCE, new AsyncTask() {
+                        @Override
+                        public void onRun() {
+                            Position foundPortal = BlockNetherPortal.findNearestPortal(portalPos);
+                            getServer().getScheduler().scheduleTask(InternalPlugin.INSTANCE, () -> {
+                                if (foundPortal == null) {
+                                    BlockNetherPortal.spawnPortal(portalPos);
+                                    teleport(portalPos.add(1.5, 1, 0.5), TeleportCause.NETHER_PORTAL);
+                                } else {
+                                    teleport(BlockNetherPortal.getSafePortal(foundPortal), TeleportCause.NETHER_PORTAL);
+                                }
+                                portalPos = null;
+                            });
+                        }
+                    });
+                } else {
+                    if (this.getLevel().getDimension() == Level.DIMENSION_NETHER) {
+                        this.teleport(this.getServer().getDefaultLevel().getSafeSpawn(), TeleportCause.NETHER_PORTAL);
+                    } else {
+                        Level nether = this.getServer().getNetherWorld(this.level.getName());
+                        if (nether != null) {
+                            this.teleport(nether.getSafeSpawn(), TeleportCause.NETHER_PORTAL);
+                        }
+                    }
+                }
+            }
         }
 
         if (this.getFreezingTicks() < 140 && powderSnow) {
