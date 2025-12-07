@@ -49,6 +49,7 @@ dependencies {
         exclude("com.google.errorprone", "error_prone_annotations")
     }
     api(libs.bundles.snakeyaml)
+    api(libs.jackson.dataformat.toml)
     api(libs.nimbus.jose.jwt)
     api(libs.asm)
     api(libs.bundles.leveldb)

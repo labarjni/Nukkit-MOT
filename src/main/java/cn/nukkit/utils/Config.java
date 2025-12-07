@@ -3,6 +3,7 @@ package cn.nukkit.utils;
 import cn.nukkit.Server;
 import cn.nukkit.plugin.InternalPlugin;
 import cn.nukkit.scheduler.FileWriteTask;
+import com.fasterxml.jackson.dataformat.toml.TomlMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -35,6 +36,7 @@ public class Config {
     public static final int SERIALIZED = 4; // .sl
     public static final int ENUM = 5; // .txt, .list, .enum
     public static final int ENUMERATION = Config.ENUM;
+    public static final int TOML = 6; // .toml
 
     private ConfigSection config = new ConfigSection();
     private File file;
@@ -60,6 +62,7 @@ public class Config {
         format.put("txt", Config.ENUM);
         format.put("list", Config.ENUM);
         format.put("enum", Config.ENUM);
+        format.put("toml", Config.TOML);
     }
 
     /**
@@ -312,6 +315,9 @@ public class Config {
                             .build();
                     Dump yaml = new Dump(dumperOptions);
                     content = new StringBuilder(yaml.dumpToString(this.config));
+                    break;
+                case Config.TOML:
+                    content = new StringBuilder(this.writeToml());
                     break;
                 case Config.ENUM:
                     for (Object o : this.config.entrySet()) {
@@ -595,6 +601,28 @@ public class Config {
         }
     }
 
+    private void parseToml(String content) {
+        try {
+            TomlMapper mapper = new TomlMapper();
+            @SuppressWarnings("unchecked")
+            LinkedHashMap<String, Object> map = mapper.readValue(content, LinkedHashMap.class);
+            this.config = new ConfigSection(map);
+        } catch (Exception e) {
+            MainLogger.getLogger().error("[Config] Failed to parse TOML", e);
+            this.correct = false;
+        }
+    }
+
+    private String writeToml() {
+        try {
+            TomlMapper mapper = new TomlMapper();
+            return "#TOML Config File\r\n" + mapper.writeValueAsString(this.config.getAllMap());
+        } catch (Exception e) {
+            MainLogger.getLogger().error("[Config] Failed to write TOML", e);
+            return "";
+        }
+    }
+
     public Object getNested(String key) {
         return get(key);
     }
@@ -629,6 +657,9 @@ public class Config {
                         .build();
                 Load yaml = new Load(settings);
                 this.config = new ConfigSection((LinkedHashMap<String, Object>) yaml.loadFromString(content));
+                break;
+            case Config.TOML:
+                this.parseToml(content);
                 break;
             case Config.ENUM:
                 this.parseList(content);
