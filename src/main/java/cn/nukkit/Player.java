@@ -1869,13 +1869,8 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             this.inEndPortalTicks = 0;
         }
 
-        if (server.endEnabled && inEndPortalTicks == (this.gamemode == CREATIVE ? 1 : 80)) {
+        if (server.endEnabled && inEndPortalTicks == 1) {
             EntityPortalEnterEvent ev = new EntityPortalEnterEvent(this, EntityPortalEnterEvent.PortalType.END);
-
-            if (this.portalPos == null) {
-                ev.setCancelled();
-            }
-
             this.getServer().getPluginManager().callEvent(ev);
 
             if (!ev.isCancelled()) {
