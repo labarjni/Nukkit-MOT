@@ -2841,7 +2841,7 @@ public abstract class Entity extends Location implements Metadatable {
             }
         }
 
-        return Block.get(this.level.getBlockIdAt(x, y, z));
+        return this.level.getBlock(x, y, z, false);
     }
 
     private synchronized List<Block> updateBlocksCache(long currentTick) {
