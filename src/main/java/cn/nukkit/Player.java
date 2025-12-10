@@ -2903,42 +2903,8 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
         this.forceMovement = this.teleportPosition = this.getPosition();
 
-        String playerLanguage = this.getLoginChainData().getLanguageCode();
-        boolean isLanguageSupport = "uk_UA".equals(playerLanguage) || "ru_RU".equals(playerLanguage) || "en_US".equals(playerLanguage) || "en_UK".equals(playerLanguage);
-
         ResourcePacksInfoPacket infoPacket = new ResourcePacksInfoPacket();
-
-        ResourcePack[] allPacks = this.server.getResourcePackManager().getResourceStack(this.gameVersion);
-
-        if (isLanguageSupport) {
-            String[] slavicResourcePacks = {"Zhmurkov Pack"};
-
-            List<ResourcePack> filteredPacks = new ArrayList<>();
-            for (ResourcePack pack : allPacks) {
-                for (String allowedName : slavicResourcePacks) {
-                    if (pack.getPackName().equalsIgnoreCase(allowedName)) {
-                        filteredPacks.add(pack);
-                    }
-                }
-            }
-
-            infoPacket.resourcePackEntries = filteredPacks.toArray(ResourcePack.EMPTY_ARRAY);
-
-        } else {
-            String[] pendosResourcePacks = {"Zhmurkov Pendos Edition"};
-
-            List<ResourcePack> filteredPacks = new ArrayList<>();
-            for (ResourcePack pack : allPacks) {
-                for (String allowedName : pendosResourcePacks) {
-                    if (pack.getPackName().equalsIgnoreCase(allowedName)) {
-                        filteredPacks.add(pack);
-                    }
-                }
-            }
-
-            infoPacket.resourcePackEntries = filteredPacks.toArray(ResourcePack.EMPTY_ARRAY);
-        }
-
+        infoPacket.resourcePackEntries = this.server.getResourcePackManager().getResourceStack(this.gameVersion);
         infoPacket.behaviourPackEntries = this.server.getResourcePackManager().getBehaviorStack(this.gameVersion);
         infoPacket.mustAccept = this.server.getForceResources();
         this.dataPacket(infoPacket);
