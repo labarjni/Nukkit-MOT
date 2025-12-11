@@ -2533,13 +2533,8 @@ public abstract class Entity extends Location implements Metadatable {
     }
 
     public boolean isInsideOfLava() {
-        for (Block block : this.getCollisionBlocks()) {
-            if (block instanceof BlockLava) {
-                return true;
-            }
-        }
-
-        return false;
+        if (collisionCache == null) collisionCache = new EntityCollisionCache(this);
+        return collisionCache.isInsideSpecialBlock(boundingBox, Block.LAVA);
     }
 
     public boolean isInsideOfSolid() {
@@ -2557,13 +2552,8 @@ public abstract class Entity extends Location implements Metadatable {
     }
 
     public boolean isInsideOfFire() {
-        for (Block block : this.getCollisionBlocks()) {
-            if (block instanceof BlockFire) {
-                return true;
-            }
-        }
-
-        return false;
+        if (collisionCache == null) collisionCache = new EntityCollisionCache(this);
+        return collisionCache.isInsideSpecialBlock(boundingBox, Block.FIRE);
     }
 
     public boolean fastMove(double dx, double dy, double dz) {
