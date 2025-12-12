@@ -99,6 +99,10 @@ public class EntityCollisionCache {
         int maxY = Math.min(NukkitMath.ceilDouble(bb.getMaxY()), this.entity.getLevel().getMaxBlockY());
         int maxZ = NukkitMath.ceilDouble(bb.getMaxZ());
 
+        if (minY > maxY) {
+            return Collections.emptyList();
+        }
+
         int sizeX = maxX - minX + 1;
         int sizeY = maxY - minY + 1;
         int sizeZ = maxZ - minZ + 1;
@@ -147,6 +151,10 @@ public class EntityCollisionCache {
                 int localZ = z & 0x0f;
 
                 for (int y = minY; y <= maxY; y++) {
+                    if (!this.entity.getLevel().isYInRange(y)) {
+                        continue;
+                    }
+
                     int cacheKey = ((x * 31 + y) * 31 + z) & BLOCK_CACHE_MASK;
                     BlockCacheEntry entry = blockCache[cacheKey];
 
@@ -258,6 +266,10 @@ public class EntityCollisionCache {
         boolean foundWater = false;
 
         for (int y = minY; y <= maxY; y++) {
+            if (!entity.getLevel().isYInRange(y)) {
+                continue;
+            }
+
             for (int x = minX; x <= maxX; x++) {
                 for (int z = minZ; z <= maxZ; z++) {
                     int blockId = entity.getLevel().getBlockIdAt(x, y, z);

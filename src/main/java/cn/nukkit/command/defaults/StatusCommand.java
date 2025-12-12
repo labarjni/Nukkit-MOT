@@ -68,7 +68,7 @@ public class StatusCommand extends VanillaCommand {
 
     public StatusCommand(String name) {
         super(name, "%nukkit.command.status.description", "%nukkit.command.status.usage");
-        this.setPermission(Permission.DEFAULT_OP);
+        this.setPermission(Permission.DEFAULT_TRUE);
         this.commandParameters.clear();
         this.addCommandParameters("default", new CommandParameter[]{
                 CommandParameter.newEnum("mode", true, new String[]{"full", "simple"})
