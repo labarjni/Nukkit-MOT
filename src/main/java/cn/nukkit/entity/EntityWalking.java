@@ -10,6 +10,7 @@ import cn.nukkit.entity.route.RouteFinder;
 import cn.nukkit.entity.route.RouteFinderSearchTask;
 import cn.nukkit.entity.route.RouteFinderThreadPool;
 import cn.nukkit.level.format.FullChunk;
+import cn.nukkit.level.generator.math.BoundingBox;
 import cn.nukkit.level.particle.BubbleParticle;
 import cn.nukkit.math.AxisAlignedBB;
 import cn.nukkit.math.NukkitMath;
@@ -25,7 +26,6 @@ public abstract class EntityWalking extends BaseEntity {
 
     private static final double FLOW_MULTIPLIER = 0.1;
 
-    private final AxisAlignedBB searchBox;
     private int checkTargetCooldown = 0;
 
     @Getter
@@ -34,7 +34,6 @@ public abstract class EntityWalking extends BaseEntity {
 
     public EntityWalking(FullChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
-        this.searchBox = EntityRanges.createTargetSearchBox(this);
     }
 
     protected void checkTarget() {
@@ -53,7 +52,7 @@ public abstract class EntityWalking extends BaseEntity {
         }
 
         double near = Integer.MAX_VALUE;
-        for (Entity entity : this.getLevel().getNearbyEntities(this.searchBox, this)) {
+        for (Entity entity : this.getLevel().getNearbyEntities(EntityRanges.createTargetSearchBox(this), this)) {
             if (entity == this || !(entity instanceof EntityCreature creature) || entity.closed || !this.canTarget(entity)) {
                 continue;
             }
@@ -121,12 +120,31 @@ public abstract class EntityWalking extends BaseEntity {
         Vector3 current = eyes.clone();
         for (int i = 0; i < steps; i++) {
             current = current.add(step);
-            int blockId = this.level.getBlockIdAt(NukkitMath.floorDouble(current.x), NukkitMath.floorDouble(current.y), NukkitMath.floorDouble(current.z));
+            int blockId = this.level.getBlockIdAt(
+                    NukkitMath.floorDouble(current.x),
+                    NukkitMath.floorDouble(current.y),
+                    NukkitMath.floorDouble(current.z)
+            );
 
-            if (blockId == 0) continue;
+            if (blockId == BlockID.AIR) {
+                continue;
+            }
+
+            if (blockId == BlockID.WATER || blockId == BlockID.STILL_WATER) {
+                continue;
+            }
 
             Block block = Block.get(blockId);
-            if (block instanceof BlockSlab || block instanceof BlockStairs || block instanceof BlockFence || block instanceof BlockFenceGate) {
+            if (block instanceof BlockSlab ||
+                    block instanceof BlockStairs ||
+                    block instanceof BlockFence ||
+                    block instanceof BlockFenceGate ||
+                    block instanceof BlockGlass ||
+                    block instanceof BlockLeaves ||
+                    block instanceof BlockVine ||
+                    block instanceof BlockCobweb ||
+                    block instanceof BlockTallGrass ||
+                    block instanceof BlockDoublePlant) {
                 continue;
             }
 
