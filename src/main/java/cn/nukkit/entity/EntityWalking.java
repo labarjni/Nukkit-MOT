@@ -120,31 +120,12 @@ public abstract class EntityWalking extends BaseEntity {
         Vector3 current = eyes.clone();
         for (int i = 0; i < steps; i++) {
             current = current.add(step);
-            int blockId = this.level.getBlockIdAt(
-                    NukkitMath.floorDouble(current.x),
-                    NukkitMath.floorDouble(current.y),
-                    NukkitMath.floorDouble(current.z)
-            );
+            int blockId = this.level.getBlockIdAt(NukkitMath.floorDouble(current.x), NukkitMath.floorDouble(current.y), NukkitMath.floorDouble(current.z));
 
-            if (blockId == BlockID.AIR) {
-                continue;
-            }
-
-            if (blockId == BlockID.WATER || blockId == BlockID.STILL_WATER) {
-                continue;
-            }
+            if (blockId == 0) continue;
 
             Block block = Block.get(blockId);
-            if (block instanceof BlockSlab ||
-                    block instanceof BlockStairs ||
-                    block instanceof BlockFence ||
-                    block instanceof BlockFenceGate ||
-                    block instanceof BlockGlass ||
-                    block instanceof BlockLeaves ||
-                    block instanceof BlockVine ||
-                    block instanceof BlockCobweb ||
-                    block instanceof BlockTallGrass ||
-                    block instanceof BlockDoublePlant) {
+            if (block instanceof BlockSlab || block instanceof BlockStairs || block instanceof BlockFence || block instanceof BlockFenceGate) {
                 continue;
             }
 
