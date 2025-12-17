@@ -65,7 +65,7 @@ public class EntityCollision implements ChunkLoader {
         }
 
         if (speedSq < 0.0001 && entity instanceof EntityLiving) {
-            if (currentTick % adaptiveCheckInterval != 0 && !isNearDangerousBlocks(bb)) {
+            if (currentTick % adaptiveCheckInterval != 0 && !isNearDangerousBlocks(bb) && !isNearPortal(bb)) {
                 List<Block> empty = Collections.emptyList();
                 collisionCache.put(cacheKey, empty);
                 return empty;
@@ -90,6 +90,11 @@ public class EntityCollision implements ChunkLoader {
         for (Block block : blocks) {
             int id = block.getId();
             if (id == Block.AIR) continue;
+
+            if (id == Block.CAMPFIRE_BLOCK || id == Block.SOUL_CAMPFIRE_BLOCK) {
+                collisionBlocks.add(block);
+                continue;
+            }
 
             if (id == Block.NETHER_PORTAL || id == Block.END_PORTAL) {
                 AxisAlignedBB portalBB = new SimpleAxisAlignedBB(block.x, block.y, block.z, block.x + 1, block.y + 1, block.z + 1);
@@ -207,7 +212,33 @@ public class EntityCollision implements ChunkLoader {
         AxisAlignedBB safetyBB = bb.grow(2, 2, 2);
         return isInsideSpecialBlock(safetyBB, Block.LAVA) ||
                 isInsideSpecialBlock(safetyBB, Block.FIRE) ||
-                isInsideSpecialBlock(safetyBB, Block.CACTUS);
+                isInsideSpecialBlock(safetyBB, Block.CACTUS) ||
+                isInsideSpecialBlock(safetyBB, Block.CAMPFIRE_BLOCK) ||
+                isInsideSpecialBlock(safetyBB, Block.SOUL_CAMPFIRE_BLOCK);
+    }
+
+    private boolean isNearPortal(AxisAlignedBB bb) {
+        AxisAlignedBB checkBB = bb.grow(1, 1, 1);
+        Level level = entity.getLevel();
+        int minX = NukkitMath.floorDouble(checkBB.getMinX());
+        int minY = Math.max(NukkitMath.floorDouble(checkBB.getMinY()), level.getMinBlockY());
+        int minZ = NukkitMath.floorDouble(checkBB.getMinZ());
+        int maxX = NukkitMath.ceilDouble(checkBB.getMaxX());
+        int maxY = Math.min(NukkitMath.ceilDouble(checkBB.getMaxY()), level.getMaxBlockY());
+        int maxZ = NukkitMath.ceilDouble(checkBB.getMaxZ());
+
+        for (int y = minY; y <= maxY; y++) {
+            if (!level.isYInRange(y)) continue;
+            for (int x = minX; x <= maxX; x++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    int id = level.getBlockIdAt(x, y, z);
+                    if (id == Block.NETHER_PORTAL || id == Block.END_PORTAL) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private int calculateMaxBlocks(double speedSq) {
@@ -242,6 +273,7 @@ public class EntityCollision implements ChunkLoader {
                 case Block.LAVA -> (insideSpecialCache & 2) != 0;
                 case Block.WATER -> (insideSpecialCache & 4) != 0;
                 case Block.CACTUS -> (insideSpecialCache & 8) != 0;
+                case Block.CAMPFIRE_BLOCK, Block.SOUL_CAMPFIRE_BLOCK -> (insideSpecialCache & 16) != 0;
                 default -> false;
             };
         }
@@ -258,7 +290,7 @@ public class EntityCollision implements ChunkLoader {
         int maxY = Math.min(NukkitMath.ceilDouble(bb.getMaxY()), level.getMaxBlockY());
         int maxZ = NukkitMath.ceilDouble(bb.getMaxZ());
 
-        boolean foundFire = false, foundLava = false, foundWater = false, foundCactus = false;
+        boolean foundFire = false, foundLava = false, foundWater = false, foundCactus = false, foundCampfire = false;
 
         for (int y = minY; y <= maxY; y++) {
             if (!level.isYInRange(y)) continue;
@@ -270,6 +302,7 @@ public class EntityCollision implements ChunkLoader {
                         case Block.LAVA, Block.STILL_LAVA -> foundLava = true;
                         case Block.WATER, Block.STILL_WATER -> foundWater = true;
                         case Block.CACTUS -> foundCactus = true;
+                        case Block.CAMPFIRE_BLOCK, Block.SOUL_CAMPFIRE_BLOCK -> foundCampfire = true;
                     }
                     if (targetBlockId == Block.FIRE && foundFire) {
                         insideSpecialCache |= 1;
@@ -287,6 +320,10 @@ public class EntityCollision implements ChunkLoader {
                         insideSpecialCache |= 8;
                         return true;
                     }
+                    if ((targetBlockId == Block.CAMPFIRE_BLOCK || targetBlockId == Block.SOUL_CAMPFIRE_BLOCK) && foundCampfire) {
+                        insideSpecialCache |= 16;
+                        return true;
+                    }
                 }
             }
         }
@@ -295,12 +332,14 @@ public class EntityCollision implements ChunkLoader {
         if (foundLava) insideSpecialCache |= 2;
         if (foundWater) insideSpecialCache |= 4;
         if (foundCactus) insideSpecialCache |= 8;
+        if (foundCampfire) insideSpecialCache |= 16;
 
         return switch (targetBlockId) {
             case Block.FIRE -> foundFire;
             case Block.LAVA -> foundLava;
             case Block.WATER -> foundWater;
             case Block.CACTUS -> foundCactus;
+            case Block.CAMPFIRE_BLOCK, Block.SOUL_CAMPFIRE_BLOCK -> foundCampfire;
             default -> false;
         };
     }
