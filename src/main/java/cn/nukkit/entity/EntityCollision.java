@@ -14,23 +14,18 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class EntityCollision implements ChunkLoader {
-    private static final int BLOCK_CACHE_MAX_SIZE = 2048;
     private static final int CHUNK_CACHE_MAX_SIZE = 256;
     private static final int COLLISION_CACHE_MAX_SIZE = 128;
     private static final Set<Long> recentBlockChanges = ConcurrentHashMap.newKeySet();
 
     @Override
     public void onBlockChanged(Vector3 pos) {
-        long key = ((long) pos.getFloorX() << 32) | (pos.getFloorZ() & 0xFFFFFFFFL) | ((long) pos.getFloorY() << 32);
+        long x = pos.getFloorX();
+        long z = pos.getFloorZ();
+        long y = pos.getFloorY();
+        long key = (x & 0xFFFFFL) | ((z & 0xFFFFFL) << 20) | ((y & 0x7FFL) << 40);
         recentBlockChanges.add(key);
     }
-
-    private final Map<Long, Block> blockCache = new LinkedHashMap<>(128, 0.75f, true) {
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<Long, Block> eldest) {
-            return size() > BLOCK_CACHE_MAX_SIZE;
-        }
-    };
 
     private final Map<Integer, FullChunk> chunkCache = new LinkedHashMap<>(64, 0.75f, true) {
         @Override
@@ -152,23 +147,12 @@ public class EntityCollision implements ChunkLoader {
                 for (int y = minY; y <= maxY; y++) {
                     if (!level.isYInRange(y)) continue;
 
-                    long blockKey = ((long) x << 32) | (z & 0xFFFFFFFFL) | ((long) y << 32);
-                    boolean recentlyChanged = recentBlockChanges.contains(blockKey);
+                    int blockId = chunk.getBlockId(localX, y, localZ);
+                    if (blockId == Block.AIR) continue;
 
-                    Block block = recentlyChanged ? null : blockCache.get(blockKey);
-                    if (block == null) {
-                        int blockId = chunk.getBlockId(localX, y, localZ);
-                        int blockData = chunk.getBlockData(localX, y, localZ);
-                        block = Block.get(blockId, blockData, level, x, y, z);
-                        if (blockId != Block.AIR) {
-                            blockCache.put(blockKey, block);
-                            recentBlockChanges.remove(blockKey);
-                        }
-                    }
-
-                    if (block.getId() != Block.AIR) {
-                        result.add(block);
-                    }
+                    int blockData = chunk.getBlockData(localX, y, localZ);
+                    Block block = Block.get(blockId, blockData, level, x, y, z);
+                    result.add(block);
                 }
             }
         }
@@ -209,9 +193,13 @@ public class EntityCollision implements ChunkLoader {
         int maxZ = NukkitMath.ceilDouble(bb.getMaxZ());
 
         for (long key : recentBlockChanges) {
-            int x = (int) (key >> 32);
-            int z = (int) (key & 0xFFFFFFFFL);
-            int y = (int) (key >> 32);
+            int x = (int) (key & 0xFFFFF);
+            if (x >= 0x80000) x -= 0x100000;
+            int z = (int) ((key >> 20) & 0xFFFFF);
+            if (z >= 0x80000) z -= 0x100000;
+            int y = (int) ((key >> 40) & 0x7FF);
+            if (y >= 0x400) y -= 0x800;
+
             if (x >= minX && x <= maxX && y >= minY && y <= maxY && z >= minZ && z <= maxZ) {
                 return true;
             }
