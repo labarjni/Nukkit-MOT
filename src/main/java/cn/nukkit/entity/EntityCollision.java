@@ -81,14 +81,10 @@ public class EntityCollision implements ChunkLoader {
             return Collections.emptyList();
         }
 
-        AxisAlignedBB trajectoryBB = new SimpleAxisAlignedBB(
-                bb.getMinX() + Math.min(0, motionX) - 0.3,
-                bb.getMinY() + Math.min(0, motionY) - 0.3,
-                bb.getMinZ() + Math.min(0, motionZ) - 0.3,
-                bb.getMaxX() + Math.max(0, motionX) + 0.3,
-                bb.getMaxY() + Math.max(0, motionY) + 0.3,
-                bb.getMaxZ() + Math.max(0, motionZ) + 0.3
-        );
+        double motionAbsX = Math.abs(motionX);
+        double motionAbsY = Math.abs(motionY);
+        double motionAbsZ = Math.abs(motionZ);
+        AxisAlignedBB trajectoryBB = bb.grow(motionAbsX + 0.3, motionAbsY + 0.3, motionAbsZ + 0.3);
 
         List<Block> collisionBlocks = new ArrayList<>(16);
         for (Block block : blocks) {
