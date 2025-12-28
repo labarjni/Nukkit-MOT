@@ -43,6 +43,7 @@ import cn.nukkit.level.format.LevelProviderManager;
 import cn.nukkit.level.format.anvil.Anvil;
 import cn.nukkit.level.format.leveldb.LevelDBProvider;
 import cn.nukkit.level.generator.*;
+import cn.nukkit.level.generator.Void;
 import cn.nukkit.level.tickingarea.manager.SimpleTickingAreaManager;
 import cn.nukkit.level.tickingarea.manager.TickingAreaManager;
 import cn.nukkit.level.tickingarea.storage.JSONTickingAreaStorage;
@@ -115,8 +116,8 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.*;
-import java.util.List;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
@@ -201,7 +202,8 @@ public class Server {
     private final String dataPath;
     private final String pluginPath;
 
-    private String ip;
+    @NotNull
+    private String ip = "0.0.0.0";
     private int port;
     private QueryHandler queryHandler;
     private QueryRegenerateEvent queryRegenerateEvent;
@@ -785,7 +787,7 @@ public class Server {
 
         this.queryRegenerateEvent = new QueryRegenerateEvent(this, 5);
 
-        log.info(this.baseLang.translateString("nukkit.server.networkStart", new String[]{this.getIp().isEmpty() ? "*" : this.getIp(), String.valueOf(this.getPort())}));
+        log.info(this.baseLang.translateString("nukkit.server.networkStart", new String[]{this.getIp().isBlank() ? "0.0.0.0" : this.getIp(), String.valueOf(this.getPort())}));
         this.network = new Network(this);
         this.network.setName(this.settings.server().motd());
         this.network.setSubName(this.settings.server().subMotd());
@@ -821,7 +823,7 @@ public class Server {
         Generator.addGenerator(OldNormal.class, "oldnormal", Generator.TYPE_INFINITE);
         Generator.addGenerator(Nether.class, "nether", Generator.TYPE_NETHER);
         Generator.addGenerator(End.class, "the_end", Generator.TYPE_THE_END);
-        Generator.addGenerator(cn.nukkit.level.generator.Void.class, "void", Generator.TYPE_VOID);
+        Generator.addGenerator(Void.class, "void", Generator.TYPE_VOID);
 
         if (this.defaultLevel == null) {
             String defaultName = this.settings.world().levelName();
@@ -1641,6 +1643,7 @@ public class Server {
         return viewDistance;
     }
 
+    @NotNull
     public String getIp() {
         return ip;
     }
