@@ -7,6 +7,7 @@ import cn.nukkit.command.data.CommandParameter;
 import cn.nukkit.level.Level;
 import cn.nukkit.math.NukkitMath;
 import cn.nukkit.network.Network;
+import cn.nukkit.permission.Permission;
 import cn.nukkit.utils.TextFormat;
 import com.sun.jna.platform.win32.COM.WbemcliUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -67,7 +68,7 @@ public class StatusCommand extends VanillaCommand {
 
     public StatusCommand(String name) {
         super(name, "%nukkit.command.status.description", "%nukkit.command.status.usage");
-        this.setPermission("nukkit.command.status");
+        this.setPermission(Permission.DEFAULT_TRUE);
         this.commandParameters.clear();
         this.addCommandParameters("default", new CommandParameter[]{
                 CommandParameter.newEnum("mode", true, new String[]{"full", "simple"})

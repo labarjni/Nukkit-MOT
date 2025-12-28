@@ -79,4 +79,9 @@ public class BlockMobSpawner extends BlockSolid {
         return 3;
     }
 
+    @Override
+    public boolean canSilkTouch() {
+        return true;
+    }
+
 }

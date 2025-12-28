@@ -288,18 +288,6 @@ public class EntityPig extends EntityWalkingAnimal implements EntityRideable, En
     }
 
     @Override
-    public boolean attack(EntityDamageEvent source) {
-        boolean attack = super.attack(source);
-        if (attack && this.isSaddled() && source.getCause() == EntityDamageEvent.DamageCause.FALL && source.getFinalDamage() >= 2 && !this.passengers.isEmpty()) {
-            Entity p = this.passengers.get(0);
-            if (p instanceof Player player) {
-                player.awardAchievement("flyPig");
-            }
-        }
-        return attack;
-    }
-
-    @Override
     public void setHealth(float health) {
         super.setHealth(health);
 

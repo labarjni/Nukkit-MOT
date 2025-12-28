@@ -41,14 +41,11 @@ public class BlockSkullWitherSkeleton extends BlockSkullSkeleton {
         return SkullType.WITHER_SKELETON;
     }
 
+
     @Override
     public boolean place(@NotNull Item item, @NotNull Block block, @NotNull Block target, @NotNull BlockFace face, double fx, double fy, double fz, @Nullable Player player) {
         if (super.place(item, block, target, face, fx, fy, fz, player)) {
-            if (EntityWither.checkAndSpawnWither(this)) {
-                if (player != null) {
-                    player.awardAchievement("spawnWither");
-                }
-            }
+            EntityWither.checkAndSpawnWither(this);
             return true;
         }
         return false;
