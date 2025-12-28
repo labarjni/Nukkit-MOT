@@ -7872,4 +7872,5 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         }
         return Math.max(newMovementSpeed, 0.00f);
     }
+
 }

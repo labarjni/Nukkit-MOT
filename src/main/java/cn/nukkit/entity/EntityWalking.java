@@ -10,9 +10,7 @@ import cn.nukkit.entity.route.RouteFinder;
 import cn.nukkit.entity.route.RouteFinderSearchTask;
 import cn.nukkit.entity.route.RouteFinderThreadPool;
 import cn.nukkit.level.format.FullChunk;
-import cn.nukkit.level.generator.math.BoundingBox;
 import cn.nukkit.level.particle.BubbleParticle;
-import cn.nukkit.math.AxisAlignedBB;
 import cn.nukkit.math.NukkitMath;
 import cn.nukkit.math.Vector2;
 import cn.nukkit.math.Vector3;
@@ -25,8 +23,6 @@ import org.apache.commons.math3.util.FastMath;
 public abstract class EntityWalking extends BaseEntity {
 
     private static final double FLOW_MULTIPLIER = 0.1;
-
-    private int checkTargetCooldown = 0;
 
     @Getter
     @Setter
@@ -52,7 +48,7 @@ public abstract class EntityWalking extends BaseEntity {
         }
 
         double near = Integer.MAX_VALUE;
-        for (Entity entity : this.getLevel().getNearbyEntities(EntityRanges.createTargetSearchBox(this), this)) {
+        for (Entity entity : this.getLevel().getSharedNearbyEntities(this, EntityRanges.createTargetSearchBox(this))) {
             if (entity == this || !(entity instanceof EntityCreature creature) || entity.closed || !this.canTarget(entity)) {
                 continue;
             }
@@ -62,7 +58,7 @@ public abstract class EntityWalking extends BaseEntity {
             }
 
             double distance = this.distanceSquared(creature);
-            if (distance > near || !this.targetOption(creature, distance) || !this.canSee(creature)) {
+            if (distance > near || !this.targetOption(creature, distance)) {
                 continue;
             }
 
@@ -103,37 +99,6 @@ public abstract class EntityWalking extends BaseEntity {
             }
             this.target = new Vector3(tx, this.y + Utils.rand(-20.0, 20.0) / 10, tz);
         }
-    }
-
-    protected boolean canSee(Entity target) {
-        Vector3 eyes = this.getPosition().add(0, this.getEyeHeight(), 0);
-        Vector3 targetEyes = target.getPosition().add(0, target.getEyeHeight(), 0);
-
-        Vector3 direction = targetEyes.subtract(eyes);
-        double distance = direction.length();
-        if (distance == 0) return true;
-
-        direction = direction.normalize();
-        int steps = (int) Math.ceil(distance * 2);
-        Vector3 step = direction.multiply(0.5);
-
-        Vector3 current = eyes.clone();
-        for (int i = 0; i < steps; i++) {
-            current = current.add(step);
-            int blockId = this.level.getBlockIdAt(NukkitMath.floorDouble(current.x), NukkitMath.floorDouble(current.y), NukkitMath.floorDouble(current.z));
-
-            if (blockId == 0) continue;
-
-            Block block = Block.get(blockId);
-            if (block instanceof BlockSlab || block instanceof BlockStairs || block instanceof BlockFence || block instanceof BlockFenceGate) {
-                continue;
-            }
-
-            if (!block.canPassThrough()) {
-                return false;
-            }
-        }
-        return true;
     }
 
     protected boolean checkJump(double dx, double dz) {
@@ -250,12 +215,8 @@ public abstract class EntityWalking extends BaseEntity {
                     }
                 }
 
-                // It should not be called every tick
-                if (checkTargetCooldown-- <= 0) {
-                    if (this.isLookupForTarget()) {
-                        checkTarget();
-                    }
-                    checkTargetCooldown = this.getServer().mobFollowTicks;
+                if (this.isLookupForTarget()) {
+                    this.checkTarget();
                 }
                 if (this.target != null || !this.isLookupForTarget()) {
                     double x = this.target.x - this.x;
