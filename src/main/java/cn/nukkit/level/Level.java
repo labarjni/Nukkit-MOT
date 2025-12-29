@@ -88,7 +88,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-
 /**
  * @author MagicDroidX Nukkit Project
  */
@@ -284,9 +283,10 @@ public class Level implements ChunkManager, Metadatable {
     private final Object2ObjectMap<GameVersion, ConcurrentMap<Long, Int2ObjectMap<Player>>> chunkSendQueues = new Object2ObjectOpenHashMap<>();
     private final Object2ObjectMap<GameVersion, LongSet> chunkSendTasks = new Object2ObjectOpenHashMap<>();
 
-    private static final int ENTITY_NEARBY_CACHE_TICKS = 5;
+    // Cache for fast entity processing for checkTarget()
     private final Long2ObjectOpenHashMap<List<Entity>> entityNearbyCache = new Long2ObjectOpenHashMap<>();
     private final Long2LongOpenHashMap entityNearbyCacheTime = new Long2LongOpenHashMap();
+    private final LongSet entityNearbyCacheDirty = new LongOpenHashSet();
 
     private final Long2ObjectOpenHashMap<Boolean> chunkPopulationQueue = new Long2ObjectOpenHashMap<>();
     private final Long2ObjectOpenHashMap<Boolean> chunkPopulationLock = new Long2ObjectOpenHashMap<>();
@@ -3004,15 +3004,40 @@ public class Level implements ChunkManager, Metadatable {
 
         long chunkKey = chunkHash(((int) requester.x) >> 4, ((int) requester.z) >> 4);
         long currentTick = this.levelCurrentTick;
-
         long lastUpdate = entityNearbyCacheTime.get(chunkKey);
-        if (lastUpdate == 0 || currentTick - lastUpdate > ENTITY_NEARBY_CACHE_TICKS) {
-            List<Entity> entities = new ArrayList<>(List.of(this.getNearbyEntities(searchBox, requester)));
-            entityNearbyCache.put(chunkKey, entities);
+        boolean isDirty = entityNearbyCacheDirty.contains(chunkKey);
+
+        if (isDirty || lastUpdate == 0 || (currentTick - lastUpdate) > 5) {
+            Entity[] rawEntities = this.getNearbyEntities(searchBox, null);
+            List<Entity> validEntities = new ArrayList<>(rawEntities.length);
+            for (Entity e : rawEntities) {
+                if (e != null && e.isValid() && !e.closed) {
+                    validEntities.add(e);
+                }
+            }
+            entityNearbyCache.put(chunkKey, validEntities);
             entityNearbyCacheTime.put(chunkKey, currentTick);
+            entityNearbyCacheDirty.remove(chunkKey);
         }
 
-        return entityNearbyCache.get(chunkKey);
+        List<Entity> cached = entityNearbyCache.get(chunkKey);
+        if (cached == null) {
+            return Collections.emptyList();
+        }
+
+        List<Entity> result = new ArrayList<>(cached.size());
+        for (Entity e : cached) {
+            if (e != requester && e.isValid() && !e.closed && searchBox.intersectsWith(e.boundingBox)) {
+                result.add(e);
+            }
+        }
+        return result;
+    }
+
+    public void setDirtyNearby(Entity entity) {
+        if (entity == null || entity.getLevel() != this) return;
+        long chunkKey = chunkHash(((int) entity.x) >> 4, ((int) entity.z) >> 4);
+        entityNearbyCacheDirty.add(chunkKey);
     }
 
     public Entity[] getNearbyEntities(AxisAlignedBB bb) {
