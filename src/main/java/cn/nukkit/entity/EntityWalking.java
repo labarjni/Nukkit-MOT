@@ -2,6 +2,8 @@ package cn.nukkit.entity;
 
 import cn.nukkit.block.*;
 import cn.nukkit.entity.mob.EntityDrowned;
+import cn.nukkit.entity.mob.EntityVindicator;
+import cn.nukkit.entity.mob.EntityZombie;
 import cn.nukkit.entity.passive.EntityIronGolem;
 import cn.nukkit.entity.passive.EntityLlama;
 import cn.nukkit.entity.passive.EntityPig;
@@ -9,6 +11,7 @@ import cn.nukkit.entity.passive.EntitySkeletonHorse;
 import cn.nukkit.entity.route.RouteFinder;
 import cn.nukkit.entity.route.RouteFinderSearchTask;
 import cn.nukkit.entity.route.RouteFinderThreadPool;
+import cn.nukkit.level.Sound;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.level.particle.BubbleParticle;
 import cn.nukkit.math.NukkitMath;
@@ -37,6 +40,9 @@ public abstract class EntityWalking extends BaseEntity {
     private int lastTargetCheck = 0;
     private Vector3 lastTargetPos = null;
 
+    private BlockDoor doorBreakingTarget = null;
+    private int doorBreakCooldown = 0;
+
     public EntityWalking(FullChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
         this.lastPosition = new Vector3(this.x, this.y, this.z);
@@ -62,7 +68,7 @@ public abstract class EntityWalking extends BaseEntity {
 
         double near = Integer.MAX_VALUE;
         Entity closestTarget = null;
-        for (Entity entity : this.getLevel().getSharedNearbyEntities(this, EntityRanges.createTargetSearchBox(this))) {
+        for (Entity entity : this.getLevel().getNearbyEntities(EntityRanges.createTargetSearchBox(this), this, true)) {
 
             if (entity == this || !(entity instanceof EntityCreature creature) || entity.closed || !this.canTarget(entity)) {
                 continue;
@@ -152,25 +158,27 @@ public abstract class EntityWalking extends BaseEntity {
             int x = NukkitMath.floorDouble(point.x);
             int y = NukkitMath.floorDouble(point.y);
             int z = NukkitMath.floorDouble(point.z);
-            Block block = level.getBlock(x, y, z, false);
-            if (isVisionBlockingBlock(block)) {
+
+            if (this.isCanSeeThrough(this.level.getBlockIdAt(x, y, z))) {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean isVisionBlockingBlock(Block block) {
-        if (block == null) return false;
-        int id = block.getId();
-        if (block instanceof BlockSlab ||
-                block instanceof BlockFence ||
-                block instanceof BlockFenceGate ||
-                block instanceof BlockTrapdoor ||
-                block instanceof BlockDoor) {
-            return false;
+    private boolean isCanSeeThrough(int blockId) {
+        if (Block.isSlab(blockId) ||
+                Block.isFence(blockId) ||
+                Block.isFenceGate(blockId) ||
+                Block.isTrapdoor(blockId) ||
+                Block.isDoor(blockId) ||
+                blockId == Block.AIR) {
+            return true;
         }
-        return !block.isTransparent() && !block.canPassThrough();
+
+        Block block = Block.get(blockId);
+
+        return block.isTransparent() && block.canPassThrough();
     }
 
     private Vector3 findPosition(int radius) {
@@ -319,6 +327,10 @@ public abstract class EntityWalking extends BaseEntity {
             }
         }
 
+        if (block.equals(doorBreakingTarget)) {
+            return false;
+        }
+
         if (!canPassThroughInCave(block) && !(block instanceof BlockFlowable || block.getId() == BlockID.SOUL_SAND) &&
                 canPassThroughInCave(block.up()) && canPassThroughInCave(that.up(2))) {
             if (block instanceof BlockFence || block instanceof BlockFenceGate) {
@@ -366,6 +378,8 @@ public abstract class EntityWalking extends BaseEntity {
         }
 
         updateStuckDetection(tickDiff);
+
+        handleDoorBreaking(tickDiff);
 
         if (!isImmobile()) {
             if (this.age % 10 == 0 && this.route != null && !this.route.isSearching()) {
@@ -427,8 +441,7 @@ public abstract class EntityWalking extends BaseEntity {
                             this.motionZ = 0;
                         }
                     } else {
-                        if (levelBlock.getId() == BlockID.WATER) {
-                            BlockWater blockWater = (BlockWater) levelBlock;
+                        if (levelBlock instanceof BlockWater blockWater) {
                             Vector3 flowVector = blockWater.getFlowVector();
                             motionX = flowVector.getX() * FLOW_MULTIPLIER;
                             motionZ = flowVector.getZ() * FLOW_MULTIPLIER;
@@ -675,7 +688,7 @@ public abstract class EntityWalking extends BaseEntity {
         return level.getBlock(chunk, checkX, checkY, checkZ, false);
     }
 
-    private boolean lastCaveResult;
+    private boolean lastCave;
     private int lastCaveCheckTick = 0;
 
     private boolean isInCave() {
@@ -683,14 +696,14 @@ public abstract class EntityWalking extends BaseEntity {
         int currentY = NukkitMath.floorDouble(this.y);
         int currentZ = NukkitMath.floorDouble(this.z);
 
-        if (lastCaveCheckTick + 10 > this.age) {
-            return lastCaveResult;
+        if (this.lastCaveCheckTick + 10 > this.age) {
+            return this.lastCave;
         }
 
         int skyLight = this.level.getBlockSkyLightAt(currentX, NukkitMath.floorDouble(this.y + 1), currentZ);
         if (skyLight == 15) {
-            lastCaveResult = false;
-            lastCaveCheckTick = this.age;
+            this.lastCave = false;
+            this.lastCaveCheckTick = this.age;
             return false;
         }
 
@@ -703,7 +716,6 @@ public abstract class EntityWalking extends BaseEntity {
             if (blockId == Block.AIR ||
                     blockId == Block.LEAVES ||
                     blockId == Block.LEAVES2 ||
-                    blockId == Block.FLOWER ||
                     blockId == Block.NETHERRACK ||
                     Block.isWater(blockId)) {
                 continue;
@@ -711,14 +723,125 @@ public abstract class EntityWalking extends BaseEntity {
 
             Block block = this.level.getBlock(currentX, y, currentZ, false);
             if (block != null && !block.canPassThrough()) {
-                lastCaveResult = true;
-                lastCaveCheckTick = this.age;
+                this.lastCave = true;
+                this.lastCaveCheckTick = this.age;
                 return true;
             }
         }
 
-        lastCaveResult = false;
-        lastCaveCheckTick = this.age;
+        this.lastCave = false;
+        this.lastCaveCheckTick = this.age;
         return false;
+    }
+
+    private void handleDoorBreaking(int tickDiff) {
+        boolean isZombie = this instanceof EntityZombie;
+        boolean isVindicator = this instanceof EntityVindicator;
+
+        if (isZombie && !(this.server.isHardcore || this.server.getDifficulty() == 3)) {
+            return;
+        }
+
+        if (isVindicator && !(this.server.getDifficulty() == 2 || this.server.getDifficulty() == 3)) {
+            return;
+        }
+
+        if (!isZombie && !isVindicator) {
+            if (this.doorBreakingTarget != null) {
+                this.resetDoorState();
+            }
+            return;
+        }
+
+        if (this.doorBreakCooldown > 0) {
+            this.doorBreakCooldown -= tickDiff;
+            return;
+        }
+
+        Vector3 frontPos = getFrontBlockPosition();
+        if (frontPos == null) {
+            if (this.doorBreakingTarget != null) {
+                this.resetDoorState();
+            }
+            return;
+        }
+
+        int blockId = this.level.getBlockIdAt((int) frontPos.x, (int) frontPos.y, (int) frontPos.z);
+
+        if (Block.isDoor(blockId) && blockId != Block.IRON_DOOR_BLOCK) {
+            Block block = this.level.getBlock(frontPos, false);
+
+            if (block instanceof BlockDoor door) {
+                if (!door.isOpen()) {
+                    if (this.doorBreakingTarget == null || !this.doorBreakingTarget.equals(door)) {
+                        this.doorBreakingTarget = door;
+                    }
+
+                    int doorDamage = calculateDoorDamage();
+                    this.doorBreakCooldown = 32;
+
+                    if (doorDamage > 0) {
+                        this.doorBreakingTarget.damage(doorDamage);
+
+                        this.level.setBlock(this.doorBreakingTarget, this.doorBreakingTarget, true, true);
+
+                        this.level.addSound(frontPos, Sound.MOB_ZOMBIE_WOODBREAK);
+
+                        if (this.doorBreakingTarget.getHealth() <= 0) {
+                            this.level.useBreakOn(frontPos, null, null, true);
+                            this.resetDoorState();
+                        }
+                    }
+                } else {
+                    this.resetDoorState();
+                }
+            }
+        } else {
+            this.resetDoorState();
+        }
+    }
+
+    private void resetDoorState() {
+        if (this.doorBreakingTarget != null) {
+            if (this.doorBreakingTarget.getHealth() > 0 &&
+                    this.doorBreakingTarget.getHealth() < this.doorBreakingTarget.getMaxHealth()) {
+                this.doorBreakingTarget.setHealth(this.doorBreakingTarget.getMaxHealth());
+            }
+            this.doorBreakingTarget = null;
+        }
+    }
+
+    private Vector3 getFrontBlockPosition() {
+        if (this.level == null) return null;
+
+        double dx = Math.cos(Math.toRadians(this.yaw + 90));
+        double dz = Math.sin(Math.toRadians(this.yaw + 90));
+
+        int checkX = NukkitMath.floorDouble(this.x + dx * 0.3);
+        int checkY = NukkitMath.floorDouble(this.y + 1);
+        int checkZ = NukkitMath.floorDouble(this.z + dz * 0.3);
+
+        return new Vector3(checkX, checkY, checkZ);
+    }
+
+    private int calculateDoorDamage() {
+        if (this instanceof EntityZombie) {
+            return Utils.rand(2, 3);
+        } else if (this instanceof EntityVindicator) {
+            return Utils.rand(1, 2);
+        }
+        return 0;
+    }
+
+    @Override
+    public void close() {
+        if (this.doorBreakingTarget != null &&
+                this.doorBreakingTarget.getHealth() > 0 &&
+                this.doorBreakingTarget.getHealth() < this.doorBreakingTarget.getMaxHealth()) {
+            this.doorBreakingTarget.setHealth(this.doorBreakingTarget.getMaxHealth());
+        }
+        this.doorBreakingTarget = null;
+
+        super.close();
     }
 }
