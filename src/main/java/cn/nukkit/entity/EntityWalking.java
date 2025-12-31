@@ -63,9 +63,11 @@ public abstract class EntityWalking extends BaseEntity {
         double near = Integer.MAX_VALUE;
         Entity closestTarget = null;
         for (Entity entity : this.getLevel().getSharedNearbyEntities(this, EntityRanges.createTargetSearchBox(this))) {
+
             if (entity == this || !(entity instanceof EntityCreature creature) || entity.closed || !this.canTarget(entity)) {
                 continue;
             }
+
             if (creature instanceof BaseEntity base && base.isFriendly() == this.isFriendly() && !this.isInLove()) {
                 continue;
             }
@@ -102,24 +104,24 @@ public abstract class EntityWalking extends BaseEntity {
                 if (Utils.rand(1, 100) > 5) {
                     return;
                 }
-                Vector3 newTarget = findCavePosition(20);
+                Vector3 newTarget = findPosition(20);
                 this.target = Objects.requireNonNullElseGet(newTarget, () -> new Vector3(this.x, this.y, this.z));
             } else if (Utils.rand(1, 100) == 1) {
                 this.stayTime = Utils.rand(40, 120);
-                Vector3 newTarget = findCavePosition(15);
+                Vector3 newTarget = findPosition(15);
                 this.target = Objects.requireNonNullElseGet(newTarget, () -> new Vector3(this.x, this.y, this.z));
             } else if (this.moveTime <= 0 || this.target == null) {
                 this.stayTime = 0;
                 this.moveTime = Utils.rand(60, 180);
                 if (this.caveNavigationMode > 0 && Utils.rand(1, 100) > 50) {
-                    Vector3 newTarget = exploreCaveArea();
+                    Vector3 newTarget = exploreArea();
                     this.target = Objects.requireNonNullElseGet(newTarget, () -> new Vector3(
                             this.x + Utils.rand(-12, 12),
                             this.y,
                             this.z + Utils.rand(-12, 12)
                     ));
                 } else {
-                    Vector3 newTarget = findCavePosition(20);
+                    Vector3 newTarget = findPosition(20);
                     this.target = Objects.requireNonNullElseGet(newTarget, () -> new Vector3(
                             this.x + Utils.rand(-10, 10),
                             this.y,
@@ -160,18 +162,23 @@ public abstract class EntityWalking extends BaseEntity {
 
     private boolean isVisionBlockingBlock(Block block) {
         if (block == null) return false;
-
+        int id = block.getId();
         if (block instanceof BlockSlab ||
                 block instanceof BlockFence ||
                 block instanceof BlockFenceGate ||
                 block instanceof BlockTrapdoor ||
-                block instanceof BlockDoor ||
-                block instanceof BlockFlowable ||
-                block.isAir()) {
+                block instanceof BlockDoor) {
             return false;
         }
-
         return !block.isTransparent() && !block.canPassThrough();
+    }
+
+    private Vector3 findPosition(int radius) {
+        if (isInCave()) {
+            return findCavePosition(radius);
+        } else {
+            return findSurfacePosition(radius);
+        }
     }
 
     private Vector3 findCavePosition(int radius) {
@@ -193,6 +200,20 @@ public abstract class EntityWalking extends BaseEntity {
             }
         }
         return null;
+    }
+
+    private Vector3 findSurfacePosition(int radius) {
+        double tx = this.x + Utils.rand(-radius, radius);
+        double tz = this.z + Utils.rand(-radius, radius);
+        int txFloor = NukkitMath.floorDouble(tx);
+        int tzFloor = NukkitMath.floorDouble(tz);
+        int y = level.getHighestBlockAt(txFloor, tzFloor);
+        Block floor = level.getBlock(txFloor, y, tzFloor, false);
+        if (!floor.canPassThrough() && !Block.isWater(floor.getId()) && !Block.isLava(floor.getId())) {
+            return new Vector3(tx, y + 1, tz);
+        }
+
+        return new Vector3(tx, this.y, tz);
     }
 
     private boolean isCavePositionWalkable(int x, int y, int z) {
@@ -243,8 +264,15 @@ public abstract class EntityWalking extends BaseEntity {
                 id == Block.FLOWER) {
             return true;
         }
-
         return block.canPassThrough() || Block.isWater(id);
+    }
+
+    private Vector3 exploreArea() {
+        if (isInCave()) {
+            return exploreCaveArea();
+        } else {
+            return findSurfacePosition(20);
+        }
     }
 
     private Vector3 exploreCaveArea() {
@@ -386,8 +414,6 @@ public abstract class EntityWalking extends BaseEntity {
             }
 
             if (this.getServer().getMobAiEnabled()) {
-                this.checkTarget();
-
                 if (this.followTarget != null && !this.followTarget.closed && this.followTarget.isAlive() && this.followTarget.canBeFollowed() && this.target != null) {
                     if (this.noPathFoundTimer > 60) {
                         attemptCaveNavigation();
@@ -423,11 +449,15 @@ public abstract class EntityWalking extends BaseEntity {
                     }
                 }
 
-                if (this.target != null) {
+                boolean shouldActivelyMoveToTarget = !this.isFriendly() || this.followTarget != null;
+
+                this.checkTarget();
+                if (this.target != null && shouldActivelyMoveToTarget) {
                     double x = this.target.x - this.x;
                     double z = this.target.z - this.z;
 
                     double diff = Math.abs(x) + Math.abs(z);
+                    boolean distance = false;
                     if (this.riding != null || diff <= 0.001 || !inWater && (this.stayTime > 0 || (this.distance(this.target) <= (this.getWidth() / 2 + 0.3) * nearbyDistanceMultiplier()))) {
                         if (!this.isInsideOfWater()) {
                             this.motionX = 0;
@@ -454,7 +484,7 @@ public abstract class EntityWalking extends BaseEntity {
                         }
                     }
 
-                    if (this.noRotateTicks <= 0 && (this.passengers.isEmpty() || this instanceof EntityLlama || this instanceof EntityPig) && (this.stayTime <= 0 || Utils.rand()) && diff > 0.001) {
+                    if (this.noRotateTicks <= 0 && !distance && (this.passengers.isEmpty() || this instanceof EntityLlama || this instanceof EntityPig) && (this.stayTime <= 0 || Utils.rand()) && diff > 0.001) {
                         this.setBothYaw(FastMath.toDegrees(-FastMath.atan2(x / diff, z / diff)));
                     }
                 }
@@ -567,12 +597,12 @@ public abstract class EntityWalking extends BaseEntity {
             this.stayTime = 0;
             this.moveTime = Utils.rand(30, 80);
             this.caveNavigationMode = 1;
-            Vector3 escapePos = null;
-
+            Vector3 escapePos;
             if (isInCave()) {
                 escapePos = findCaveEscape();
+            } else {
+                escapePos = findSurfacePosition(10);
             }
-
             if (escapePos != null) {
                 this.target = escapePos;
             } else {
@@ -645,23 +675,50 @@ public abstract class EntityWalking extends BaseEntity {
         return level.getBlock(chunk, checkX, checkY, checkZ, false);
     }
 
+    private boolean lastCaveResult;
+    private int lastCaveCheckTick = 0;
+
     private boolean isInCave() {
-        int skyLight = this.level.getBlockSkyLightAt(NukkitMath.floorDouble(this.x), NukkitMath.floorDouble(this.y + 1), NukkitMath.floorDouble(this.z));
-        boolean hasDirectSky = skyLight == 15;
-        if (hasDirectSky) {
+        int currentX = NukkitMath.floorDouble(this.x);
+        int currentY = NukkitMath.floorDouble(this.y);
+        int currentZ = NukkitMath.floorDouble(this.z);
+
+        if (lastCaveCheckTick + 10 > this.age) {
+            return lastCaveResult;
+        }
+
+        int skyLight = this.level.getBlockSkyLightAt(currentX, NukkitMath.floorDouble(this.y + 1), currentZ);
+        if (skyLight == 15) {
+            lastCaveResult = false;
+            lastCaveCheckTick = this.age;
             return false;
         }
 
-        int x = NukkitMath.floorDouble(this.x);
-        int z = NukkitMath.floorDouble(this.z);
-        int y = NukkitMath.floorDouble(this.y) + 2;
-        while (y <= this.level.getMaxBlockY()) {
-            Block block = this.level.getBlock(x, y, z, false);
-            if (!block.canPassThrough()) {
+        int startY = currentY + 2;
+        int maxCheckHeight = Math.min(startY + 64, this.level.getMaxBlockY());
+
+        for (int y = startY; y <= maxCheckHeight; y++) {
+            int blockId = this.level.getBlockIdAt(currentX, y, currentZ);
+
+            if (blockId == Block.AIR ||
+                    blockId == Block.LEAVES ||
+                    blockId == Block.LEAVES2 ||
+                    blockId == Block.FLOWER ||
+                    blockId == Block.NETHERRACK ||
+                    Block.isWater(blockId)) {
+                continue;
+            }
+
+            Block block = this.level.getBlock(currentX, y, currentZ, false);
+            if (block != null && !block.canPassThrough()) {
+                lastCaveResult = true;
+                lastCaveCheckTick = this.age;
                 return true;
             }
-            y++;
         }
+
+        lastCaveResult = false;
+        lastCaveCheckTick = this.age;
         return false;
     }
 }
