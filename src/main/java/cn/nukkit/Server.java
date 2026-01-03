@@ -3302,7 +3302,7 @@ public class Server {
                 noTickingWorlds.add(tokenizer.nextToken());
             }
         }
-        this.levelDbCache = 80;
+        this.levelDbCache = this.settings.world().levelDbCache();
         this.useNativeLevelDB = this.settings.integration().onlyAllowNeteaseClient();
         this.enableRawOres = this.settings.features().enableRawOres();
         this.enableNewPaintings = this.settings.features().enableNewPaintings();
