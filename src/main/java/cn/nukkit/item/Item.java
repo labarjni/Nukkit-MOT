@@ -754,31 +754,40 @@ public class Item implements Cloneable, BlockID, ItemID, ItemNamespaceId, Protoc
         //TODO Multiversion 添加新版本支持时修改这里
     }
 
-    public static ArrayList<Item> getCreativeItems() {
-        Server.mvw("Item#getCreativeItems()");
-        return getCreativeItems(GameVersion.getLastVersion());
+
+    public static ArrayList<Item> getCreativeItems(GameVersion protocol) {
+        return new ArrayList<>(getCreativeItemsAndGroups(protocol, null).getItems());
     }
 
-    @Deprecated
-    public static ArrayList<Item> getCreativeItems(int protocol) {
-        return new ArrayList<>(getCreativeItemsAndGroups(protocol).getItems());
+    public static ArrayList<Item> getCreativeItems(Player player) {
+        return new ArrayList<>(getCreativeItemsAndGroups(player.getGameVersion(), player).getItems());
     }
 
-    public static ArrayList<Item> getCreativeItems(GameVersion gameVersion) {
-        return new ArrayList<>(getCreativeItemsAndGroups(gameVersion).getItems());
+    public static CreativeItems getCreativeItemsAndGroups(GameVersion protocol, Player player) {
+        CreativeItems original = getCreativeItemsAndGroupsRaw(protocol);
+        if (player == null) {
+            return original;
+        }
+
+        CreativeItems filtered = new CreativeItems();
+
+        for (CreativeItemGroup group : original.getGroups()) {
+            filtered.addGroup(group);
+        }
+
+        for (Map.Entry<Item, CreativeItemGroup> entry : original.getContents().entrySet()) {
+            Item item = entry.getKey();
+            CreativeItemGroup group = entry.getValue();
+
+            if (CreativeItemPermissions.hasPermission(item, player)) {
+                filtered.add(item, group);
+            }
+        }
+
+        return filtered;
     }
 
-    public static CreativeItems getCreativeItemsAndGroups() {
-        Server.mvw("Item#getCreativeItemsAndGroups()");
-        return getCreativeItemsAndGroups(GameVersion.getLastVersion());
-    }
-
-    @Deprecated
-    public static CreativeItems getCreativeItemsAndGroups(int protocol) {
-        return getCreativeItemsAndGroups(GameVersion.byProtocol(protocol, Server.getInstance().onlyNetEaseMode));
-    }
-
-    public static CreativeItems getCreativeItemsAndGroups(GameVersion protocol) {
+    public static CreativeItems getCreativeItemsAndGroupsRaw(GameVersion protocol) {
         switch (protocol) {
             case V1_1_0:
                 return Item.creative113;
@@ -1015,7 +1024,7 @@ public class Item implements Cloneable, BlockID, ItemID, ItemNamespaceId, Protoc
     }
 
     public static void removeCreativeItem(GameVersion protocol, Item item) {
-        Item.getCreativeItemsAndGroups(protocol).getContents().remove(item);
+        Item.getCreativeItemsAndGroups(protocol, null).getContents().remove(item);
     }
 
     public static boolean isCreativeItem(Item item) {
@@ -1029,7 +1038,7 @@ public class Item implements Cloneable, BlockID, ItemID, ItemNamespaceId, Protoc
     }
 
     public static boolean isCreativeItem(GameVersion gameVersion, Item item) {
-        for (Item aCreative : Item.getCreativeItemsAndGroups(gameVersion).getItems()) {
+        for (Item aCreative : Item.getCreativeItemsAndGroups(gameVersion, null).getItems()) {
             if (item.equals(aCreative, !item.isTool())) {
                 return true;
             }

@@ -58,6 +58,7 @@ public class SettingsMigrator {
                         cfg.getBoolean("end", true),
                         cfg.getBoolean("vanilla-portals", true),
                         parseInt.apply(cfg.getString("portal-ticks", "80")),
+                        parseInt.apply(cfg.getString("level-db-cache", "64")),
                         cfg.getString("multi-nether-worlds", ""),
                         cfg.getString("anti-xray-worlds", ""),
                         cfg.getString("do-not-tick-worlds", ""),
