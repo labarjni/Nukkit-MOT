@@ -3012,6 +3012,8 @@ public class Level implements ChunkManager, Metadatable {
         return getNearbyEntities(bb, entity, false, false);
     }
 
+    private static final long CACHE_EXPIRE_TICKS = 100;
+
     public Entity[] getNearbyEntities(AxisAlignedBB bb, Entity entity, boolean isAiMob, boolean loadChunks) {
         if (!isAiMob) {
             int index = 0;
@@ -3053,23 +3055,27 @@ public class Level implements ChunkManager, Metadatable {
             }
             return copy;
         } else {
-            if (entity == null || entity.getLevel() != this) {
-                return new Entity[]{};
-            }
-
             long boxHash = hashSearchBox(bb);
             long currentTick = this.levelCurrentTick;
-            long lastUpdate = entityNearbyCacheTime.get(boxHash);
-            boolean isDirty = entityNearbyCacheDirty.contains(boxHash);
+            LongSet dirty = entityNearbyCacheDirty;
+            Long2ObjectMap<Entity[]> cache = entityNearbyCache;
+            Long2LongMap cacheTime = entityNearbyCacheTime;
 
-            if (isDirty || lastUpdate == 0) {
-                Entity[] entities = this.getNearbyEntities(bb, entity);
-                entityNearbyCache.put(boxHash, entities);
-                entityNearbyCacheTime.put(boxHash, currentTick);
-                entityNearbyCacheDirty.remove(boxHash);
+            if (cache.size() > 1000) {
+                cache.long2ObjectEntrySet().removeIf(e -> currentTick - cacheTime.get(e.getLongKey()) > CACHE_EXPIRE_TICKS);
+                cacheTime.keySet().retainAll(cache.keySet());
+                dirty.retainAll(cache.keySet());
             }
 
-            return entityNearbyCache.get(boxHash);
+            boolean isDirty = dirty.contains(boxHash);
+            long lastUpdate = cacheTime.get(boxHash);
+            if (isDirty || lastUpdate == 0) {
+                Entity[] entities = this.getNearbyEntities(bb, entity, false, loadChunks);
+                cache.put(boxHash, entities);
+                cacheTime.put(boxHash, currentTick);
+                dirty.remove(boxHash);
+            }
+            return cache.get(boxHash);
         }
     }
 
