@@ -64,6 +64,8 @@ import cn.nukkit.scheduler.BlockUpdateScheduler;
 import cn.nukkit.utils.*;
 import cn.nukkit.utils.collection.nb.Long2ObjectNonBlockingMap;
 import cn.nukkit.utils.collection.nb.LongObjectEntry;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
@@ -283,10 +285,11 @@ public class Level implements ChunkManager, Metadatable {
     private final Object2ObjectMap<GameVersion, ConcurrentMap<Long, Int2ObjectMap<Player>>> chunkSendQueues = new Object2ObjectOpenHashMap<>();
     private final Object2ObjectMap<GameVersion, LongSet> chunkSendTasks = new Object2ObjectOpenHashMap<>();
 
-    // Cache for fast entity processing for checkTarget()
-    private final Long2ObjectOpenHashMap<Entity[]> entityNearbyCache = new Long2ObjectOpenHashMap<>();
-    private final Long2LongOpenHashMap entityNearbyCacheTime = new Long2LongOpenHashMap();
     private final LongSet entityNearbyCacheDirty = new LongOpenHashSet();
+    private final LoadingCache<Long, Entity[]> nearbyEntitiesCache = Caffeine.newBuilder()
+            .maximumSize(4096)
+            .expireAfterWrite(700, TimeUnit.MILLISECONDS)
+            .build(key -> new Entity[0]);
 
     private final Long2ObjectOpenHashMap<Boolean> chunkPopulationQueue = new Long2ObjectOpenHashMap<>();
     private final Long2ObjectOpenHashMap<Boolean> chunkPopulationLock = new Long2ObjectOpenHashMap<>();
@@ -2582,18 +2585,11 @@ public class Level implements ChunkManager, Metadatable {
             breakTime -= 0.15;
 
             Item[] eventDrops;
-            if (isSilkTouch && target.canSilkTouch()) {
-                if (new java.util.Random().nextBoolean()) {
-                    eventDrops = new Item[]{target.toItem()};
-                } else {
-                    eventDrops = Item.EMPTY_ARRAY;
-                }
-            } else if (target.isDropOriginal(player)) {
+            if (isSilkTouch && target.canSilkTouch() || target.isDropOriginal(player)) {
                 eventDrops = new Item[]{target.toItem()};
             } else {
                 eventDrops = target.getDrops(player, item);
             }
-
             //TODO 直接加1000可能会影响其他判断，需要进一步改进
             boolean fastBreak = (player.lastBreak + breakTime * 1000) > Long.sum(System.currentTimeMillis(), 1000);
             BlockBreakEvent ev = new BlockBreakEvent(player, target, face, item, eventDrops, player.isCreative(), fastBreak);
@@ -2618,12 +2614,7 @@ public class Level implements ChunkManager, Metadatable {
         } else if (!target.isBreakable(item)) {
             return null;
         } else if (item.hasEnchantment(Enchantment.ID_SILK_TOUCH)) {
-            // Шанс 50/50 для шелкового касания (вторая проверка - когда player == null)
-            if (new java.util.Random().nextBoolean()) {
-                drops = new Item[]{target.toItem()};
-            } else {
-                drops = new Item[]{};
-            }
+            drops = new Item[]{target.toItem()};
         } else {
             drops = target.getDrops(null, item);
         }
@@ -3004,15 +2995,15 @@ public class Level implements ChunkManager, Metadatable {
     private static final Entity[] EMPTY_ENTITY_ARR = new Entity[0];
     private static final Entity[] ENTITY_BUFFER = new Entity[512];
 
-    public Entity[] getNearbyEntities(AxisAlignedBB bb, Entity entity, boolean isAiMob) {
-        return getNearbyEntities(bb, entity, isAiMob, false);
+    public Entity[] getNearbyEntities(AxisAlignedBB bb, Entity entity, boolean loadChunks) {
+        return getNearbyEntities(bb, entity, loadChunks, false);
     }
 
     public Entity[] getNearbyEntities(AxisAlignedBB bb, Entity entity) {
         return getNearbyEntities(bb, entity, false, false);
     }
 
-    public Entity[] getNearbyEntities(AxisAlignedBB bb, Entity entity, boolean isAiMob, boolean loadChunks) {
+    public Entity[] getNearbyEntities(AxisAlignedBB bb, Entity entity, boolean loadChunks, boolean isAiMob) {
         if (!isAiMob) {
             int index = 0;
 
@@ -3053,32 +3044,18 @@ public class Level implements ChunkManager, Metadatable {
             }
             return copy;
         } else {
-            long boxHash = hashSearchBox(bb);
-            long currentTick = this.levelCurrentTick;
-            LongSet dirty = entityNearbyCacheDirty;
-            Long2ObjectMap<Entity[]> cache = entityNearbyCache;
-            Long2LongMap cacheTime = entityNearbyCacheTime;
-
-            boolean isDirty = dirty.contains(boxHash);
-            long lastUpdate = cacheTime.get(boxHash);
-            if (isDirty || lastUpdate == 0) {
-                Entity[] entities = this.getNearbyEntities(bb, entity, false, loadChunks);
-                cache.put(boxHash, entities);
-                cacheTime.put(boxHash, currentTick);
-                dirty.remove(boxHash);
+            if (entity == null || entity.getLevel() != this) {
+                return new Entity[]{};
             }
-            return cache.get(boxHash);
+            long chunkHash = chunkHash(((int) entity.x) >> 4, ((int) entity.z) >> 4);
+            Entity[] cached = this.nearbyEntitiesCache .getIfPresent(entity.getId());
+            if (entityNearbyCacheDirty.contains(chunkHash) || cached == null) {
+                cached = this.getNearbyEntities(bb, entity, loadChunks);
+                this.nearbyEntitiesCache.put(entity.getId(), cached);
+                entityNearbyCacheDirty.remove(chunkHash);
+            }
+            return cached;
         }
-    }
-
-    private static long hashSearchBox(AxisAlignedBB box) {
-        long x1 = (long) (box.getMinX() * 10);
-        long y1 = (long) (box.getMinY() * 10);
-        long z1 = (long) (box.getMinZ() * 10);
-        long x2 = (long) (box.getMaxX() * 10);
-        long y2 = (long) (box.getMaxY() * 10);
-        long z2 = (long) (box.getMaxZ() * 10);
-        return (x1 ^ (z1 << 11) ^ (y1 << 22)) + (x2 ^ (z2 << 11) ^ (y2 << 22) << 32);
     }
 
     public void setDirtyNearby(Entity entity) {

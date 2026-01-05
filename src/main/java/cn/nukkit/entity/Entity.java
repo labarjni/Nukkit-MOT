@@ -40,7 +40,6 @@ import cn.nukkit.utils.Identifier;
 import cn.nukkit.utils.MainLogger;
 import cn.nukkit.utils.Utils;
 import com.google.common.collect.Iterables;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.apache.commons.math3.util.FastMath;
 import org.jetbrains.annotations.NotNull;
 
@@ -2726,7 +2725,7 @@ public abstract class Entity extends Location implements Metadatable {
         if (!blocksAround.isEmpty()) {
             this.blocksAround = blocksAround;
         } else {
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
 
         return blocksAround;
@@ -2743,7 +2742,7 @@ public abstract class Entity extends Location implements Metadatable {
         if (!collisionBlocks.isEmpty()) {
             this.collisionBlocks = collisionBlocks;
         } else {
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
 
         return collisionBlocks;
