@@ -3012,8 +3012,6 @@ public class Level implements ChunkManager, Metadatable {
         return getNearbyEntities(bb, entity, false, false);
     }
 
-    private static final long CACHE_EXPIRE_TICKS = 100;
-
     public Entity[] getNearbyEntities(AxisAlignedBB bb, Entity entity, boolean isAiMob, boolean loadChunks) {
         if (!isAiMob) {
             int index = 0;
@@ -3060,12 +3058,6 @@ public class Level implements ChunkManager, Metadatable {
             LongSet dirty = entityNearbyCacheDirty;
             Long2ObjectMap<Entity[]> cache = entityNearbyCache;
             Long2LongMap cacheTime = entityNearbyCacheTime;
-
-            if (cache.size() > 1000) {
-                cache.long2ObjectEntrySet().removeIf(e -> currentTick - cacheTime.get(e.getLongKey()) > CACHE_EXPIRE_TICKS);
-                cacheTime.keySet().retainAll(cache.keySet());
-                dirty.retainAll(cache.keySet());
-            }
 
             boolean isDirty = dirty.contains(boxHash);
             long lastUpdate = cacheTime.get(boxHash);

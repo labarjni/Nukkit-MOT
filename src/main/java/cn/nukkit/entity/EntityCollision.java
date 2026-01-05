@@ -1,6 +1,5 @@
 package cn.nukkit.entity;
 
-import cn.nukkit.Server;
 import cn.nukkit.block.Block;
 import cn.nukkit.level.ChunkLoader;
 import cn.nukkit.level.Level;
@@ -17,11 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class EntityCollision implements ChunkLoader {
     private static final int CHUNK_CACHE_MAX_SIZE = 256;
     private static final int COLLISION_CACHE_MAX_SIZE = 128;
-
-    private static final Map<Long, Long> recentBlockChanges = new ConcurrentHashMap<>();
-
-    private static final long BLOCK_CHANGE_TTL_TICKS = 20;
-
+    private static final Set<Long> recentBlockChanges = ConcurrentHashMap.newKeySet();
 
     @Override
     public void onBlockChanged(Vector3 pos) {
@@ -29,8 +24,7 @@ public class EntityCollision implements ChunkLoader {
         long z = pos.getFloorZ();
         long y = pos.getFloorY();
         long key = (x & 0xFFFFFL) | ((z & 0xFFFFFL) << 20) | ((y & 0x7FFL) << 40);
-        long currentTick = Server.getInstance().getTick();
-        recentBlockChanges.put(key, currentTick);
+        recentBlockChanges.add(key);
     }
 
     private final Map<Integer, FullChunk> chunkCache = new LinkedHashMap<>(64, 0.75f, true) {
@@ -181,12 +175,6 @@ public class EntityCollision implements ChunkLoader {
 
     private boolean hasBlockChangesInArea(AxisAlignedBB bb) {
         Level level = entity.getLevel();
-        long currentTick = Server.getInstance().getTick();
-
-        if (currentTick % 10 == 0) {
-            recentBlockChanges.entrySet().removeIf(e -> currentTick - e.getValue() > BLOCK_CHANGE_TTL_TICKS);
-        }
-
         int minX = NukkitMath.floorDouble(bb.getMinX());
         int minY = Math.max(NukkitMath.floorDouble(bb.getMinY()), level.getMinBlockY());
         int minZ = NukkitMath.floorDouble(bb.getMinZ());
@@ -194,7 +182,7 @@ public class EntityCollision implements ChunkLoader {
         int maxY = Math.min(NukkitMath.ceilDouble(bb.getMaxY()), level.getMaxBlockY());
         int maxZ = NukkitMath.ceilDouble(bb.getMaxZ());
 
-        for (long key : recentBlockChanges.keySet()) {
+        for (long key : recentBlockChanges) {
             int x = (int) (key & 0xFFFFF);
             if (x >= 0x80000) x -= 0x100000;
             int z = (int) ((key >> 20) & 0xFFFFF);
