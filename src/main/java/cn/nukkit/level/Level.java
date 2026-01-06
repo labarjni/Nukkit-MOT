@@ -286,8 +286,8 @@ public class Level implements ChunkManager, Metadatable {
     private final Object2ObjectMap<GameVersion, LongSet> chunkSendTasks = new Object2ObjectOpenHashMap<>();
 
     private final Cache<Object, Object> entityNearbyCacheDirty = Caffeine.newBuilder()
-            .maximumSize(4096)
-            .expireAfterWrite(5, TimeUnit.SECONDS)
+            .maximumSize(512)
+            .expireAfterWrite(1, TimeUnit.SECONDS)
             .build();
 
     private final Cache<Long, Entity[]> nearbyEntitiesCache = Caffeine.newBuilder()
