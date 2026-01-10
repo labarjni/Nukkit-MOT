@@ -18,6 +18,7 @@ import java.util.function.Supplier;
  * @author CreeperFace
  */
 @ToString
+@EqualsAndHashCode(exclude = {"strListSupplier"})
 public class CommandEnum {
 
     public static final CommandEnum ENUM_BOOLEAN = new CommandEnum("Boolean", ImmutableList.of("true", "false"));

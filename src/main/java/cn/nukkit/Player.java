@@ -65,6 +65,7 @@ import cn.nukkit.network.encryption.PrepareEncryptionTask;
 import cn.nukkit.network.process.DataPacketManager;
 import cn.nukkit.network.protocol.*;
 import cn.nukkit.network.protocol.types.*;
+import cn.nukkit.network.protocol.types.debugshape.DebugShape;
 import cn.nukkit.network.session.NetworkPlayerSession;
 import cn.nukkit.permission.PermissibleBase;
 import cn.nukkit.permission.Permission;
@@ -90,10 +91,7 @@ import com.google.gson.JsonParser;
 import io.netty.util.internal.PlatformDependent;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
-import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongIterator;
-import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.longs.*;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import lombok.Getter;
 import lombok.Setter;
@@ -111,10 +109,10 @@ import java.net.InetSocketAddress;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.ByteOrder;
-import java.util.List;
 import java.util.*;
-import java.util.Queue;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -441,6 +439,11 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
     protected int lastSweetBerryBushDamageTick;
 
     private float speedToSend = DEFAULT_SPEED;
+
+    private final Long2ObjectMap<ShapeInstance> shapes = new Long2ObjectOpenHashMap<>();
+
+    private record ShapeInstance(DebugShape shape, int expirationTick) {
+    }
 
     public int getStartActionTick() {
         return startAction;
@@ -1937,6 +1940,11 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
             if (this.inPortalTicks == this.server.portalTicks || (this.server.vanillaPortals && this.inPortalTicks == 25 && this.gamemode == CREATIVE)) {
                 EntityPortalEnterEvent ev = new EntityPortalEnterEvent(this, EntityPortalEnterEvent.PortalType.NETHER);
+
+                if (this.portalPos == null && this.inPortalTicks >= 80) {
+                    ev.setCancelled();
+                }
+
                 this.getServer().getPluginManager().callEvent(ev);
 
                 if (ev.isCancelled()) {
@@ -2600,6 +2608,8 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             }
         }
 
+        this.removeExpiredShapes();
+
         return true;
     }
 
@@ -2965,6 +2975,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         }
         startGamePacket.authoritativeMovementMode = this.getAuthoritativeMovementMode();
         startGamePacket.isServerAuthoritativeBlockBreaking = this.isServerAuthoritativeBlockBreaking();
+        startGamePacket.blockNetworkIdsHashed = GlobalBlockPalette.shouldUseHashedBlockNetworkIds(this.gameVersion);
         startGamePacket.playerPropertyData = EntityProperty.getPlayerPropertyCache();
         this.forceDataPacket(startGamePacket, null);
 
@@ -7863,6 +7874,12 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         return super.canBeDamagedBySweetBerryBush();
     }
 
+    /**
+     * Add a movement speed modifier to the player.
+     * 添加一个移动速度修改器到玩家
+     *
+     * @param modifier The movement speed modifier to add (要添加的移动速度修改器)
+     */
     @Override
     public void addMovementSpeedModifier(EntityMovementSpeedModifier modifier) {
         super.addMovementSpeedModifier(modifier);
@@ -7870,6 +7887,13 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         this.sendMovementSpeed();
     }
 
+    /**
+     * Remove a movement speed modifier from the player.
+     * 从玩家移除移动速度修改器
+     *
+     * @param identifier The identifier of the movement speed modifier to remove (要移除的移动速度修改器的标识符)
+     * @return True if the modifier was successfully removed, false otherwise (如果成功移除则返回true，否则返回false)
+     */
     @Override
     public boolean removeMovementSpeedModifier(String identifier) {
         boolean isRemoved = super.removeMovementSpeedModifier(identifier);
@@ -7899,4 +7923,80 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         return Math.max(newMovementSpeed, 0.00f);
     }
 
+    /**
+     * Adds a debug shape to the player's view for visualization purposes.
+     * 为玩家添加调试形状用于可视化
+     *
+     * @param shape The debug shape to add (添加的调试形状)
+     */
+    public void addShape(DebugShape shape) {
+        if (this.protocol < ProtocolInfo.v1_21_90) {
+            return;
+        }
+
+        int expirationTick = (shape.getTotalTimeLeft() != null && shape.getTotalTimeLeft() > 0) ? (int) (shape.getTotalTimeLeft() * 20) + this.getServer().getTick() : Integer.MAX_VALUE;
+        this.shapes.put(shape.getId(), new ShapeInstance(shape, expirationTick));
+
+        DebugDrawerPacket packet = new DebugDrawerPacket();
+        packet.shapes.add(shape);
+        this.dataPacket(packet);
+    }
+
+    /**
+     * Removes a specific debug shape from the player's view.
+     * 从玩家视图中移除指定的调试形状
+     *
+     * @param shape The debug shape to remove (要移除的调试形状)
+     */
+    public void removeShape(DebugShape shape) {
+        if (this.shapes.remove(shape.getId()) == null) {
+            return;
+        }
+
+        DebugDrawerPacket packet = new DebugDrawerPacket();
+        packet.shapes.add(new DebugShape(shape.getId(), shape.getDimension()));
+        this.dataPacket(packet);
+    }
+
+    /**
+     * Removes all debug shapes from the player's view.
+     * 移除玩家视图中的所有调试形状
+     */
+    public void removeAllShapes() {
+        if (this.shapes.isEmpty()) {
+            return;
+        }
+
+        DebugDrawerPacket packet = new DebugDrawerPacket();
+        packet.shapes.addAll(this.shapes.values().stream().map(instance -> new DebugShape(instance.shape.getId(), instance.shape.getDimension())).toList());
+        this.dataPacket(packet);
+
+        this.shapes.clear();
+    }
+
+    /**
+     * Removes expired debug shapes from the player's view based on their time-to-live.
+     * 根据存活时间移除过期的调试形状
+     */
+    protected void removeExpiredShapes() {
+        int now = this.getServer().getTick();
+        List<DebugShape> entries = new ObjectArrayList<>();
+        Iterator<ShapeInstance> iterator = this.shapes.values().iterator();
+        while (iterator.hasNext()) {
+            ShapeInstance instance = iterator.next();
+            if (instance.expirationTick > now) {
+                continue;
+            }
+
+            entries.add(new DebugShape(instance.shape.getId(), instance.shape.getDimension()));
+            iterator.remove();
+        }
+        if (entries.isEmpty()) {
+            return;
+        }
+
+        DebugDrawerPacket packet = new DebugDrawerPacket();
+        packet.shapes.addAll(entries);
+        this.dataPacket(packet);
+    }
 }
