@@ -40,22 +40,22 @@ public class Explosion {
     private Set<Block> affectedBlocks;
     private Set<Block> fireIgnitions;
 
-    private final ExplosionSource target;
+    private final ExplosionSource sourceObject;
     private boolean doesDamage = true;
 
-    public Explosion(Position center, double size, Entity target) {
-        this(center, size, new ExplosionSource.EntitySource(target));
+    public Explosion(Position center, double size, Entity sourceObject) {
+        this(center, size, new ExplosionSource.EntitySource(sourceObject));
     }
 
-    public Explosion(Position center, double size, Block target) {
-        this(center, size, new ExplosionSource.BlockSource(target));
+    public Explosion(Position center, double size, Block sourceObject) {
+        this(center, size, new ExplosionSource.BlockSource(sourceObject));
     }
 
-    protected Explosion(Position center, double size, ExplosionSource target) {
+    protected Explosion(Position center, double size, ExplosionSource sourceObject) {
         this.level = center.getLevel();
         this.source = center;
         this.size = Math.max(size, 0);
-        this.target = target;
+        this.sourceObject = sourceObject;
     }
 
     public double getFireSpawnChance() {
@@ -92,13 +92,12 @@ public class Explosion {
      * @return {@code true} if success
      */
     public boolean explodeA() {
-        if (target instanceof ExplosionSource.EntitySource entitySource) {
+        if (this.sourceObject instanceof ExplosionSource.EntitySource entitySource) {
             Entity entity = entitySource.entity();
             if (entity instanceof EntityExplosive) {
-                Block blockLayer0 = level.getBlock(entity.floor());
-                Block blockLayer1 = level.getBlock(entity.floor(), 1);
-                if (blockLayer0.getId() == BlockID.WATER || blockLayer0.getId() == BlockID.STILL_WATER ||
-                        blockLayer1.getId() == BlockID.WATER || blockLayer1.getId() == BlockID.STILL_WATER) {
+                int blockLayer0 = level.getBlockIdAt(entity.getFloorX(), entity.getFloorY(), entity.getFloorZ());
+                int blockLayer1 = level.getBlockIdAt(entity.getFloorX(), entity.getFloorY(), entity.getFloorZ(), 1);
+                if (Block.isWater(blockLayer0) || Block.isWater(blockLayer1)) {
                     this.doesDamage = false;
                     return true;
                 }
@@ -188,7 +187,7 @@ public class Explosion {
             affectedBlocks = new LinkedHashSet<>();
         }
 
-        if (target instanceof ExplosionSource.EntitySource entitySource) {
+        if (this.sourceObject instanceof ExplosionSource.EntitySource entitySource) {
             Entity exploder = entitySource.entity();
             List<Block> affectedBlocksList = new ArrayList<>(this.affectedBlocks);
             EntityExplodeEvent ev = new EntityExplodeEvent(exploder, this.source, affectedBlocksList, yield);
@@ -199,7 +198,7 @@ public class Explosion {
             affectedBlocks.clear();
             affectedBlocks.addAll(ev.getBlockList());
             fireIgnitions = ev.getIgnitions();
-        } else if (target instanceof ExplosionSource.BlockSource blockSource) {
+        } else if (this.sourceObject instanceof ExplosionSource.BlockSource blockSource) {
             BlockExplodeEvent ev = new BlockExplodeEvent(blockSource.block(), this.source, this.affectedBlocks,
                     fireIgnitions == null ? new LinkedHashSet<>(0) : fireIgnitions, yield, this.fireSpawnChance);
             this.level.getServer().getPluginManager().callEvent(ev);
@@ -220,7 +219,7 @@ public class Explosion {
         );
 
         Entity[] nearbyEntities = this.level.getNearbyEntities(explosionBB,
-                target instanceof ExplosionSource.EntitySource es ? es.entity() : null);
+                this.sourceObject instanceof ExplosionSource.EntitySource es ? es.entity() : null);
 
         for (Entity entity : nearbyEntities) {
             double distance = entity.distance(this.source) / explosionSize;
@@ -234,9 +233,9 @@ public class Explosion {
             float damage = this.doesDamage ? (float) ((impact * impact + impact) / 2.0 * 7.0 * force + 1.0) : 0f;
 
             EntityDamageEvent damageEvent;
-            if (target instanceof ExplosionSource.EntitySource es) {
+            if (this.sourceObject instanceof ExplosionSource.EntitySource es) {
                 damageEvent = new EntityDamageByEntityEvent(es.entity(), entity, DamageCause.ENTITY_EXPLOSION, damage);
-            } else if (target instanceof ExplosionSource.BlockSource bs) {
+            } else if (this.sourceObject instanceof ExplosionSource.BlockSource bs) {
                 damageEvent = new EntityDamageByBlockEvent(bs.block(), entity, DamageCause.BLOCK_EXPLOSION, damage);
             } else {
                 damageEvent = new EntityDamageEvent(entity, DamageCause.BLOCK_EXPLOSION, damage);
@@ -255,14 +254,14 @@ public class Explosion {
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
         for (Block originalBlock : new ArrayList<>(this.affectedBlocks)) {
-            Block currentBlock = this.level.getBlock((int) originalBlock.x, (int) originalBlock.y, (int) originalBlock.z, originalBlock.layer);
+            Block currentBlock = this.level.getBlock(originalBlock.getFloorX(), originalBlock.getFloorY(), originalBlock.getFloorZ(), originalBlock.layer);
 
             if (currentBlock.getId() != originalBlock.getId()) {
                 continue;
             }
 
             if (currentBlock instanceof BlockTNT tnt) {
-                Entity exploder = (target instanceof ExplosionSource.EntitySource es) ? es.entity() : null;
+                Entity exploder = (this.sourceObject instanceof ExplosionSource.EntitySource es) ? es.entity() : null;
                 tnt.prime(random.nextInt(10, 31), exploder);
             } else {
                 BlockEntity container = currentBlock.getLevel().getBlockEntity(currentBlock);
@@ -287,13 +286,13 @@ public class Explosion {
                 smokePositions.add(currentBlock);
             }
 
-            this.level.setBlock(new Vector3((int) currentBlock.x, (int) currentBlock.y, (int) currentBlock.z), currentBlock.layer, Block.get(BlockID.AIR));
+            this.level.setBlock(new Vector3(currentBlock.getFloorX(), currentBlock.getFloorY(), currentBlock.getFloorZ()), currentBlock.layer, Block.get(BlockID.AIR));
 
             if (currentBlock.layer == 0) {
                 Vector3 pos = new Vector3(currentBlock.x, currentBlock.y, currentBlock.z);
                 for (BlockFace side : BlockFace.values()) {
                     Vector3 sideBlock = pos.getSide(side);
-                    long index = Hash.hashBlock((int) sideBlock.x, (int) sideBlock.y, (int) sideBlock.z);
+                    long index = Hash.hashBlock(sideBlock.getFloorX(), sideBlock.getFloorY(), sideBlock.getFloorZ());
                     if (!this.affectedBlocks.contains(sideBlock) && !updateBlocks.contains(index)) {
                         this.processBlockUpdate(sideBlock);
                         Block layer1 = this.level.getBlock(sideBlock, 1);
