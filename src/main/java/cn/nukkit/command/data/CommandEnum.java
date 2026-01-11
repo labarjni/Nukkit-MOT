@@ -8,6 +8,7 @@ import cn.nukkit.utils.CameraPresetManager;
 import cn.nukkit.utils.Identifier;
 import com.google.common.collect.ImmutableList;
 
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import java.lang.reflect.Modifier;
@@ -117,16 +118,5 @@ public class CommandEnum {
             return;
         }
         this.updateSoftEnum(UpdateSoftEnumPacket.Type.SET, this.getValues().toArray(new String[0]));
-    }
-
-
-    @Override
-    public boolean equals(Object o) {
-        return this == o || (o instanceof CommandEnum that && name.equals(that.name));
-    }
-
-    @Override
-    public int hashCode() {
-        return name.hashCode();
     }
 }
