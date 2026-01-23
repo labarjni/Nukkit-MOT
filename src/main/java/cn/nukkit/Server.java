@@ -3287,7 +3287,7 @@ public class Server {
         this.enableRakSendCookie = this.getPropertyBoolean("enable-rak-send-cookie", true);
 
         this.maxEnchantLevel = this.getPropertyInt("max-enchant-level", 0);
-        if (this.getProperty("forced-safety-enchant") != null) {
+        if (this.properties.exists("forced-safety-enchant")) {
             if (!this.getPropertyBoolean("forced-safety-enchant")) {
                 this.maxEnchantLevel = 255;
                 this.setPropertyInt("max-enchant-level", 255);
