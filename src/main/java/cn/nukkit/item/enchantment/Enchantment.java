@@ -429,7 +429,7 @@ public abstract class Enchantment implements Cloneable {
     }
 
     public Enchantment setLevel(int level, boolean safe) {
-        if (!safe && !Server.getInstance().forcedSafetyEnchant) {
+        if (!safe) {
             this.level = level;
             return this;
         }
