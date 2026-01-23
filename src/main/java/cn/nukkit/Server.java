@@ -585,9 +585,10 @@ public class Server {
      */
     public boolean enableRakSendCookie;
     /**
-     * Enable forced safety enchantments (up max lvl)
+     * Set the default max enchantment level
+     * For vanilla enchantments - 0
      */
-    public boolean forcedSafetyEnchant;
+    public int maxEnchantLevel;
     /**
      * Enable vibrant visuals
      * @since 1.21.80
@@ -3284,7 +3285,16 @@ public class Server {
         this.enableNewChickenEggsLaying = this.getPropertyBoolean("enable-new-chicken-eggs-laying", true);
         this.rakPacketLimit = this.getPropertyInt("rak-packet-limit", RakConstants.DEFAULT_PACKET_LIMIT);
         this.enableRakSendCookie = this.getPropertyBoolean("enable-rak-send-cookie", true);
-        this.forcedSafetyEnchant = this.getPropertyBoolean("forced-safety-enchant", true);
+
+        this.maxEnchantLevel = this.getPropertyInt("max-enchant-level", 0);
+        if (this.getProperty("forced-safety-enchant") != null) {
+            if (!this.getPropertyBoolean("forced-safety-enchant")) {
+                this.maxEnchantLevel = 255;
+                this.setPropertyInt("max-enchant-level", 255);
+            }
+            this.properties.remove("forced-safety-enchant");
+        }
+
         this.enableVibrantVisuals = this.getPropertyBoolean("enable-vibrant-visuals", true);
         this.enableRaytracing = this.getPropertyBoolean("enable-raytracing", true);
 
@@ -3442,7 +3452,8 @@ public class Server {
             put("enable-raw-ores", true);
             put("enable-new-paintings", true);
             put("enable-new-chicken-eggs-laying", true);
-            put("forced-safety-enchant", true);
+            put("max-enchant-level", 0);
+
             put("enable-vibrant-visuals", true);
             put("enable-raytracing", true);
 
