@@ -13,6 +13,8 @@ import cn.nukkit.item.RuntimeItemMapping.RuntimeEntry;
 import cn.nukkit.item.customitem.CustomItem;
 import cn.nukkit.item.customitem.CustomItemDefinition;
 import cn.nukkit.item.enchantment.Enchantment;
+import cn.nukkit.level.BlockPalette;
+import cn.nukkit.level.GlobalBlockPalette;
 import cn.nukkit.level.Level;
 import cn.nukkit.math.BlockFace;
 import cn.nukkit.math.Vector3;
@@ -397,7 +399,8 @@ public class Item implements Cloneable, BlockID, ItemID, ItemNamespaceId, Protoc
 
             list[MANGROVE_SIGN] = ItemMangroveSign.class; //1005
             list[BAMBOO_SIGN] = ItemBambooSign.class; //1006
-            list[CHERRY_SIGN] = ItemCherrySign.class; //1007
+            list[CHERRY_SIGN] = ItemCherrySign.class; //1007 //TODO rename to ItemSignCherry
+            list[PALE_OAK_SIGN] = ItemSignPaleOak.class; //1008
 
             for (int i = 0; i < 256; ++i) {
                 if (Block.list[i] != null) {
@@ -673,7 +676,9 @@ public class Item implements Cloneable, BlockID, ItemID, ItemNamespaceId, Protoc
             }
 
             if (useNetEaseConversion) {
-                itemsArray = NetEaseConverter.convertCreativeItems(itemsArray);
+                BlockPalette standardPalette = GlobalBlockPalette.getPaletteByProtocol(GameVersion.byProtocol(protocol, false));
+                BlockPalette neteasePalette = GlobalBlockPalette.getPaletteByProtocol(blockPaletteVersion);
+                itemsArray = NetEaseConverter.convertCreativeItems(itemsArray, standardPalette, neteasePalette);
                 root.add("items", itemsArray);
                 log.info("Converted {} creative items to NetEase version", itemsArray.size());
             }

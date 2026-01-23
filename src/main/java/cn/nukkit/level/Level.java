@@ -172,6 +172,7 @@ public class Level implements ChunkManager, Metadatable {
         randomTickBlocks[Block.MANGROVE_LEAVES] = true;
         randomTickBlocks[Block.CHERRY_SAPLING] = true;
         randomTickBlocks[Block.CHERRY_LEAVES] = true;
+        randomTickBlocks[Block.CHORUS_FLOWER] = true;
 
         xrayableBlocks[Block.GOLD_ORE] = true;
         xrayableBlocks[Block.IRON_ORE] = true;
@@ -1887,8 +1888,8 @@ public class Level implements ChunkManager, Metadatable {
         float light = 1 - (MathHelper.cos(this.calculateCelestialAngle(getTime(), tickDiff) * (6.2831855f)) * 2 + 0.5f);
         light = light < 0 ? 0 : light > 1 ? 1 : light;
         light = 1 - light;
-        light = (float) ((double) light * ((raining ? 1 : 0) - 0.3125));
-        light = (float) ((double) light * ((isThundering() ? 1 : 0) - 0.3125));
+        light = (float) ((double) light * (1.0 - (raining ? 1 : 0) * 0.3125));
+        light = (float) ((double) light * (1.0 - (isThundering() ? 1 : 0) * 0.3125));
         light = 1 - light;
         return (int) (light * 11f);
     }
