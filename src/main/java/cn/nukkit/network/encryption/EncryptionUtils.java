@@ -1,5 +1,7 @@
 package cn.nukkit.network.encryption;
 
+import cn.nukkit.Nukkit;
+import cn.nukkit.Server;
 import cn.nukkit.network.protocol.types.auth.AuthPayload;
 import cn.nukkit.network.protocol.types.auth.AuthType;
 import cn.nukkit.network.protocol.types.auth.CertificateChainPayload;
@@ -53,11 +55,14 @@ public class EncryptionUtils {
     public static final ECPublicKey MOJANG_PUBLIC_KEY;
     @Deprecated
     public static final ECPublicKey OLD_MOJANG_PUBLIC_KEY;
+    public static final ECPublicKey NETEASE_PUBLIC_KEY;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final String MOJANG_PUBLIC_KEY_BASE64 =
             "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAECRXueJeTDqNRRgJi/vlRufByu/2G0i2Ebt6YMar5QX/R0DIIyrJMcUpruK4QveTfJSTp3Shlq4Gk34cD/4GUWwkv0DVuzeuB+tXija7HBxii03NHDbPAD0AKnLr2wdAp";
     private static final String OLD_MOJANG_PUBLIC_KEY_BASE64 =
             "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE8ELkixyLcwlZryUQcu1TvPOmI2B7vX83ndnWRUaXm74wFfa5f/lwQNTfrLVHa2PmenpGI6JhIMUJaWZrjmMj90NoKNFSNBuKdm8rYiXsfaz3K36x/1U26HpG0ZxK/V1V";
+    private static final String NETEASE_PUBLIC_KEY_BASE64 =
+            "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEEsmU+IF/XeAF3yiqJ7Ko36btx6JtdB26wV9Eyw4AYR/nmesznkfXxwQ4B0NkSnGIZccbb2f3nFUYughKSoAcNHx+lQm8F9h9RwhrNgeN907z06LUA2AqWcwqasxyaU0E";
     private static final KeyPairGenerator KEY_PAIR_GEN;
 
     public static final String ALGORITHM_TYPE = AlgorithmIdentifiers.ECDSA_USING_P384_CURVE_AND_SHA384;
@@ -66,7 +71,6 @@ public class EncryptionUtils {
 
     private static final String DISCOVERY_ENDPOINT =
             "https://client.discovery.minecraft-services.net/api/v1.0/discovery/MinecraftPE/builds/1.0.0.0";
-    private static final JSONParser JSON_PARSER = new JSONParser();
 
     public static final JwtConsumer OFFLINE_CONSUMER = new JwtConsumerBuilder()
             .setSkipAllValidators()
@@ -84,8 +88,26 @@ public class EncryptionUtils {
         private static volatile Map<String, Object> OPENID_CONFIGURATION = null;
         private static volatile JwtConsumer MOJANG_CONSUMER = null;
         private static final Object LOCK = new Object();
+        private static volatile AuthCacheManager CACHE_MANAGER = null;
 
         private static final JwtConsumer OFFLINE_CONSUMER = EncryptionUtils.OFFLINE_CONSUMER;
+
+        private static AuthCacheManager getCacheManager() {
+            if (CACHE_MANAGER != null) {
+                return CACHE_MANAGER;
+            }
+
+            synchronized (LOCK) {
+                if (CACHE_MANAGER != null) {
+                    return CACHE_MANAGER;
+                }
+
+                // Initialize cache manager with data path from Nukkit
+                String dataPath = Nukkit.DATA_PATH;
+                CACHE_MANAGER = new AuthCacheManager(dataPath);
+                return CACHE_MANAGER;
+            }
+        }
 
         private static Map<String, Object> getDiscoveryData() {
             if (DISCOVERY_DATA != null) {
@@ -96,6 +118,18 @@ public class EncryptionUtils {
                 if (DISCOVERY_DATA != null) {
                     return DISCOVERY_DATA;
                 }
+
+                // Try to load from disk cache first
+                AuthCacheManager cacheManager = getCacheManager();
+                Map<String, Object> cachedData = cacheManager.loadDiscoveryData();
+                if (cachedData != null) {
+                    DISCOVERY_DATA = cachedData;
+                    log.debug("Using cached discovery data from disk");
+                    return cachedData;
+                }
+
+                // Cache miss or expired, fetch from remote
+                log.debug("Discovery cache miss, fetching from remote: {}", DISCOVERY_ENDPOINT);
 
                 int maxRetries = 3;
                 long retryDelay = 1000; // 1 second
@@ -115,8 +149,11 @@ public class EncryptionUtils {
                         try(InputStream stream = connection.getInputStream();
                             InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
                             //noinspection unchecked
-                            Map<String, Object> data = (Map<String, Object>) JSON_PARSER.parse(reader);
+                            JSONParser parser = new JSONParser();
+                            Map<String, Object> data = (Map<String, Object>) parser.parse(reader);
                             DISCOVERY_DATA = data;
+                            // Save to disk cache
+                            cacheManager.saveDiscoveryData(data);
                             return data;
                         }
                     } catch (ParseException | IOException e) {
@@ -179,8 +216,19 @@ public class EncryptionUtils {
                     return OPENID_CONFIGURATION;
                 }
 
+                // Try to load from disk cache first
+                AuthCacheManager cacheManager = getCacheManager();
+                Map<String, Object> cachedConfig = cacheManager.loadOpenIdConfiguration();
+                if (cachedConfig != null) {
+                    OPENID_CONFIGURATION = cachedConfig;
+                    log.debug("Using cached OpenID configuration from disk");
+                    return cachedConfig;
+                }
+
+                // Cache miss or expired, fetch from remote
                 String serviceUri = getServiceUri();
                 String openIdConfigUrl = serviceUri + "/.well-known/openid-configuration";
+                log.debug("OpenID configuration cache miss, fetching from remote: {}", openIdConfigUrl);
 
                 int maxRetries = 3;
                 long retryDelay = 1000; // 1 second
@@ -200,8 +248,11 @@ public class EncryptionUtils {
                         try (InputStream stream = connection.getInputStream();
                              InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
                             //noinspection unchecked
-                            Map<String, Object> config = (Map<String, Object>) JSON_PARSER.parse(reader);
+                            JSONParser parser = new JSONParser();
+                            Map<String, Object> config = (Map<String, Object>) parser.parse(reader);
                             OPENID_CONFIGURATION = config;
+                            // Save to disk cache
+                            cacheManager.saveOpenIdConfiguration(config);
                             return config;
                         }
                     } catch (ParseException | IOException e) {
@@ -282,6 +333,7 @@ public class EncryptionUtils {
             KEY_PAIR_GEN.initialize(new ECGenParameterSpec("secp384r1"));
             MOJANG_PUBLIC_KEY = parseKey(MOJANG_PUBLIC_KEY_BASE64);
             OLD_MOJANG_PUBLIC_KEY = parseKey(OLD_MOJANG_PUBLIC_KEY_BASE64);
+            NETEASE_PUBLIC_KEY = parseKey(NETEASE_PUBLIC_KEY_BASE64);
         } catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException | InvalidKeySpecException e) {
             throw new AssertionError("Unable to initialize required encryption", e);
         }
@@ -374,8 +426,8 @@ public class EncryptionUtils {
                         // throw new IllegalStateException("Chain signature doesn't match content");
                     }
 
-                    // the second chain entry has to be signed by Mojang
-                    if (i == 1 && (!currentKey.equals(MOJANG_PUBLIC_KEY))) {
+                    // the second chain entry has to be signed by Mojang or NetEase
+                    if (i == 1 && !currentKey.equals(MOJANG_PUBLIC_KEY) && (!Server.getInstance().netEaseMode || !currentKey.equals(NETEASE_PUBLIC_KEY))) {
                         signed = false;
                         // throw new IllegalStateException("The chain isn't signed by Mojang!");
                     }

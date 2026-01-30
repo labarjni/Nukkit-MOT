@@ -80,8 +80,7 @@ public class BlockMobSpawner extends BlockSolid {
     }
 
     @Override
-    public boolean canSilkTouch() {
+    public boolean diffusesSkyLight() {
         return true;
     }
-
 }
