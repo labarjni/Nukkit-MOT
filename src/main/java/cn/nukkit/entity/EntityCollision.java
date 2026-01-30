@@ -18,6 +18,12 @@ public class EntityCollision implements ChunkLoader {
     private static final int COLLISION_CACHE_MAX_SIZE = 128;
     private static final Set<Long> recentBlockChanges = ConcurrentHashMap.newKeySet();
 
+    public void clearCaches() {
+        this.chunkCache.clear();
+        this.collisionCache.clear();
+        this.lastCheckedBB = null;
+    }
+
     @Override
     public void onBlockChanged(Vector3 pos) {
         long x = pos.getFloorX();
