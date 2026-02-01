@@ -95,8 +95,6 @@ public class EntityCollision implements ChunkLoader {
             return Collections.emptyList();
         }
 
-        this.updateChunkRegistration();
-
         List<Block> blocks = this.getBlocksInBoundingBox(boundingBox);
 
         if (blocks.isEmpty()) {
@@ -110,7 +108,7 @@ public class EntityCollision implements ChunkLoader {
                 double motionAbsX = Math.abs(motionX);
                 double motionAbsY = Math.abs(motionY);
                 double motionAbsZ = Math.abs(motionZ);
-                if (block.collidesWithBB(boundingBox.grow(motionAbsX, motionAbsY, motionAbsZ))) {
+                if (block.collidesWithBB(boundingBox.grow(motionAbsX + 1, motionAbsY + 1, motionAbsZ + 1))) {
                     collisionBlocks.add(block);
                 }
             } else if (block.collidesWithBB(boundingBox, true)) {
