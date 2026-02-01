@@ -33,7 +33,7 @@ public class EntityCollision implements ChunkLoader {
     }
 
     /**
-     * Clears internal chunk cache to free memory when the entity is removed.
+     * Clears data when the entity is removed.
      */
     public void cleanup() {
         chunkCache.invalidateAll();
@@ -148,6 +148,8 @@ public class EntityCollision implements ChunkLoader {
             return Collections.emptyList();
         }
 
+        this.updateChunkRegistration();
+
         List<Block> result = new ArrayList<>();
         for (int x = minX; x <= maxX; x++) {
             int chunkX = x >> 4;
@@ -203,6 +205,8 @@ public class EntityCollision implements ChunkLoader {
             return false;
         }
 
+        this.updateChunkRegistration();
+
         for (int x = minX; x <= maxX; x++) {
             int chunkX = x >> 4;
             int localX = x & 0x0f;
@@ -240,7 +244,7 @@ public class EntityCollision implements ChunkLoader {
 
     @Override
     public boolean isLoaderActive() {
-        return !entity.isClosed() && entity.getLevel() != null && registered;
+        return !entity.isClosed() && entity.getLevel() != null && this.registered;
     }
 
     @Override
