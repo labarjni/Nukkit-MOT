@@ -442,7 +442,7 @@ public abstract class Entity extends Location implements Metadatable {
 
     protected EntityDamageEvent lastDamageCause = null;
 
-    private EntityCollision collisionCache;
+    private EntityCollisionHelper collisionHelper;
 
     public List<Block> blocksAround = new ArrayList<>();
     public List<Block> collisionBlocks = new ArrayList<>();
@@ -659,7 +659,7 @@ public abstract class Entity extends Location implements Metadatable {
 
         this.init = true;
 
-        this.collisionCache = new EntityCollision(this);
+        this.collisionHelper = new EntityCollisionHelper(this);
         this.temporalVector = new Vector3();
 
         if (Server.getInstance().netEaseMode) {
@@ -1766,7 +1766,13 @@ public abstract class Entity extends Location implements Metadatable {
     }
 
     protected boolean checkObstruction(double x, double y, double z) {
-        if (this.noClip || this.level.getCollisionCubes(this, this.boundingBox, false).length == 0) {
+        if (this.noClip || EntityCollisionHelper.getCollisionCubes(
+                this.level,
+                this,
+                this.boundingBox,
+                false,
+                false
+        ).isEmpty()) {
             return false;
         }
 
@@ -1990,7 +1996,7 @@ public abstract class Entity extends Location implements Metadatable {
                 return false;
             }
             if (!(this instanceof Player) && !positionChanged) return false;
-            List<Block> blocks = this.getBlocksAround();
+            Block[] blocks = getCollisionHelper().getBlocksAround();
             for (Block block : blocks) {
                 if (block.getId() == Block.SWEET_BERRY_BUSH && block.getDamage() >= 2) {
                     return true;
@@ -2530,8 +2536,7 @@ public abstract class Entity extends Location implements Metadatable {
     }
 
     public boolean isInsideOfLava() {
-        if (this.collisionCache == null) this.collisionCache = new EntityCollision(this);
-        return this.collisionCache.isInsideBlock(this.boundingBox, Block.LAVA);
+        return getCollisionHelper().isInsideBlock(this.boundingBox, Block.LAVA);
     }
 
     public boolean isInsideOfSolid() {
@@ -2549,8 +2554,7 @@ public abstract class Entity extends Location implements Metadatable {
     }
 
     public boolean isInsideOfFire() {
-        if (this.collisionCache == null) this.collisionCache = new EntityCollision(this);
-        return this.collisionCache.isInsideBlock(this.boundingBox, Block.FIRE);
+        return getCollisionHelper().isInsideBlock(this.boundingBox, Block.FIRE);
     }
 
     public boolean fastMove(double dx, double dy, double dz) {
@@ -2593,6 +2597,7 @@ public abstract class Entity extends Location implements Metadatable {
 
         if (!(this instanceof Player)) {
             this.blocksAround = null;
+            this.collisionBlocks = null;
         }
 
         if (this.keepMovement) {
@@ -2609,7 +2614,13 @@ public abstract class Entity extends Location implements Metadatable {
 
             AxisAlignedBB axisalignedbb = this.boundingBox.clone();
 
-            AxisAlignedBB[] list = this.noClip ? AxisAlignedBB.EMPTY_ARRAY : this.level.getCollisionCubes(this, this.boundingBox.addCoord(dx, dy, dz), false);
+            List<AxisAlignedBB> list = this.noClip ? List.of(AxisAlignedBB.EMPTY_ARRAY) : EntityCollisionHelper.getCollisionCubes(
+                    this.level,
+                    this,
+                    this.boundingBox.addCoord(dx, dy, dz),
+                    false,
+                    false
+            );
 
             for (AxisAlignedBB bb : list) {
                 dy = bb.calculateYOffset(this.boundingBox, dy);
@@ -2643,7 +2654,13 @@ public abstract class Entity extends Location implements Metadatable {
 
                 this.boundingBox.setBB(axisalignedbb);
 
-                list = this.level.getCollisionCubes(this, this.boundingBox.addCoord(dx, dy, dz), false);
+                list = EntityCollisionHelper.getCollisionCubes(
+                        this.level,
+                        this,
+                        this.boundingBox.addCoord(dx, dy, dz),
+                        false,
+                        false
+                );
 
                 for (AxisAlignedBB bb : list) {
                     dy = bb.calculateYOffset(this.boundingBox, dy);
@@ -2719,32 +2736,39 @@ public abstract class Entity extends Location implements Metadatable {
         }
     }
 
-    public List<Block> getBlocksAround() {
-        if (this.collisionCache == null) return Collections.emptyList();
-
-        List<Block> blocksAround = this.collisionCache.getBlocksInBoundingBox(this.boundingBox);
-
-        if (!blocksAround.isEmpty()) {
-            this.blocksAround = blocksAround;
-        } else {
-            return Collections.emptyList();
+    /**
+     * Gets the collision helper for this entity.
+     * Creates a new instance if one doesn't exist.
+     *
+     * @return EntityCollisionHelper instance
+     */
+    public EntityCollisionHelper getCollisionHelper() {
+        if (this.collisionHelper == null) {
+            this.collisionHelper = new EntityCollisionHelper(this);
         }
-
-        return blocksAround;
+        return this.collisionHelper;
     }
 
-    public List<Block> getCollisionBlocks() {
-        if (this.collisionCache == null) return Collections.emptyList();
-
-        List<Block> collisionBlocks = this.collisionCache.getCollisionBlocks(this.boundingBox);
-
-        if (!collisionBlocks.isEmpty()) {
-            this.collisionBlocks = collisionBlocks;
-        } else {
-            return Collections.emptyList();
+    /**
+     * @deprecated Use {@link #getCollisionHelper()}.getBlocksAround() instead
+     */
+    @Deprecated
+    public List<Block> getBlocksAround() {
+        if (this.blocksAround == null) {
+            this.blocksAround = List.of(getCollisionHelper().getBlocksAround());
         }
+        return this.blocksAround;
+    }
 
-        return collisionBlocks;
+    /**
+     * @deprecated Use {@link #getCollisionHelper()}.getCollisionBlocks() instead
+     */
+    @Deprecated
+    public List<Block> getCollisionBlocks() {
+        if (this.collisionBlocks == null) {
+            this.collisionBlocks = List.of(getCollisionHelper().getCollisionBlocks());
+        }
+        return this.collisionBlocks;
     }
 
     /**
@@ -2765,7 +2789,7 @@ public abstract class Entity extends Location implements Metadatable {
         boolean portal = false;
         boolean powderSnow = false;
 
-        for (Block block : this.getCollisionBlocks()) {
+        for (Block block : getCollisionHelper().getCollisionBlocks()) {
             if (block.getId() == Block.NETHER_PORTAL) {
                 portal = true;
                 continue;
@@ -3053,13 +3077,25 @@ public abstract class Entity extends Location implements Metadatable {
         if (!this.closed) {
             this.closed = true;
 
-            if (this.collisionCache != null) {
-                this.collisionCache.cleanup();
-                this.collisionCache = null;
+            this.collisionHelper = null;
+            this.blocksAround = null;
+            this.collisionBlocks = null;
+
+            this.effects.clear();
+            this.passengers.clear();
+
+            if (this.intProperties != null) {
+                this.intProperties.clear();
+            }
+            if (this.floatProperties != null) {
+                this.floatProperties.clear();
             }
 
             this.server.getPluginManager().callEvent(new EntityDespawnEvent(this));
             this.despawnFromAll();
+
+            this.hasSpawned.clear();
+
             if (this.chunk != null) {
                 this.chunk.removeEntity(this);
             }
