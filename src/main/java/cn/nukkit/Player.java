@@ -1871,6 +1871,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         List<Block> scaffoldingUnder = EntityCollisionHelper.getCollisionBlocks(
                 this.level,
                 scanBoundingBox,
+                null,
                 true,
                 true,
                 block -> block.getId() == BlockID.SCAFFOLDING
