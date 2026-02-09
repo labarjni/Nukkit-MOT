@@ -5,7 +5,7 @@ import cn.nukkit.block.Block;
 import cn.nukkit.block.BlockID;
 import cn.nukkit.block.BlockWater;
 import cn.nukkit.entity.Entity;
-import cn.nukkit.entity.EntityCollisionHelper;
+import cn.nukkit.entity.CollisionHelper;
 import cn.nukkit.entity.data.ByteEntityData;
 import cn.nukkit.entity.data.FloatEntityData;
 import cn.nukkit.event.entity.EntityDamageByEntityEvent;
@@ -193,7 +193,7 @@ public class EntityBoat extends EntityVehicle {
 
         if (this.age % 5 == 0) {
             if (!this.passengers.isEmpty() && this.passengers.get(0) instanceof Player) {
-                List<Block> blocks = EntityCollisionHelper.getCollisionBlocks(
+                List<Block> blocks = CollisionHelper.getCollisionBlocks(
                         this.level,
                         this.getBoundingBox().grow(0.1, 0.3, 0.1)
                 );

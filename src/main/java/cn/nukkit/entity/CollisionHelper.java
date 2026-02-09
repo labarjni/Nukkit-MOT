@@ -14,13 +14,13 @@ import java.util.List;
 import java.util.function.Predicate;
 
 /**
- * Collision helper for entities.
+ * Collision helper for entities and other targets.
  * @author labarjni
  */
-public record EntityCollisionHelper(Entity entity) {
+public record CollisionHelper(Entity entity) {
 
     /**
-     * Gets blocks that collide with entity's AABB.
+     * Gets blocks that collide with current entity's AABB.
      *
      * @return Array of colliding blocks
      */
@@ -48,7 +48,7 @@ public record EntityCollisionHelper(Entity entity) {
     }
 
     /**
-     * Gets blocks in bounding box with caching.
+     * Gets blocks in bounding box.
      *
      * @param boundingBox Bounding box to check
      * @return Array of blocks
@@ -128,7 +128,11 @@ public record EntityCollisionHelper(Entity entity) {
         return false;
     }
 
-    // API
+    /*
+     * API
+        Contains auxiliary collision methods
+        Uses lists instead of arrays
+     */
 
     /**
      * Gets colliding entities within a bounding box.
@@ -173,7 +177,7 @@ public record EntityCollisionHelper(Entity entity) {
     }
 
     /**
-     * Gets blocks that collide with specified bounding box in a level.
+     * Gets blocks that collide with bounding box in a level.
      *
      * @param level The level to check
      * @param boundingBox The axis-aligned bounding box
@@ -193,7 +197,7 @@ public record EntityCollisionHelper(Entity entity) {
     }
 
     /**
-     * Gets blocks that collide with specified bounding box in a level.
+     * Gets blocks that collide with bounding box in a level.
      *
      * @param level The level to check
      * @param boundingBox The axis-aligned bounding box
@@ -218,7 +222,7 @@ public record EntityCollisionHelper(Entity entity) {
     }
 
     /**
-     * Gets blocks that collide with specified bounding box in a level.
+     * Gets blocks that collide with bounding box in a level.
      *
      * @param level The level to check
      * @param boundingBox The axis-aligned bounding box
@@ -245,7 +249,7 @@ public record EntityCollisionHelper(Entity entity) {
     }
 
     /**
-     * Gets blocks that collide with specified bounding box in a level.
+     * Gets blocks that collide with bounding box in a level.
      *
      * @param level The level to check
      * @param boundingBox The axis-aligned bounding box
@@ -311,7 +315,7 @@ public record EntityCollisionHelper(Entity entity) {
     }
 
     /**
-     * Checks if there are any collision blocks in the specified bounding box.
+     * Checks if there are any collision blocks in the bounding box.
      *
      * @param level Level to check
      * @param entity Optional entity for chunk reference
@@ -357,8 +361,7 @@ public record EntityCollisionHelper(Entity entity) {
     }
 
     /**
-     * Checks if there are any collision blocks in the specified bounding box.
-     * Simplified version without checkCanPassThrough parameter.
+     * Checks if there are any collision blocks in the bounding box.
      *
      * @param level Level to check
      * @param entity Entity for chunk reference
@@ -379,7 +382,7 @@ public record EntityCollisionHelper(Entity entity) {
     }
 
     /**
-     * Gets collision cubes (bounding boxes) for blocks and optionally entities.
+     * Gets collision cubes (bounding boxes) for blocks.
      *
      * @param level Level to check
      * @param entity Optional entity to exclude from entity collisions
@@ -443,7 +446,6 @@ public record EntityCollisionHelper(Entity entity) {
 
     /**
      * Gets collision cubes (bounding boxes) for blocks only.
-     * Simplified version that excludes entities.
      *
      * @param level Level to check
      * @param entity Entity for level reference
@@ -466,7 +468,6 @@ public record EntityCollisionHelper(Entity entity) {
 
     /**
      * Gets collision cubes (bounding boxes) for blocks only.
-     * Simplified version that excludes entities.
      *
      * @param level Level to check
      * @param entity Entity for level reference
@@ -491,7 +492,6 @@ public record EntityCollisionHelper(Entity entity) {
 
     /**
      * Gets blocks around the entity's current position.
-     * Equivalent to the old getBlocksAround() method.
      *
      * @return Array of blocks around the entity
      */

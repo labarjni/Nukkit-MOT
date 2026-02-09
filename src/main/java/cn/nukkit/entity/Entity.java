@@ -442,7 +442,7 @@ public abstract class Entity extends Location implements Metadatable {
 
     protected EntityDamageEvent lastDamageCause = null;
 
-    private EntityCollisionHelper collisionHelper;
+    private CollisionHelper collisionHelper;
 
     public List<Block> blocksAround = new ArrayList<>();
     public List<Block> collisionBlocks = new ArrayList<>();
@@ -659,7 +659,7 @@ public abstract class Entity extends Location implements Metadatable {
 
         this.init = true;
 
-        this.collisionHelper = new EntityCollisionHelper(this);
+        this.collisionHelper = new CollisionHelper(this);
         this.temporalVector = new Vector3();
 
         if (Server.getInstance().netEaseMode) {
@@ -1766,7 +1766,7 @@ public abstract class Entity extends Location implements Metadatable {
     }
 
     protected boolean checkObstruction(double x, double y, double z) {
-        if (this.noClip || EntityCollisionHelper.getCollisionCubes(
+        if (this.noClip || CollisionHelper.getCollisionCubes(
                 this.level,
                 this,
                 this.boundingBox,
@@ -2614,7 +2614,7 @@ public abstract class Entity extends Location implements Metadatable {
 
             AxisAlignedBB axisalignedbb = this.boundingBox.clone();
 
-            List<AxisAlignedBB> list = this.noClip ? List.of(AxisAlignedBB.EMPTY_ARRAY) : EntityCollisionHelper.getCollisionCubes(
+            List<AxisAlignedBB> list = this.noClip ? List.of(AxisAlignedBB.EMPTY_ARRAY) : CollisionHelper.getCollisionCubes(
                     this.level,
                     this,
                     this.boundingBox.addCoord(dx, dy, dz),
@@ -2654,7 +2654,7 @@ public abstract class Entity extends Location implements Metadatable {
 
                 this.boundingBox.setBB(axisalignedbb);
 
-                list = EntityCollisionHelper.getCollisionCubes(
+                list = CollisionHelper.getCollisionCubes(
                         this.level,
                         this,
                         this.boundingBox.addCoord(dx, dy, dz),
@@ -2740,11 +2740,11 @@ public abstract class Entity extends Location implements Metadatable {
      * Gets the collision helper for this entity.
      * Creates a new instance if one doesn't exist.
      *
-     * @return EntityCollisionHelper instance
+     * @return CollisionHelper instance
      */
-    public EntityCollisionHelper getCollisionHelper() {
+    public CollisionHelper getCollisionHelper() {
         if (this.collisionHelper == null) {
-            this.collisionHelper = new EntityCollisionHelper(this);
+            this.collisionHelper = new CollisionHelper(this);
         }
         return this.collisionHelper;
     }

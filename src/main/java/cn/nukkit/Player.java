@@ -1868,7 +1868,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         AxisAlignedBB scanBoundingBox = this.boundingBox.getOffsetBoundingBox(0, -0.125, 0);
         scanBoundingBox.setMaxY(this.boundingBox.getMinY());
 
-        List<Block> scaffoldingUnder = EntityCollisionHelper.getCollisionBlocks(
+        List<Block> scaffoldingUnder = CollisionHelper.getCollisionBlocks(
                 this.level,
                 scanBoundingBox,
                 null,
@@ -2131,7 +2131,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         // Replacement for this.fastMove(dx, dy, dz) start
         boolean canPass = this.isSpectator();
         if (!canPass) {
-            List<Block> blocks = EntityCollisionHelper.getCollisionBlocks(
+            List<Block> blocks = CollisionHelper.getCollisionBlocks(
                     this.level,
                     this.boundingBox.getOffsetBoundingBox(dx, dy, dz).shrink(0.1, this.getStepHeight(), 0.1)
             );

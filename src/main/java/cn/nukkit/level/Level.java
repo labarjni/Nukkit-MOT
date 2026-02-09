@@ -7,8 +7,8 @@ import cn.nukkit.api.NonComputationAtomic;
 import cn.nukkit.block.*;
 import cn.nukkit.blockentity.BlockEntity;
 import cn.nukkit.entity.BaseEntity;
+import cn.nukkit.entity.CollisionHelper;
 import cn.nukkit.entity.Entity;
-import cn.nukkit.entity.EntityCollisionHelper;
 import cn.nukkit.entity.custom.EntityDefinition;
 import cn.nukkit.entity.custom.EntityManager;
 import cn.nukkit.entity.item.EntityItem;
@@ -1247,7 +1247,7 @@ public class Level implements ChunkManager, Metadatable {
         AxisAlignedBB boundingBox = new SimpleAxisAlignedBB(pos.x, pos.y, pos.z, pos.getX(), this.getMaxBlockY(), pos.getZ()).expand(3, 3, 3);
         List<Entity> list = new ArrayList<>();
 
-        for (Entity entity : EntityCollisionHelper.getCollidingEntities(this, boundingBox)) {
+        for (Entity entity : CollisionHelper.getCollidingEntities(this, boundingBox)) {
             if (entity.isAlive() && entity.canSeeSky()) {
                 list.add(entity);
             }
@@ -1720,8 +1720,8 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     /**
-     * @deprecated Use {@link EntityCollisionHelper#getCollisionBlocks(Level, AxisAlignedBB)}
-     * @see EntityCollisionHelper#getCollisionBlocks(Level, AxisAlignedBB)
+     * @deprecated Use {@link CollisionHelper#getCollisionBlocks(Level, AxisAlignedBB)}
+     * @see CollisionHelper#getCollisionBlocks(Level, AxisAlignedBB)
      */
     @Deprecated
     public @NotNull Block[] getCollisionBlocks(AxisAlignedBB bb) {
@@ -1729,12 +1729,12 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     /**
-     * @deprecated Use {@link EntityCollisionHelper#getCollisionBlocks(Level, AxisAlignedBB)}
-     * @see EntityCollisionHelper#getCollisionBlocks(Level, AxisAlignedBB)
+     * @deprecated Use {@link CollisionHelper#getCollisionBlocks(Level, AxisAlignedBB)}
+     * @see CollisionHelper#getCollisionBlocks(Level, AxisAlignedBB)
      */
     @Deprecated
     public @NotNull Block[] getCollisionBlocks(AxisAlignedBB boundingBox, boolean targetFirst) {
-        return EntityCollisionHelper.getCollisionBlocks(
+        return CollisionHelper.getCollisionBlocks(
                 this,
                 boundingBox,
                 null,
@@ -1744,12 +1744,12 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     /**
-     * @deprecated Use {@link EntityCollisionHelper#getCollisionBlocks(Level, AxisAlignedBB)}
-     * @see EntityCollisionHelper#getCollisionBlocks(Level, AxisAlignedBB)
+     * @deprecated Use {@link CollisionHelper#getCollisionBlocks(Level, AxisAlignedBB)}
+     * @see CollisionHelper#getCollisionBlocks(Level, AxisAlignedBB)
      */
     @Deprecated
     public @NotNull Block[] getCollisionBlocks(AxisAlignedBB boundingBox, boolean targetFirst, boolean ignoreCollidesCheck) {
-        return EntityCollisionHelper.getCollisionBlocks(
+        return CollisionHelper.getCollisionBlocks(
                 this,
                 boundingBox,
                 null,
@@ -1760,12 +1760,12 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     /**
-     * @deprecated Use {@link EntityCollisionHelper#getCollisionBlocks(Level, AxisAlignedBB)}
-     * @see EntityCollisionHelper#getCollisionBlocks(Level, AxisAlignedBB)
+     * @deprecated Use {@link CollisionHelper#getCollisionBlocks(Level, AxisAlignedBB)}
+     * @see CollisionHelper#getCollisionBlocks(Level, AxisAlignedBB)
      */
     @Deprecated
     public @NotNull Block[] getCollisionBlocks(AxisAlignedBB boundingBox, boolean targetFirst, boolean ignoreCollidesCheck, Predicate<Block> condition) {
-        return EntityCollisionHelper.getCollisionBlocks(
+        return CollisionHelper.getCollisionBlocks(
                 this,
                 boundingBox,
                 null,
@@ -1776,12 +1776,12 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     /**
-     * @deprecated Use {@link EntityCollisionHelper#hasCollisionBlocks(Level, Entity, AxisAlignedBB, boolean)}
-     * @see EntityCollisionHelper#hasCollisionBlocks(Level, Entity, AxisAlignedBB, boolean)
+     * @deprecated Use {@link CollisionHelper#hasCollisionBlocks(Level, Entity, AxisAlignedBB, boolean)}
+     * @see CollisionHelper#hasCollisionBlocks(Level, Entity, AxisAlignedBB, boolean)
      */
     @Deprecated
     public boolean hasCollisionBlocks(AxisAlignedBB boundingBox) {
-        return EntityCollisionHelper.hasCollisionBlocks(
+        return CollisionHelper.hasCollisionBlocks(
                 this,
                 null,
                 boundingBox
@@ -1789,12 +1789,12 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     /**
-     * @deprecated Use {@link EntityCollisionHelper#hasCollisionBlocks(Level, Entity, AxisAlignedBB, boolean)}
-     * @see EntityCollisionHelper#hasCollisionBlocks(Level, Entity, AxisAlignedBB, boolean)
+     * @deprecated Use {@link CollisionHelper#hasCollisionBlocks(Level, Entity, AxisAlignedBB, boolean)}
+     * @see CollisionHelper#hasCollisionBlocks(Level, Entity, AxisAlignedBB, boolean)
      */
     @Deprecated
     public boolean hasCollisionBlocks(Entity entity, AxisAlignedBB boundingBox) {
-        return EntityCollisionHelper.hasCollisionBlocks(
+        return CollisionHelper.hasCollisionBlocks(
                 this,
                 entity,
                 boundingBox,
@@ -1803,12 +1803,12 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     /**
-     * @deprecated Use {@link EntityCollisionHelper#hasCollisionBlocks(Level, Entity, AxisAlignedBB, boolean)}
-     * @see EntityCollisionHelper#hasCollisionBlocks(Level, Entity, AxisAlignedBB, boolean)
+     * @deprecated Use {@link CollisionHelper#hasCollisionBlocks(Level, Entity, AxisAlignedBB, boolean)}
+     * @see CollisionHelper#hasCollisionBlocks(Level, Entity, AxisAlignedBB, boolean)
      */
     @Deprecated
     public boolean hasCollisionBlocks(Entity entity, AxisAlignedBB boundingBox, boolean checkCanPassThrough) {
-        return EntityCollisionHelper.hasCollisionBlocks(
+        return CollisionHelper.hasCollisionBlocks(
                 this,
                 entity,
                 boundingBox,
@@ -1817,12 +1817,12 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     /**
-     * @deprecated Use {@link EntityCollisionHelper#getCollisionCubes(Level, Entity, AxisAlignedBB)}
-     * @see EntityCollisionHelper#getCollisionCubes(Level, Entity, AxisAlignedBB)
+     * @deprecated Use {@link CollisionHelper#getCollisionCubes(Level, Entity, AxisAlignedBB)}
+     * @see CollisionHelper#getCollisionCubes(Level, Entity, AxisAlignedBB)
      */
     @Deprecated
     public AxisAlignedBB[] getCollisionCubes(Entity entity, AxisAlignedBB boundingBox) {
-        return EntityCollisionHelper.getCollisionCubes(
+        return CollisionHelper.getCollisionCubes(
                 this,
                 entity,
                 boundingBox
@@ -1830,12 +1830,12 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     /**
-     * @deprecated Use {@link EntityCollisionHelper#getCollisionCubes(Level, Entity, AxisAlignedBB, boolean)}
-     * @see EntityCollisionHelper#getCollisionCubes(Level, Entity, AxisAlignedBB, boolean)
+     * @deprecated Use {@link CollisionHelper#getCollisionCubes(Level, Entity, AxisAlignedBB, boolean)}
+     * @see CollisionHelper#getCollisionCubes(Level, Entity, AxisAlignedBB, boolean)
      */
     @Deprecated
     public AxisAlignedBB[] getCollisionCubes(Entity entity, AxisAlignedBB boundingBox, boolean entities) {
-        return EntityCollisionHelper.getCollisionCubes(
+        return CollisionHelper.getCollisionCubes(
                 this,
                 entity,
                 boundingBox,
@@ -1844,12 +1844,12 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     /**
-     * @deprecated Use {@link EntityCollisionHelper#getCollisionCubes(Level, Entity, AxisAlignedBB, boolean, boolean)}
-     * @see EntityCollisionHelper#getCollisionCubes(Level, Entity, AxisAlignedBB, boolean, boolean)
+     * @deprecated Use {@link CollisionHelper#getCollisionCubes(Level, Entity, AxisAlignedBB, boolean, boolean)}
+     * @see CollisionHelper#getCollisionCubes(Level, Entity, AxisAlignedBB, boolean, boolean)
      */
     @Deprecated
     public AxisAlignedBB[] getCollisionCubes(Entity entity, AxisAlignedBB boundingBox, boolean entities, boolean solidEntities) {
-        return EntityCollisionHelper.getCollisionCubes(
+        return CollisionHelper.getCollisionCubes(
                 this,
                 entity,
                 boundingBox,
@@ -1873,7 +1873,7 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     public boolean hasCollision(Entity entity, AxisAlignedBB boundingBox, boolean entities) {
-        if (EntityCollisionHelper.hasCollisionBlocks(
+        if (CollisionHelper.hasCollisionBlocks(
                 this,
                 entity,
                 boundingBox,
@@ -1883,7 +1883,7 @@ public class Level implements ChunkManager, Metadatable {
         }
 
         if (entities) {
-            return !EntityCollisionHelper.getCollidingEntities(
+            return !CollisionHelper.getCollidingEntities(
                     this,
                     boundingBox.grow(0.25f, 0.25f, 0.25f),
                     entity
@@ -2816,7 +2816,7 @@ public class Level implements ChunkManager, Metadatable {
 
 
         if (!hand.canPassThrough() && hand.getBoundingBox() != null) {
-            List<Entity> entities = EntityCollisionHelper.getCollidingEntities(this, hand.getBoundingBox());
+            List<Entity> entities = CollisionHelper.getCollidingEntities(this, hand.getBoundingBox());
             //int realCount = 0;
             for (Entity e : entities) {
                 if (e == player || e instanceof EntityArrow || e instanceof EntityItem || (e instanceof Player && ((Player) e).isSpectator() || !e.canCollide())) {
@@ -2989,8 +2989,8 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     /**
-     * @deprecated Use {@link EntityCollisionHelper#getCollidingEntities(Level, AxisAlignedBB)}
-     * @see EntityCollisionHelper#getCollidingEntities(Level, AxisAlignedBB)
+     * @deprecated Use {@link CollisionHelper#getCollidingEntities(Level, AxisAlignedBB)}
+     * @see CollisionHelper#getCollidingEntities(Level, AxisAlignedBB)
      */
     @Deprecated
     public Entity[] getCollidingEntities(AxisAlignedBB bb) {
@@ -2998,12 +2998,12 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     /**
-     * @deprecated Use {@link EntityCollisionHelper#getCollidingEntities(Level, AxisAlignedBB, Entity)}
-     * @see EntityCollisionHelper#getCollidingEntities(Level, AxisAlignedBB, Entity)
+     * @deprecated Use {@link CollisionHelper#getCollidingEntities(Level, AxisAlignedBB, Entity)}
+     * @see CollisionHelper#getCollidingEntities(Level, AxisAlignedBB, Entity)
      */
     @Deprecated
     public Entity[] getCollidingEntities(AxisAlignedBB boundingBox, Entity entity) {
-        return EntityCollisionHelper.getCollidingEntities(this, boundingBox, entity).toArray(EMPTY_ENTITY_ARR);
+        return CollisionHelper.getCollidingEntities(this, boundingBox, entity).toArray(EMPTY_ENTITY_ARR);
     }
 
     public Entity[] getNearbyEntities(AxisAlignedBB bb) {

@@ -406,7 +406,7 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
         double movY = dy;
         double movZ = dz * moveMultiplier;
 
-        List<AxisAlignedBB> list = EntityCollisionHelper.getCollisionCubes(
+        List<AxisAlignedBB> list = CollisionHelper.getCollisionCubes(
                 this.level,
                 this,
                 this.boundingBox.addCoord(dx, dy, dz),
