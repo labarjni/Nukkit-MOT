@@ -1,5 +1,6 @@
 package cn.nukkit.block;
 
+import cn.nukkit.Server;
 import cn.nukkit.item.Item;
 import cn.nukkit.item.ItemBlock;
 import cn.nukkit.level.Level;
