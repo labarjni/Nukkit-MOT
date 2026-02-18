@@ -2138,13 +2138,8 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             if (blocks.isEmpty()) {
                 canPass = true;
             } else {
-                canPass = true;
-                for (Block b : blocks) {
-                    if (b.getId() != Block.SCAFFOLDING) { //脚手架特殊判断，移动时可以穿过
-                        canPass = false;
-                        break;
-                    }
-                }
+                canPass = blocks.stream()
+                        .allMatch(block -> block.getId() == Block.SCAFFOLDING);
             }
         }
         if (canPass) {
@@ -2169,7 +2164,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                 bb.setMaxZ(bb.getMaxZ() - 0.1);
             }
 
-            this.onGround = this.level.hasCollisionBlocks(this, bb);
+            this.onGround = CollisionHelper.hasCollisionBlocks(this.level, this, bb);
         }
 
         this.isCollided = this.onGround;
