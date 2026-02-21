@@ -608,8 +608,10 @@ public class PlayerInventory extends BaseInventory {
             if (!p.isSpectator()) {
                 if (p.isCreative()) {
                     pk.creativeItems = Item.getCreativeItemsAndGroups(p.getGameVersion(), p);
-                } else {
+                } else if (p.protocol > ProtocolInfo.v1_21_50) { // AntiToolbox patch
                     pk.creativeItems = Item.getCreativeItemsAndGroupsRaw(p.getGameVersion());
+                } else {
+                    pk.creativeItems = Item.getCreativeItemsAndGroups(p.getGameVersion(), p);
                 }
             }
             p.dataPacket(pk);
