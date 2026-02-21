@@ -5,7 +5,7 @@ import cn.nukkit.Player;
 import java.util.*;
 import java.util.function.Predicate;
 
-public final class CreativeItemPermissions {
+public final class ItemCreativePermissions {
 
     private static final String BASE_PERMISSION = "nukkit.creativeitem.";
 
