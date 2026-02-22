@@ -2135,6 +2135,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                     this.level,
                     this.boundingBox.getOffsetBoundingBox(dx, dy, dz).shrink(0.1, this.getStepHeight(), 0.1)
             );
+
             if (blocks.isEmpty()) {
                 canPass = true;
             } else {
