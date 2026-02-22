@@ -2615,7 +2615,7 @@ public abstract class Entity extends Location implements Metadatable {
 
         double movX = dx, movY = dy, movZ = dz;
         AxisAlignedBB originalBB = this.boundingBox.clone();
-        List<AxisAlignedBB> collisions = this.noClip ? List.of() : CollisionHelper.getCollisionCubes(this.level, this, this.boundingBox.addCoord(dx, dy, dz), false);
+        List<AxisAlignedBB> collisions = this.noClip ? Collections.emptyList() : CollisionHelper.getCollisionCubes(this.level, this, this.boundingBox.addCoord(dx, dy, dz), false);
 
         for (AxisAlignedBB bb : collisions) dy = bb.calculateYOffset(this.boundingBox, dy);
         this.boundingBox.offset(0, dy, 0);
@@ -2720,7 +2720,7 @@ public abstract class Entity extends Location implements Metadatable {
      */
     @Deprecated
     public List<Block> getCollisionBlocks() {
-        if (this.collisionBlocks == null) {
+        if (this.collisionBlocks == null || this.positionChanged) {
             this.collisionBlocks = Arrays.asList(getCollisionHelper().getCollisionBlocks());
         }
         return this.collisionBlocks;
@@ -3031,13 +3031,12 @@ public abstract class Entity extends Location implements Metadatable {
     public void close() {
         if (!this.closed) {
             this.closed = true;
+            this.server.getPluginManager().callEvent(new EntityDespawnEvent(this));
+            this.despawnFromAll();
 
             this.collisionHelper = null;
             this.blocksAround = null;
             this.collisionBlocks = null;
-
-            this.server.getPluginManager().callEvent(new EntityDespawnEvent(this));
-            this.despawnFromAll();
 
             this.effects.clear();
             this.passengers.clear();
