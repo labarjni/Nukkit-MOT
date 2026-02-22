@@ -794,182 +794,97 @@ public class Item implements Cloneable, BlockID, ItemID, ItemNamespaceId, Protoc
         //TODO Multiversion 添加新版本支持时修改这里
     }
 
-    public static ArrayList<Item> getCreativeItems() {
-        Server.mvw("Item#getCreativeItems()");
-        return getCreativeItems(GameVersion.getLastVersion());
+
+    public static ArrayList<Item> getCreativeItems(GameVersion protocol) {
+        return new ArrayList<>(getCreativeItemsAndGroups(protocol, null).getItems());
     }
 
-    @Deprecated
-    public static ArrayList<Item> getCreativeItems(int protocol) {
-        return new ArrayList<>(getCreativeItemsAndGroups(protocol).getItems());
+    public static ArrayList<Item> getCreativeItems(Player player) {
+        return new ArrayList<>(getCreativeItemsAndGroups(player.getGameVersion(), player).getItems());
     }
 
-    public static ArrayList<Item> getCreativeItems(GameVersion gameVersion) {
-        return new ArrayList<>(getCreativeItemsAndGroups(gameVersion).getItems());
-    }
-
-    public static CreativeItems getCreativeItemsAndGroups() {
-        Server.mvw("Item#getCreativeItemsAndGroups()");
-        return getCreativeItemsAndGroups(GameVersion.getLastVersion());
-    }
-
-    @Deprecated
-    public static CreativeItems getCreativeItemsAndGroups(int protocol) {
-        return getCreativeItemsAndGroups(GameVersion.byProtocol(protocol, Server.getInstance().onlyNetEaseMode));
-    }
-
-    public static CreativeItems getCreativeItemsAndGroups(GameVersion protocol) {
-        switch (protocol) {
-            case V1_1_0:
-                return Item.creative113;
-            case V1_2_0:
-            case V1_2_5_11:
-            case V1_2_5:
-            case V1_2_6:
-            case V1_2_7:
-            case V1_2_10:
-            case V1_2_13:
-            case V1_2_13_11:
-            case V1_4_0:
-                return Item.creative137;
-            case V1_5_0:
-                return Item.creative274;
-            case V1_6_0_5:
-            case V1_6_0:
-            case V1_7_0:
-                return Item.creative291;
-            case V1_8_0:
-                return Item.creative313;
-            case V1_9_0:
-                return Item.creative332;
-            case V1_10_0:
-                return Item.creative340;
-            case V1_11_0:
-            case V1_12_0:
-            case V1_13_0:
-                return Item.creative354;
-            case V1_14_0:
-            case V1_14_60:
-                return Item.creative389;
-            case V1_16_0:
-            case V1_16_20:
-            case V1_16_100_0:
-            case V1_16_100_51:
-            case V1_16_100_52:
-            case V1_16_100:
-            case V1_16_200_51:
-            case V1_16_200:
-            case V1_16_210_50:
-            case V1_16_210_53:
-            case V1_16_210:
-            case V1_16_220:
-            case V1_16_230_50:
-            case V1_16_230:
-            case V1_16_230_54:
-                return Item.creative407;
-            case V1_17_0:
-                return Item.creative440;
-            case V1_17_10:
-            case V1_17_20_20:
-                return Item.creative448;
-            case V1_17_30:
-                return Item.creative465;
-            case V1_17_40:
-                return Item.creative471;
-            case V1_18_0:
-                return Item.creative475;
-            case V1_18_10_26:
-            case V1_18_10:
-                return Item.creative486;
-            case V1_18_30:
-                return Item.creative503;
-            case V1_19_0_29:
-            case V1_19_0_31:
-            case V1_19_0:
-                return Item.creative527;
-            case V1_19_10:
-                return Item.creative534;
-            case V1_19_20:
-            case V1_19_21:
-            case V1_19_30_23:
-            case V1_19_30:
-            case V1_19_40:
-                return Item.creative544;
-            case V1_19_50:
-                return Item.creative560;
-            case V1_19_60:
-            case V1_19_63:
-                return Item.creative567;
-            case V1_19_70_24:
-            case V1_19_70:
-                return Item.creative575;
-            case V1_19_80:
-                return Item.creative582;
-            case V1_20_0_23:
-            case V1_20_0:
-                return Item.creative589;
-            case V1_20_10_21:
-            case V1_20_10:
-                return Item.creative594;
-            case V1_20_30_24:
-            case V1_20_30:
-                return Item.creative618;
-            case V1_20_40:
-                return Item.creative622;
-            case V1_20_50:
-                return Item.creative630;
-            case V1_20_60:
-                return Item.creative649;
-            case V1_20_70:
-                return Item.creative662;
-            case V1_20_80:
-                return Item.creative671;
-            case V1_21_0:
-            case V1_21_2:
-                return Item.creative685;
-            case V1_21_20:
-                return Item.creative712;
-            case V1_21_30:
-                return Item.creative729;
-            case V1_21_40:
-                return Item.creative748;
-            case V1_21_50_26:
-            case V1_21_50:
-                return Item.creative766;
-            case V1_21_60:
-                return Item.creative776;
-            case V1_21_70_24:
-            case V1_21_70:
-                return Item.creative786;
-            case V1_21_80:
-                return Item.creative800;
-            case V1_21_90:
-                return Item.creative818;
-            case V1_21_93:
-                return Item.creative819;
-            case V1_21_110_26:
-            case V1_21_100:
-                return Item.creative827;
-            case V1_21_110:
-                return Item.creative844;
-            case V1_21_120:
-            case V1_21_124:
-                return Item.creative859;
-            case V1_21_130_28:
-            case V1_21_130:
-            case V1_26_0:
-                return Item.creative898;
-            // NetEase
-            case V1_20_50_NETEASE:
-                return Item.creative_netease_630;
-            case V1_21_2_NETEASE:
-                return Item.creative_netease_686;
-            case V1_21_50_NETEASE:
-                return Item.creative_netease_766;
-            // TODO Multiversion
-            default:
-                throw new IllegalArgumentException("Tried to get creative items for unsupported protocol version: " + protocol);
+    public static CreativeItems getCreativeItemsAndGroups(GameVersion protocol, Player player) {
+        CreativeItems original = getCreativeItemsAndGroupsRaw(protocol);
+        if (player == null) {
+            return original;
         }
+
+        CreativeItems filtered = new CreativeItems();
+
+        for (CreativeItemGroup group : original.getGroups()) {
+            filtered.addGroup(group);
+        }
+
+        for (Map.Entry<Item, CreativeItemGroup> entry : original.getContents().entrySet()) {
+            Item item = entry.getKey();
+            CreativeItemGroup group = entry.getValue();
+
+            if (ItemCreativePermissions.hasPermission(item, player)) {
+                filtered.add(item, group);
+            }
+        }
+
+        return filtered;
+    }
+
+    public static CreativeItems getCreativeItemsAndGroupsRaw(GameVersion protocol) {
+        return switch (protocol) {
+            case V1_1_0 -> Item.creative113;
+            case V1_2_0, V1_2_5_11, V1_2_5, V1_2_6, V1_2_7, V1_2_10, V1_2_13, V1_2_13_11, V1_4_0 -> Item.creative137;
+            case V1_5_0 -> Item.creative274;
+            case V1_6_0_5, V1_6_0, V1_7_0 -> Item.creative291;
+            case V1_8_0 -> Item.creative313;
+            case V1_9_0 -> Item.creative332;
+            case V1_10_0 -> Item.creative340;
+            case V1_11_0, V1_12_0, V1_13_0 -> Item.creative354;
+            case V1_14_0, V1_14_60 -> Item.creative389;
+            case V1_16_0, V1_16_20, V1_16_100_0, V1_16_100_51, V1_16_100_52, V1_16_100, V1_16_200_51, V1_16_200,
+                 V1_16_210_50, V1_16_210_53, V1_16_210, V1_16_220, V1_16_230_50, V1_16_230, V1_16_230_54 ->
+                    Item.creative407;
+            case V1_17_0 -> Item.creative440;
+            case V1_17_10, V1_17_20_20 -> Item.creative448;
+            case V1_17_30 -> Item.creative465;
+            case V1_17_40 -> Item.creative471;
+            case V1_18_0 -> Item.creative475;
+            case V1_18_10_26, V1_18_10 -> Item.creative486;
+            case V1_18_30 -> Item.creative503;
+            case V1_19_0_29, V1_19_0_31, V1_19_0 -> Item.creative527;
+            case V1_19_10 -> Item.creative534;
+            case V1_19_20, V1_19_21, V1_19_30_23, V1_19_30, V1_19_40 -> Item.creative544;
+            case V1_19_50 -> Item.creative560;
+            case V1_19_60, V1_19_63 -> Item.creative567;
+            case V1_19_70_24, V1_19_70 -> Item.creative575;
+            case V1_19_80 -> Item.creative582;
+            case V1_20_0_23, V1_20_0 -> Item.creative589;
+            case V1_20_10_21, V1_20_10 -> Item.creative594;
+            case V1_20_30_24, V1_20_30 -> Item.creative618;
+            case V1_20_40 -> Item.creative622;
+            case V1_20_50 -> Item.creative630;
+            case V1_20_60 -> Item.creative649;
+            case V1_20_70 -> Item.creative662;
+            case V1_20_80 -> Item.creative671;
+            case V1_21_0, V1_21_2 -> Item.creative685;
+            case V1_21_20 -> Item.creative712;
+            case V1_21_30 -> Item.creative729;
+            case V1_21_40 -> Item.creative748;
+            case V1_21_50_26, V1_21_50 -> Item.creative766;
+            case V1_21_60 -> Item.creative776;
+            case V1_21_70_24, V1_21_70 -> Item.creative786;
+            case V1_21_80 -> Item.creative800;
+            case V1_21_90 -> Item.creative818;
+            case V1_21_93 -> Item.creative819;
+            case V1_21_110_26, V1_21_100 -> Item.creative827;
+            case V1_21_110 -> Item.creative844;
+            case V1_21_120, V1_21_124 -> Item.creative859;
+            case V1_21_130_28, V1_21_130, V1_26_0 -> Item.creative898;
+            // NetEase
+            case V1_20_50_NETEASE -> Item.creative_netease_630;
+            case V1_21_2_NETEASE -> Item.creative_netease_686;
+            case V1_21_50_NETEASE -> Item.creative_netease_766;
+            // TODO Multiversion
+            default ->
+                    throw new IllegalArgumentException("Tried to get creative items for unsupported protocol version: " + protocol);
+        };
     }
 
     public static void addCreativeItem(Item item) {
@@ -1065,7 +980,7 @@ public class Item implements Cloneable, BlockID, ItemID, ItemNamespaceId, Protoc
     }
 
     public static void removeCreativeItem(GameVersion protocol, Item item) {
-        Item.getCreativeItemsAndGroups(protocol).getContents().remove(item);
+        Item.getCreativeItemsAndGroups(protocol, null).getContents().remove(item);
     }
 
     public static boolean isCreativeItem(Item item) {
@@ -1079,7 +994,7 @@ public class Item implements Cloneable, BlockID, ItemID, ItemNamespaceId, Protoc
     }
 
     public static boolean isCreativeItem(GameVersion gameVersion, Item item) {
-        for (Item aCreative : Item.getCreativeItemsAndGroups(gameVersion).getItems()) {
+        for (Item aCreative : Item.getCreativeItemsAndGroups(gameVersion, null).getItems()) {
             if (item.equals(aCreative, !item.isTool())) {
                 return true;
             }
@@ -1632,7 +1547,15 @@ public class Item implements Cloneable, BlockID, ItemID, ItemNamespaceId, Protoc
             if (entry.getShort("id") == id) {
                 Enchantment e = Enchantment.getEnchantment(entry.getShort("id"));
                 if (e != null) {
-                    e.setLevel(entry.getShort("lvl"), Server.getInstance().forcedSafetyEnchant);
+                    if (Server.getInstance().maxEnchantLevel == 0) {
+                        e.setLevel(entry.getShort("lvl"));
+                    } else {
+                        if (entry.getShort("lvl") > Server.getInstance().maxEnchantLevel) {
+                            e.setLevel(entry.getShort("lvl"));
+                        } else {
+                            e.setLevel(entry.getShort("lvl"), false);
+                        }
+                    }
                     return e;
                 }
             }
@@ -1694,7 +1617,15 @@ public class Item implements Cloneable, BlockID, ItemID, ItemNamespaceId, Protoc
         for (CompoundTag entry : ench.getAll()) {
             Enchantment e = Enchantment.getEnchantment(entry.getShort("id"));
             if (e != null) {
-                e.setLevel(entry.getShort("lvl"), Server.getInstance().forcedSafetyEnchant);
+                if (Server.getInstance().maxEnchantLevel == 0) {
+                    e.setLevel(entry.getShort("lvl"));
+                } else {
+                    if (entry.getShort("lvl") > Server.getInstance().maxEnchantLevel) {
+                        e.setLevel(entry.getShort("lvl"));
+                    } else {
+                        e.setLevel(entry.getShort("lvl"), false);
+                    }
+                }
                 enchantments.add(e);
             }
         }

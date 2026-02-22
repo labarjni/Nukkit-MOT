@@ -205,7 +205,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
     public Vector3 speed = null;
 
     private final Queue<Vector3> clientMovements = PlatformDependent.newMpscQueue(4);
-    public final HashSet<String> achievements = new HashSet<>();
 
     public int craftingType = CRAFTING_SMALL;
 
@@ -227,7 +226,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
     protected int lastTeleportTick = -1;
 
-    protected boolean connected = true;
+    protected volatile boolean connected = true;
     protected final InetSocketAddress rawSocketAddress;
     protected InetSocketAddress socketAddress;
     protected boolean removeFormat = true;
@@ -878,14 +877,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
     @Override
     public Player asPlayer() {
         return this;
-    }
-
-    public void removeAchievement(String achievementId) {
-        achievements.remove(achievementId);
-    }
-
-    public boolean hasAchievement(String achievementId) {
-        return achievements.contains(achievementId);
     }
 
     public boolean isConnected() {
@@ -1580,34 +1571,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         return this.sleeping;
     }
 
-    public boolean awardAchievement(String achievementId) {
-        if (!this.server.achievementsEnabled) {
-            return false;
-        }
-
-        Achievement achievement = Achievement.achievements.get(achievementId);
-
-        if (achievement == null || hasAchievement(achievementId)) {
-            return false;
-        }
-
-        for (String id : achievement.requires) {
-            if (!this.hasAchievement(id)) {
-                return false;
-            }
-        }
-        PlayerAchievementAwardedEvent event = new PlayerAchievementAwardedEvent(this, achievementId);
-        this.server.getPluginManager().callEvent(event);
-
-        if (event.isCancelled()) {
-            return false;
-        }
-
-        this.achievements.add(achievementId);
-        achievement.broadcast(this);
-        return true;
-    }
-
     /**
      * Get player's gamemode
      * <p>
@@ -1750,7 +1713,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             if (this.protocol < ProtocolInfo.v1_16_0) {
                 InventoryContentPacket inventoryContentPacket = new InventoryContentPacket();
                 inventoryContentPacket.inventoryId = InventoryContentPacket.SPECIAL_CREATIVE;
-                inventoryContentPacket.slots = Item.getCreativeItems(this.gameVersion).toArray(Item.EMPTY_ARRAY);
+                inventoryContentPacket.slots = Item.getCreativeItems(this).toArray(Item.EMPTY_ARRAY);
                 this.dataPacket(inventoryContentPacket);
             }
         }
@@ -1875,7 +1838,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             return;
         }
 
-        boolean netherPortal = false;
+        boolean portal = false;
         boolean endPortal = false;
         boolean scaffolding = false;
         boolean powderSnow = false;
@@ -1883,7 +1846,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         for (Block block : getCollisionHelper().getCollisionBlocks()) {
             switch (block.getId()) {
                 case Block.NETHER_PORTAL:
-                    netherPortal = true;
+                    portal = true;
                     continue;
                 case Block.END_PORTAL:
                     endPortal = true;
@@ -1955,16 +1918,12 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                                 }
                             }
                         }
-
-                        if (this.teleport(pos, TeleportCause.END_PORTAL) && oldDimension == Level.DIMENSION_OVERWORLD) {
-                            this.awardAchievement("theEnd");
-                        }
                     }
                 }
             }
         }
 
-        if (netherPortal) {
+        if (portal) {
             this.inPortalTicks++;
         } else {
             this.inPortalTicks = 0;
@@ -2942,17 +2901,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             this.fogStack.add(i, new PlayerFogPacket.Fog(Identifier.tryParse(fogIdentifiers.get(i).data), userProvidedFogIds.get(i).data));
         }
 
-
-        for (Tag achievement : nbt.getCompound("Achievements").getAllTags()) {
-            if (!(achievement instanceof ByteTag)) {
-                continue;
-            }
-
-            if (((ByteTag) achievement).getData() > 0) {
-                this.achievements.add(achievement.getName());
-            }
-        }
-
         nbt.putLong("lastPlayed", System.currentTimeMillis() / 1000);
 
         UUID uuid = getUniqueId();
@@ -3200,7 +3148,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
     }
 
     public void handleDataPacket(DataPacket packet) {
-        if (!connected) {
+        if (!this.connected) {
             return;
         }
 
@@ -4161,7 +4109,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                             } else if (this.protocol >= 407) {
                                 if (this.inventory.open(this)) {
                                     this.inventoryOpen = true;
-                                    this.awardAchievement("openInventory");
                                 }
                             }
                         } else if (Nukkit.DEBUG > 1) {
@@ -5754,67 +5701,70 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
     }
 
     public void close(TextContainer message, String reason, boolean notify) {
-        if (this.connected && !this.closed) {
-            if (notify && !reason.isEmpty()) {
-                DisconnectPacket pk = new DisconnectPacket();
-                pk.message = reason;
-                this.forceDataPacket(pk, null);
-            }
-
-            this.connected = false;
-            PlayerQuitEvent ev = null;
-            if (this.username != null && !this.username.isEmpty()) {
-                this.server.getPluginManager().callEvent(ev = new PlayerQuitEvent(this, message, true, reason));
-                if (this.loggedIn && ev.getAutoSave()) {
-                    this.save();
-                }
-                if (this.fishing != null) {
-                    this.stopFishing(false);
-                }
-            }
-
-            for (Player player : new ArrayList<>(this.server.playerList.values())) {
-                if (!player.canSee(this)) {
-                    player.showPlayer(this);
-                }
-            }
-
-            this.hiddenPlayers.clear();
-
-            this.removeAllWindows(true);
-
-            this.unloadChunks(false);
-
-            super.close();
-
-            this.interfaz.close(this, notify ? reason : "");
-
-            if (this.loggedIn) {
-                this.server.removeOnlinePlayer(this);
-                this.loggedIn = false;
-            }
-
-            if (ev != null && !Objects.equals(this.username, "") && this.spawned && !Objects.equals(ev.getQuitMessage().toString(), "")) {
-                this.server.broadcastMessage(ev.getQuitMessage());
-            }
-
-            this.server.getPluginManager().unsubscribeFromPermission(Server.BROADCAST_CHANNEL_USERS, this);
-            this.spawned = false;
-            this.server.getLogger().info(this.getServer().getLanguage().translateString("nukkit.player.logOut",
-                    TextFormat.AQUA + (this.getName() == null ? this.unverifiedUsername : this.getName()) + TextFormat.WHITE,
-                    this.getAddress(),
-                    String.valueOf(this.getPort()),
-                    this.getServer().getLanguage().translateString(reason)));
-            this.windows.clear();
-            this.hasSpawned.clear();
-            this.spawnPosition = null;
-
-            if (this.riding instanceof EntityRideable) {
-                this.riding.passengers.remove(this);
-            }
-
-            this.riding = null;
+        if (this.closed) {
+            return;
         }
+
+        if (notify && !reason.isEmpty() && this.connected) {
+            DisconnectPacket pk = new DisconnectPacket();
+            pk.message = reason;
+            this.forceDataPacket(pk, null);
+        }
+
+        this.connected = false;
+
+        PlayerQuitEvent ev = null;
+        if (this.username != null && !this.username.isEmpty()) {
+            this.server.getPluginManager().callEvent(ev = new PlayerQuitEvent(this, message, true, reason));
+            if (this.loggedIn && ev.getAutoSave()) {
+                this.save();
+            }
+            if (this.fishing != null) {
+                this.stopFishing(false);
+            }
+        }
+
+        for (Player player : new ArrayList<>(this.server.playerList.values())) {
+            if (!player.canSee(this)) {
+                player.showPlayer(this);
+            }
+        }
+
+        this.hiddenPlayers.clear();
+        this.removeAllWindows(true);
+        this.unloadChunks(false);
+
+        // It should always be called
+        super.close();
+
+        this.interfaz.close(this, notify ? reason : "");
+
+        if (this.loggedIn) {
+            this.server.removeOnlinePlayer(this);
+            this.loggedIn = false;
+        }
+
+        if (ev != null && !Objects.equals(this.username, "") && this.spawned && !Objects.equals(ev.getQuitMessage().toString(), "")) {
+            this.server.broadcastMessage(ev.getQuitMessage());
+        }
+
+        this.server.getPluginManager().unsubscribeFromPermission(Server.BROADCAST_CHANNEL_USERS, this);
+        this.spawned = false;
+
+        this.server.getLogger().info(this.getServer().getLanguage().translateString("nukkit.player.logOut",
+                TextFormat.AQUA + (this.getName() == null ? this.unverifiedUsername : this.getName()) + TextFormat.WHITE,
+                this.getAddress(),
+                String.valueOf(this.getPort()),
+                this.getServer().getLanguage().translateString(reason)));
+
+        this.windows.clear();
+        this.hasSpawned.clear();
+        this.spawnPosition = null;
+
+        if (this.riding instanceof EntityRideable) {
+            this.riding.passengers.remove(this);
+        }
+        this.riding = null;
 
         if (this.perm != null) {
             this.perm.clearPermissions();
@@ -5827,11 +5777,12 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         this.server.removePlayer(this);
 
         if (this.loggedIn) {
-            this.server.getLogger().warning("(BUG) Player still logged in");
+            this.server.getLogger().warning("(BUG) Player still logged in after close");
             this.interfaz.close(this, notify ? reason : "");
             this.server.removeOnlinePlayer(this);
             this.loggedIn = false;
         }
+
         this.clientMovements.clear();
     }
 
@@ -5871,13 +5822,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                         .putInt("SpawnBlockPositionZ", spawnBlockPosition.getFloorZ())
                         .putString("SpawnBlockLevel", this.spawnBlockPosition.getLevel().getFolderName());
             }
-
-            CompoundTag achievements = new CompoundTag();
-            for (String achievement : this.achievements) {
-                achievements.putByte(achievement, 1);
-            }
-
-            this.namedTag.putCompound("Achievements", achievements);
 
             this.namedTag.putInt("playerGameType", this.gamemode);
             this.namedTag.putLong("lastPlayed", System.currentTimeMillis() / 1000);
@@ -7456,11 +7400,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                         this.server.getPluginManager().callEvent(ev = new InventoryPickupItemEvent(this.inventory, (EntityItem) entity));
                         if (ev.isCancelled()) {
                             return false;
-                        }
-
-                        switch (item.getId()) {
-                            case Item.WOOD, Item.WOOD2 -> this.awardAchievement("mineWood");
-                            case Item.DIAMOND -> this.awardAchievement("diamond");
                         }
 
                         TakeItemEntityPacket pk = new TakeItemEntityPacket();

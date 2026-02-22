@@ -150,39 +150,13 @@ public class CraftingTransaction extends InventoryTransaction {
          * So people don't whine about messy desync issues when someone cancels CraftItemEvent, or when a crafting
          * transaction goes wrong.
          */
-        source.getServer().getScheduler().scheduleDelayedTask(InternalPlugin.INSTANCE, () -> {
-            if (source.isOnline() && source.isAlive()) {
-                ContainerClosePacket pk = new ContainerClosePacket();
-                pk.windowId = ContainerIds.NONE;
-                pk.wasServerInitiated = true;
-                pk.type = ContainerType.NONE;
-                source.dataPacket(pk);
-            }
-        }, 10);
+        ContainerClosePacket packet = new ContainerClosePacket();
+        packet.windowId = ContainerIds.NONE;
+        packet.wasServerInitiated = true;
+        packet.type = ContainerType.NONE;
+        source.getServer().getScheduler().scheduleDelayedTask(InternalPlugin.INSTANCE, () -> source.dataPacket(packet), 20);
 
         this.source.resetCraftingGridType();
-    }
-
-    @Override
-    public boolean execute() {
-        if (super.execute()) {
-            switch (this.primaryOutput.getId()) {
-                case Item.CRAFTING_TABLE -> source.awardAchievement("buildWorkBench");
-                case Item.WOODEN_PICKAXE -> source.awardAchievement("buildPickaxe");
-                case Item.FURNACE -> source.awardAchievement("buildFurnace");
-                case Item.WOODEN_HOE -> source.awardAchievement("buildHoe");
-                case Item.BREAD -> source.awardAchievement("makeBread");
-                case Item.CAKE -> source.awardAchievement("bakeCake");
-                case Item.STONE_PICKAXE, Item.GOLDEN_PICKAXE,
-                    Item.IRON_PICKAXE, Item.DIAMOND_PICKAXE -> source.awardAchievement("buildBetterPickaxe");
-                case Item.WOODEN_SWORD -> source.awardAchievement("buildSword");
-                case Item.DIAMOND -> source.awardAchievement("diamond");
-            }
-
-            return true;
-        }
-
-        return false;
     }
 
     @Override

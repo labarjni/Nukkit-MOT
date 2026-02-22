@@ -592,21 +592,27 @@ public class PlayerInventory extends BaseInventory {
                 pk.windowid = ContainerSetContentPacketV113.SPECIAL_CREATIVE;
                 pk.eid = p.getId();
                 if (!p.isSpectator()) {
-                    pk.slots = Item.getCreativeItems(p.getGameVersion()).toArray(Item.EMPTY_ARRAY);
+                    pk.slots = Item.getCreativeItems(p).toArray(Item.EMPTY_ARRAY);
                 }
                 p.dataPacket(pk);
             } else {
                 InventoryContentPacket pk = new InventoryContentPacket();
                 pk.inventoryId = ContainerIds.CREATIVE;
                 if (!p.isSpectator()) { //fill it for all gamemodes except spectator
-                    pk.slots = Item.getCreativeItems(p.getGameVersion()).toArray(Item.EMPTY_ARRAY);
+                    pk.slots = Item.getCreativeItems(p).toArray(Item.EMPTY_ARRAY);
                 }
                 p.dataPacket(pk);
             }
         } else {
             CreativeContentPacket pk = new CreativeContentPacket();
             if (!p.isSpectator()) {
-                pk.creativeItems = Item.getCreativeItemsAndGroups(p.getGameVersion());
+                if (p.isCreative()) {
+                    pk.creativeItems = Item.getCreativeItemsAndGroups(p.getGameVersion(), p);
+                } else if (p.protocol > ProtocolInfo.v1_21_50) { // AntiToolbox patch
+                    pk.creativeItems = Item.getCreativeItemsAndGroupsRaw(p.getGameVersion());
+                } else {
+                    pk.creativeItems = Item.getCreativeItemsAndGroups(p.getGameVersion(), p);
+                }
             }
             p.dataPacket(pk);
         }

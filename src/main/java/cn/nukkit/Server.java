@@ -433,9 +433,9 @@ public class Server {
     public boolean opInGame;
     /**
      * Handling player names with spaces.
-        [0] "disabled" - Players with names containing spaces are prohibited from entering the server.
-        [1] "ignore" - Ignore names with spaces (default).
-        [2] "replacing" - Replace spaces in player names with "_".
+     [0] "disabled" - Players with names containing spaces are prohibited from entering the server.
+     [1] "ignore" - Ignore names with spaces (default).
+     [2] "replacing" - Replace spaces in player names with "_".
      */
     public int spaceMode;
     /**
@@ -585,9 +585,10 @@ public class Server {
      */
     public boolean enableRakSendCookie;
     /**
-     * Enable forced safety enchantments (up max lvl)
+     * Set the default max enchantment level
+     * For vanilla enchantments - 0
      */
-    public boolean forcedSafetyEnchant;
+    public int maxEnchantLevel;
     /**
      * Enable vibrant visuals
      * @since 1.21.80
@@ -753,8 +754,8 @@ public class Server {
         // Convert legacy data before plugins get the chance to mess with it
         try {
             nameLookup = Iq80DBFactory.factory.open(new File(dataPath, "players"), new Options()
-                            .createIfMissing(true)
-                            .compressionType(CompressionType.ZLIB_RAW));
+                    .createIfMissing(true)
+                    .compressionType(CompressionType.ZLIB_RAW));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -3284,7 +3285,16 @@ public class Server {
         this.enableNewChickenEggsLaying = this.getPropertyBoolean("enable-new-chicken-eggs-laying", true);
         this.rakPacketLimit = this.getPropertyInt("rak-packet-limit", RakConstants.DEFAULT_PACKET_LIMIT);
         this.enableRakSendCookie = this.getPropertyBoolean("enable-rak-send-cookie", true);
-        this.forcedSafetyEnchant = this.getPropertyBoolean("forced-safety-enchant", true);
+
+        this.maxEnchantLevel = this.getPropertyInt("max-enchant-level", 0);
+        if (this.properties.exists("forced-safety-enchant")) {
+            if (!this.getPropertyBoolean("forced-safety-enchant")) {
+                this.maxEnchantLevel = 255;
+                this.setPropertyInt("max-enchant-level", 255);
+            }
+            this.properties.remove("forced-safety-enchant");
+        }
+
         this.enableVibrantVisuals = this.getPropertyBoolean("enable-vibrant-visuals", true);
         this.enableRaytracing = this.getPropertyBoolean("enable-raytracing", true);
 
@@ -3442,7 +3452,8 @@ public class Server {
             put("enable-raw-ores", true);
             put("enable-new-paintings", true);
             put("enable-new-chicken-eggs-laying", true);
-            put("forced-safety-enchant", true);
+            put("max-enchant-level", 0);
+
             put("enable-vibrant-visuals", true);
             put("enable-raytracing", true);
 
@@ -3470,8 +3481,8 @@ public class Server {
 
         @SuppressWarnings("removal")
         private static final AccessControlContext ACC = contextWithPermissions(
-            new RuntimePermission("getClassLoader"),
-            new RuntimePermission("setContextClassLoader")
+                new RuntimePermission("getClassLoader"),
+                new RuntimePermission("setContextClassLoader")
         );
 
         @SuppressWarnings("removal")
