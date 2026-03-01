@@ -7,7 +7,6 @@ plugins {
     id("maven-publish")
     id("application")
     alias(libs.plugins.shadow)
-    alias(libs.plugins.git)
 }
 
 group = "cn.nukkit"
@@ -86,11 +85,6 @@ application {
     mainClass.set("cn.nukkit.Nukkit")
 }
 
-gitProperties {
-    dateFormat = "dd.MM.yyyy '@' HH:mm:ss z"
-    failOnNoGitDirectory = false
-}
-
 publishing {
     repositories {
         maven {
@@ -112,10 +106,17 @@ publishing {
 tasks {
     compileJava {
         options.encoding = "UTF-8"
+        options.compilerArgs.addAll(listOf("-nowarn", "-Xlint:none"))
     }
 
     test {
         useJUnitPlatform()
+        jvmArgs = listOf(
+            "--enable-native-access=ALL-UNNAMED",
+            "--add-opens=java.base/sun.misc=ALL-UNNAMED",
+            "--add-opens=java.base/java.lang=ALL-UNNAMED",
+            "-Dorg.slf4j.simpleLogger.defaultLogLevel=off"
+        )
     }
 
     jar {
@@ -124,6 +125,7 @@ tasks {
 
     shadowJar {
         manifest.attributes["Multi-Release"] = "true"
+        manifest.attributes["Main-Class"] = "cn.nukkit.Nukkit"
 
         transform(Log4j2PluginsCacheFileTransformer())
 
@@ -140,9 +142,20 @@ tasks {
         }
         standardInput = System.`in`
         workingDir = dir
+
+        jvmArgs = listOf(
+            "--enable-native-access=ALL-UNNAMED",
+            "--add-opens=java.base/sun.misc=ALL-UNNAMED",
+            "--add-opens=java.base/java.lang=ALL-UNNAMED",
+            "--add-opens=java.base/java.nio=ALL-UNNAMED",
+            "-Dio.netty.tryReflectionSetAccessible=true",
+            "-Dorg.slf4j.simpleLogger.defaultLogLevel=off",
+            "-Djava.util.logging.config.class=java.util.logging.LogManager"
+        )
     }
 
     javadoc {
         options.encoding = "UTF-8"
+        options.quiet()
     }
 }
