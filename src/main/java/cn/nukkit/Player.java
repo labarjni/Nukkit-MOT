@@ -3293,6 +3293,11 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
                 this.version = loginChainData.getGameVersion();
 
+                // Apply username prefix for ViaProxy Java Edition clients
+                if (this.isJavaClient() && !server.viaProxyUsernamePrefix.isBlank()) {
+                    this.unverifiedUsername = server.viaProxyUsernamePrefix + this.unverifiedUsername;
+                }
+
                 // Do not set username before the user is authenticated
                 this.username = this.unverifiedUsername;
                 this.unverifiedUsername = null;
@@ -3430,13 +3435,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                 double dis = newPos.distanceSquared(this);
 
                 if (dis == 0 && movePlayerPacket.yaw % 360 == this.yaw && movePlayerPacket.pitch % 360 == this.pitch) {
-                    break;
-                }
-
-                // 传送玩家后，可能会由于网络延迟接收错误数据包
-                // 在这种情况下为了避免错误调整玩家视角，直接忽略移动数据包
-                if (this.lastTeleportTick + 20 > this.server.getTick()
-                        && newPos.distance(this.temporalVector.setComponents(this.lastX, this.lastY, this.lastZ)) < 3) {
                     break;
                 }
 
@@ -6144,6 +6142,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         this.setSneaking(false);
         this.setSwimming(false);
         this.setGliding(false);
+        this.setCrawling(false);
 
         this.extinguish();
         this.setDataProperty(new ShortEntityData(Player.DATA_AIR, 400), false);
@@ -6476,10 +6475,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
     }
 
     protected boolean checkTeleportPosition() {
-        return checkTeleportPosition(false);
-    }
-
-    protected boolean checkTeleportPosition(boolean enderPearl) {
         if (this.teleportPosition != null) {
             int chunkX = (int) this.teleportPosition.x >> 4;
             int chunkZ = (int) this.teleportPosition.z >> 4;
@@ -6494,10 +6489,8 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             }
 
             this.spawnToAll();
-            if (!enderPearl) {
-                this.forceMovement = this.teleportPosition;
-            }
             this.teleportPosition = null;
+            this.lastTeleportTick = -1;
             return true;
         }
 
@@ -6537,8 +6530,11 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
         // HACK: solve the client-side teleporting bug (inside into the block)
         if (super.teleport(to.getY() == to.getFloorY() ? to.add(0, 0.00001, 0) : to, null)) { // null to prevent fire of duplicate EntityTeleportEvent
-            //this.removeAllWindows();
-            //this.formOpen = false;
+            this.lastX = this.x;
+            this.lastY = this.y;
+            this.lastZ = this.z;
+            this.lastYaw = this.yaw;
+            this.lastPitch = this.pitch;
 
             if (from.getLevel() == to.getLevel()) { //TODO 跨世界时客户端不发flag，我们无法正确排除错误移动包
                 this.lastTeleportTick = this.server.getTick();
@@ -6552,7 +6548,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                 this.dimensionChangeInProgress = false;
             } else {
                 this.sendPosition(this, this.yaw, this.pitch, MovePlayerPacket.MODE_TELEPORT);
-                this.checkTeleportPosition(cause == TeleportCause.ENDER_PEARL);
+                this.checkTeleportPosition();
                 this.dummyBossBars.values().forEach(DummyBossBar::reshow);
             }
 
@@ -7284,6 +7280,17 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
      */
     public LoginChainData getLoginChainData() {
         return this.loginChainData;
+    }
+
+    /**
+     * Check if this player is connecting through ViaProxy (Java Edition client)
+     *
+     * @return true if the player is a Java Edition client
+     */
+    public boolean isJavaClient() {
+        return this.loginChainData != null
+                && this.loginChainData.getViaProxyAuthToken() != null
+                && !this.loginChainData.getViaProxyAuthToken().isEmpty();
     }
 
     /**
