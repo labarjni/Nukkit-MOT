@@ -7,6 +7,7 @@ import cn.nukkit.api.NonComputationAtomic;
 import cn.nukkit.block.*;
 import cn.nukkit.blockentity.BlockEntity;
 import cn.nukkit.entity.BaseEntity;
+import cn.nukkit.potion.Effect;
 import cn.nukkit.utils.CollisionHelper;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.custom.EntityDefinition;
@@ -2595,9 +2596,21 @@ public class Level implements ChunkManager, Metadatable {
                 breakTime = 0.15;
             }
 
-            if (breakTime > 0) {
-                breakTime -= 0.15; // 保留 3 tick（150ms）宽限用于网络延迟补偿
+            if (player.hasEffect(Effect.HASTE)) {
+                breakTime *= 1 - (0.2 * (player.getEffect(Effect.HASTE).getAmplifier() + 1));
             }
+
+            if (player.hasEffect(Effect.MINING_FATIGUE)) {
+                breakTime *= 1 - (0.3 * (player.getEffect(Effect.MINING_FATIGUE).getAmplifier() + 1));
+            }
+
+            Enchantment eff = item.getEnchantment(Enchantment.ID_EFFICIENCY);
+
+            if (eff != null && eff.getLevel() > 0) {
+                breakTime *= 1 - (0.3 * eff.getLevel());
+            }
+
+            breakTime -= 0.15;
 
             Item[] eventDrops;
             if (isSilkTouch && target.canSilkTouch() || target.isDropOriginal(player)) {
@@ -2605,8 +2618,8 @@ public class Level implements ChunkManager, Metadatable {
             } else {
                 eventDrops = target.getDrops(player, item);
             }
-            // lastBreak < 0 表示首次挖掘（初始值 -1），直接放行；否则验证已等待足够时间
-            boolean fastBreak = player.lastBreak >= 0 && (player.lastBreak + breakTime * 1000) > System.currentTimeMillis();
+            //TODO 直接加1000可能会影响其他判断，需要进一步改进
+            boolean fastBreak = (player.lastBreak + breakTime * 1000) > Long.sum(System.currentTimeMillis(), 1000);
             BlockBreakEvent ev = new BlockBreakEvent(player, target, face, item, eventDrops, player.isCreative(), fastBreak);
 
             if ((player.isSurvival() || player.isAdventure()) && !target.isBreakable(item)) {
@@ -2617,12 +2630,12 @@ public class Level implements ChunkManager, Metadatable {
                 ev.setCancelled();
             }
 
+            player.lastBreak = System.currentTimeMillis();
+
             this.server.getPluginManager().callEvent(ev);
             if (ev.isCancelled()) {
                 return null;
             }
-
-            player.lastBreak = System.currentTimeMillis();
 
             drops = ev.getDrops();
             dropExp = ev.getDropExp();
