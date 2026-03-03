@@ -25,6 +25,16 @@ import org.apache.commons.math3.util.FastMath;
 public abstract class EntityWalking extends BaseEntity {
     private static final double FLOW_MULTIPLIER = 0.1;
 
+    private int targetCheckTick = 0;
+    private int waterCheckTick = 0;
+    private int cachedBlockId = 0;
+    @Getter
+    private int cachedBlockData = 0;
+    private int cachedDownBlockId = 0;
+    private boolean cachedInWater = false;
+    private Block cachedLevelBlock = null;
+    private Block cachedDownBlock = null;
+
     @Getter
     @Setter
     protected RouteFinder route;
@@ -149,6 +159,16 @@ public abstract class EntityWalking extends BaseEntity {
             return null;
         }
 
+        if (++waterCheckTick >= 5) {
+            waterCheckTick = 0;
+            cachedLevelBlock = getLevelBlock();
+            cachedBlockId = cachedLevelBlock.getId();
+            cachedBlockData = cachedLevelBlock.getDamage();
+            cachedInWater = cachedBlockId == 8 || cachedBlockId == 9;
+            cachedDownBlock = level.getBlock(chunk, getFloorX(), getFloorY() - 1, getFloorZ(), false);
+            cachedDownBlockId = cachedDownBlock.getId();
+        }
+
         if (!isImmobile()) {
             if (this.age % 10 == 0 && this.route != null && !this.route.isSearching()) {
                 RouteFinderThreadPool.executeRouteFinderThread(new RouteFinderSearchTask(this.route));
@@ -170,14 +190,12 @@ public abstract class EntityWalking extends BaseEntity {
                 return this.followTarget != null ? this.followTarget : this.target;
             }
 
-            Block levelBlock = getLevelBlock();
-            boolean inWater = levelBlock.getId() == 8 || levelBlock.getId() == 9;
-            Block down = level.getBlock(chunk, getFloorX(), getFloorY() - 1, getFloorZ(), false);
-            int downId = down.getId();
-            if (inWater && (downId == 0 || downId == 8 || downId == 9 || downId == BlockID.LAVA || downId == BlockID.STILL_LAVA || downId == BlockID.SIGN_POST || downId == BlockID.WALL_SIGN)) {
+            boolean inWater = cachedInWater;
+
+            if (inWater && (cachedDownBlockId == 0 || cachedDownBlockId == 8 || cachedDownBlockId == 9 || cachedDownBlockId == BlockID.LAVA || cachedDownBlockId == BlockID.STILL_LAVA || cachedDownBlockId == BlockID.SIGN_POST || cachedDownBlockId == BlockID.WALL_SIGN)) {
                 onGround = false;
             }
-            if (downId == 0 || downId == BlockID.SIGN_POST || downId == BlockID.WALL_SIGN) {
+            if (cachedDownBlockId == 0 || cachedDownBlockId == BlockID.SIGN_POST || cachedDownBlockId == BlockID.WALL_SIGN) {
                 onGround = false;
             }
 
@@ -193,15 +211,15 @@ public abstract class EntityWalking extends BaseEntity {
                             this.motionZ = 0;
                         }
                     } else {
-                        if (levelBlock.getId() == BlockID.WATER) {
-                            BlockWater blockWater = (BlockWater) levelBlock;
+                        if (cachedBlockId == BlockID.WATER) {
+                            BlockWater blockWater = (BlockWater) cachedLevelBlock;
                             Vector3 flowVector = blockWater.getFlowVector();
                             motionX = flowVector.getX() * FLOW_MULTIPLIER;
                             motionZ = flowVector.getZ() * FLOW_MULTIPLIER;
-                        } else if (levelBlock.getId() == BlockID.STILL_WATER) {
+                        } else if (cachedBlockId == BlockID.STILL_WATER) {
                             this.motionX = this.getSpeed() * moveMultiplier * 0.05 * (x / diff);
                             this.motionZ = this.getSpeed() * moveMultiplier * 0.05 * (z / diff);
-                            if (!(this instanceof EntityDrowned || this instanceof EntityIronGolem || this instanceof EntitySkeletonHorse)) {
+                            if (!(this instanceof EntityDrowned || this instanceof EntityIronGolem || this instanceof EntitySkeletonHorse) && Utils.rand(1, 10) == 1) {
                                 this.level.addParticle(new BubbleParticle(this.add(Utils.rand(-2.0, 2.0), Utils.rand(-0.5, 0), Utils.rand(-2.0, 2.0))));
                             }
                         } else {
@@ -214,7 +232,8 @@ public abstract class EntityWalking extends BaseEntity {
                     }
                 }
 
-                if (this.isLookupForTarget()) {
+                if (this.isLookupForTarget() && ++targetCheckTick >= 3) {
+                    targetCheckTick = 0;
                     this.checkTarget();
                 }
                 if (this.target != null || !this.isLookupForTarget()) {
@@ -229,15 +248,15 @@ public abstract class EntityWalking extends BaseEntity {
                             this.motionZ = 0;
                         }
                     } else {
-                        if (levelBlock.getId() == BlockID.WATER) {
-                            BlockWater blockWater = (BlockWater) levelBlock;
+                        if (cachedBlockId == BlockID.WATER) {
+                            BlockWater blockWater = (BlockWater) cachedLevelBlock;
                             Vector3 flowVector = blockWater.getFlowVector();
                             motionX = flowVector.getX() * FLOW_MULTIPLIER;
                             motionZ = flowVector.getZ() * FLOW_MULTIPLIER;
-                        } else if (levelBlock.getId() == BlockID.STILL_WATER) {
+                        } else if (cachedBlockId == BlockID.STILL_WATER) {
                             this.motionX = this.getSpeed() * moveMultiplier * 0.05 * (x / diff);
                             this.motionZ = this.getSpeed() * moveMultiplier * 0.05 * (z / diff);
-                            if (!(this instanceof EntityDrowned || this instanceof EntityIronGolem || this instanceof EntitySkeletonHorse)) {
+                            if (!(this instanceof EntityDrowned || this instanceof EntityIronGolem || this instanceof EntitySkeletonHorse) && Utils.rand(1, 10) == 1) {
                                 this.level.addParticle(new BubbleParticle(this.add(Utils.rand(-2.0, 2.0), Utils.rand(-0.5, 0), Utils.rand(-2.0, 2.0))));
                             } else if (this.followTarget != null) {
                                 double y = this.followTarget.y - this.y;
@@ -262,7 +281,7 @@ public abstract class EntityWalking extends BaseEntity {
                 this.move(0, this.motionY, 0);
             } else {
                 if (this.onGround) {
-                    double friction = (1 - this.getDrag()) * down.getFrictionFactor();
+                    double friction = (1 - this.getDrag()) * cachedDownBlock.getFrictionFactor();
                     this.motionX *= friction;
                     this.motionZ *= friction;
                 }
