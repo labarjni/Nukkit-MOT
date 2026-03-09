@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "cn.nukkit"
-version = "MOT-SNAPSHOT"
+version = "SNAPSHOT"
 
 java {
     toolchain {
