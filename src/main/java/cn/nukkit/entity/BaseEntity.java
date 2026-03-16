@@ -10,6 +10,7 @@ import cn.nukkit.entity.mob.EntityMob;
 import cn.nukkit.entity.mob.EntityRavager;
 import cn.nukkit.entity.mob.EntityWolf;
 import cn.nukkit.entity.passive.EntityAnimal;
+import cn.nukkit.entity.passive.EntityCow;
 import cn.nukkit.entity.projectile.EntityProjectile;
 import cn.nukkit.event.entity.EntityDamageByEntityEvent;
 import cn.nukkit.event.entity.EntityDamageEvent;

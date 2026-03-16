@@ -241,13 +241,4 @@ public class EntitySkeleton extends EntityWalkingMob implements EntitySmite {
         }
         return hasTarget;
     }
-
-    @Override
-    public void kill() {
-        if (!this.isAlive()) {
-            return;
-        }
-
-        super.kill();
-    }
 }

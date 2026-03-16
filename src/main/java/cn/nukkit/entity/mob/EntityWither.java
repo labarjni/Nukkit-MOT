@@ -27,14 +27,11 @@ import cn.nukkit.nbt.tag.ListTag;
 import cn.nukkit.network.protocol.AddEntityPacket;
 import cn.nukkit.network.protocol.DataPacket;
 import cn.nukkit.potion.Effect;
-
 import cn.nukkit.utils.DummyBossBar;
 import cn.nukkit.utils.Utils;
-
 import org.apache.commons.math3.util.FastMath;
 
 import java.util.HashMap;
-
 import java.util.Set;
 import java.util.UUID;
 
