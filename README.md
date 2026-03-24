@@ -17,7 +17,7 @@ Nukkit-MOT is a fork of [Nukkit](https://github.com/CloudburstMC/Nukkit) that pr
 Only interested in newer versions? You might want to try [Lumi](https://github.com/KoshakMineDEV/Lumi) or [PowerNukkitX](https://github.com/PowerNukkitX/PowerNukkitX)
 
 ### What's new in Nukkit-MOT?
-1. Support for 1.2 – 1.26.0 version (you can set the minimum protocol in the config)
+1. Support for 1.2 – 1.26.10 version (you can set the minimum protocol in the config)
 2. Supports most entities with AI
 3. Support for the nether world and The Еnd
 4. Generation of dungeons and caves
@@ -90,4 +90,16 @@ for monitoring and profiling Java and .NET applications.
 YourKit is the creator of <a href="https://www.yourkit.com/java/profiler/">YourKit Java Profiler</a>,
 <a href="https://www.yourkit.com/dotnet-profiler/">YourKit .NET Profiler</a>,
 and <a href="https://www.yourkit.com/youmonitor/">YourKit YouMonitor</a>.
+
+## Star History
+
+If you like this project, please give us a Star ⭐
+
+<a href="https://www.star-history.com/?repos=MemoriesOfTime%2FNukkit-MOT&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/image?repos=MemoriesOfTime/Nukkit-MOT&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/image?repos=MemoriesOfTime/Nukkit-MOT&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/image?repos=MemoriesOfTime/Nukkit-MOT&type=date&legend=top-left" />
+ </picture>
+</a>
 

@@ -17,6 +17,7 @@ public class BlockUpdateScheduler {
     private final Level level;
     private long lastTick;
     private final Long2ObjectNonBlockingMap<Set<BlockUpdateEntry>> queuedUpdates;
+    private final Set<BlockUpdateEntry> globalIndex = ConcurrentHashMap.newKeySet();
 
     private Set<BlockUpdateEntry> pendingUpdates;
 
@@ -51,6 +52,7 @@ public class BlockUpdateScheduler {
             lastTick = tick;
             Set<BlockUpdateEntry> updates = pendingUpdates = queuedUpdates.remove(tick);
             if (updates != null) {
+                globalIndex.removeAll(updates);
                 for (BlockUpdateEntry entry : updates) {
                     if (level.isAreaLoaded(new SimpleAxisAlignedBB(entry.pos, entry.pos))) {
                         Block block = level.getBlock(entry.pos, entry.block.layer);
@@ -103,44 +105,15 @@ public class BlockUpdateScheduler {
             if (tmp != null) updateSet = tmp;
         }
         updateSet.add(entry);
+        globalIndex.add(entry);
     }
 
     public boolean contains(BlockUpdateEntry entry) {
-        for (Map.Entry<Long, Set<BlockUpdateEntry>> tickUpdateSet : queuedUpdates.entrySet()) {
-            if (tickUpdateSet.getValue().contains(entry)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public void clearChunk(int chunkX, int chunkZ) {
-        int minX = chunkX << 4;
-        int maxX = minX + 16;
-        int minZ = chunkZ << 4;
-        int maxZ = minZ + 16;
-
-        for (Set<BlockUpdateEntry> tickSet : this.queuedUpdates.values()) {
-            if (tickSet != null) {
-                tickSet.removeIf(entry -> {
-                    Vector3 pos = entry.pos;
-                    return pos.getFloorX() >= minX && pos.getFloorX() < maxX &&
-                            pos.getFloorZ() >= minZ && pos.getFloorZ() < maxZ;
-                });
-            }
-        }
-
-        Set<BlockUpdateEntry> updates = this.pendingUpdates;
-        if (updates != null) {
-            updates.removeIf(entry -> {
-                Vector3 pos = entry.pos;
-                return pos.getFloorX() >= minX && pos.getFloorX() < maxX &&
-                        pos.getFloorZ() >= minZ && pos.getFloorZ() < maxZ;
-            });
-        }
+        return globalIndex.contains(entry);
     }
 
     public boolean remove(BlockUpdateEntry entry) {
+        globalIndex.remove(entry);
         for (Map.Entry<Long, Set<BlockUpdateEntry>> tickUpdateSet : queuedUpdates.entrySet()) {
             if (tickUpdateSet.getValue().remove(entry)) {
                 return true;
@@ -152,6 +125,7 @@ public class BlockUpdateScheduler {
     @Deprecated
     @SuppressWarnings("SuspiciousMethodCalls")
     public boolean remove(Vector3 pos) {
+        globalIndex.removeIf(e -> e.pos.equals(pos));
         for (Set<BlockUpdateEntry> tickUpdateSet : queuedUpdates.values()) {
             if (tickUpdateSet.remove(pos)) {
                 return true;
