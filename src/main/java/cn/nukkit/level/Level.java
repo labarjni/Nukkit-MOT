@@ -1474,7 +1474,7 @@ public class Level implements ChunkManager, Metadatable {
                     continue;
                 }
 
-                int loaders = entry.getIntValue();
+                int loaderCount = entry.getIntValue();
 
                 int chunkX = getHashX(index);
                 int chunkZ = getHashZ(index);
@@ -1484,7 +1484,7 @@ public class Level implements ChunkManager, Metadatable {
                     iter.remove();
                     continue;
                 }
-                if (loaders <= 0) {
+                if (loaderCount <= 0) {
                     iter.remove();
                 }
 
