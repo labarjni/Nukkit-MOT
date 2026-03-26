@@ -254,7 +254,8 @@ public class CraftingManager {
 
     @SuppressWarnings("unchecked")
     private void loadShapelessRecipe(RuntimeItemMapping itemMapping, Map recipe) {
-        if (!"crafting_table".equals(recipe.get("block"))) {
+        String block = (String) recipe.get("block");
+        if (!"crafting_table".equals(block) && !"deprecated".equals(block) && block != null) {
             return;
         }
 
@@ -374,7 +375,8 @@ public class CraftingManager {
 
     @SuppressWarnings("unchecked")
     private void loadShapedRecipe(RuntimeItemMapping itemMapping, Map recipe) {
-        if (!"crafting_table".equals(recipe.get("block"))) {
+        String block = (String) recipe.get("block");
+        if (!"crafting_table".equals(block) && !"deprecated".equals(block) && block != null) {
             return;
         }
 

@@ -1,73 +1,79 @@
+```
 # Compiled and build artifacts
-*.pyc
-__pycache__/
 *.class
 *.o
 *.obj
 *.out
-*.exe
-*.dll
-*.so
-*.a
-dist/
 build/
 target/
 
 # Dependencies
-node_modules/
-venv/
-.venv/
-.env
-.env.local
-*.env.*
+lib/
+libs/
+jars/
+*.jar
+*.war
+*.ear
 
 # Logs and temp files
 *.log
 *.tmp
-*.swp
-*.swo
+*.temp
 
-# Editors and IDEs
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# System files
+# OS specific
 .DS_Store
 Thumbs.db
 
-# Coverage and testing
-.coverage
+# Coverage
 coverage/
 htmlcov/
+.coverage
 
-# Cache directories
-.mypy_cache/
-.pytest_cache/
-.gradle/
-.julia/
+# Package manager
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Compressed files
-*.zip
-*.gz
-*.tar
-*.tgz
-*.bz2
-*.xz
-*.7z
-*.rar
-*.zst
-*.lz4
-*.lzh
-*.cab
-*.arj
-*.rpm
-*.deb
-*.Z
-*.lz
-*.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.nox/
+*.cover
+*.log
+.gitattributes
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.idea/
+.vscode/
+.settings/
+*.tmproj
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+```

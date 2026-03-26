@@ -38416,7 +38416,7 @@
       "shape": [
         "A"
       ],
-      "block": "crafting_table",
+      "block": null,
       "priority": 0
     },
     {
@@ -38440,7 +38440,7 @@
       "shape": [
         "A"
       ],
-      "block": "crafting_table",
+      "block": null,
       "priority": 0
     },
     {
@@ -38464,7 +38464,7 @@
       "shape": [
         "A"
       ],
-      "block": "crafting_table",
+      "block": null,
       "priority": 0
     },
     {
@@ -63135,7 +63135,7 @@
       "shape": [
         "A"
       ],
-      "block": "crafting_table",
+      "block": null,
       "priority": 0
     },
     {
@@ -63159,7 +63159,7 @@
       "shape": [
         "A"
       ],
-      "block": "crafting_table",
+      "block": null,
       "priority": 0
     },
     {
@@ -63183,7 +63183,7 @@
       "shape": [
         "A"
       ],
-      "block": "crafting_table",
+      "block": null,
       "priority": 0
     },
     {
