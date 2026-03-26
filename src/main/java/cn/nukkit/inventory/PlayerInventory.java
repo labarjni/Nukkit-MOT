@@ -599,7 +599,7 @@ public class PlayerInventory extends BaseInventory {
                 InventoryContentPacket pk = new InventoryContentPacket();
                 pk.inventoryId = ContainerIds.CREATIVE;
                 if (!p.isSpectator()) { //fill it for all gamemodes except spectator
-                    pk.slots = Item.getCreativeItems(p).toArray(Item.EMPTY_ARRAY);
+                    pk.slots = Item.getCreativeItems(p.getGameVersion()).toArray(Item.EMPTY_ARRAY);
                 }
                 p.dataPacket(pk);
             }
@@ -607,9 +607,9 @@ public class PlayerInventory extends BaseInventory {
             CreativeContentPacket pk = new CreativeContentPacket();
             if (!p.isSpectator()) {
                 if (p.isCreative()) {
-                    pk.creativeItems = Item.getCreativeItemsAndGroups(p.getGameVersion(), p);
+                    pk.creativeItems = Item.getFilteredCreativeItems(p);
                 } else {
-                    pk.creativeItems = Item.getCreativeItemsAndGroups(p.getGameVersion(), p);
+                    pk.creativeItems = Item.getCreativeItemsAndGroups();
                 }
             }
             p.dataPacket(pk);

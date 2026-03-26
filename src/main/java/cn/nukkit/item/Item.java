@@ -616,6 +616,36 @@ public class Item implements Cloneable, BlockID, ItemID, ItemNamespaceId, Protoc
         CREATIVE_ITEMS.clear();
     }
 
+    public static ArrayList<Item> getCreativeItems(Player player) {
+        return new ArrayList<>(getFilteredCreativeItems(player).getItems());
+    }
+
+    public static CreativeItems getFilteredCreativeItems(Player player) {
+        if (player == null) {
+            return getCreativeItemsAndGroups();
+        }
+
+        CreativeItems original = getCreativeItemsAndGroups();
+        CreativeItems filtered = new CreativeItems();
+
+        // Copy groups
+        for (CreativeItemGroup group : original.getGroups()) {
+            filtered.addGroup(group);
+        }
+
+        // Filter items by permissions
+        for (Map.Entry<Item, CreativeItemGroup> entry : original.getContents().entrySet()) {
+            Item item = entry.getKey();
+            CreativeItemGroup group = entry.getValue();
+
+            if (ItemCreativePermissions.hasPermission(item, player)) {
+                filtered.add(item, group);
+            }
+        }
+
+        return filtered;
+    }
+
     public static ArrayList<Item> getCreativeItems() {
         return new ArrayList<>(getCreativeItemsAndGroups().getItems());
     }
@@ -734,7 +764,7 @@ public class Item implements Cloneable, BlockID, ItemID, ItemNamespaceId, Protoc
     }
 
     public static boolean isCreativeItem(GameVersion gameVersion, Item item) {
-        for (Item aCreative : Item.getCreativeItemsAndGroups().getItems(gameVersion)) {
+        for (Item aCreative : CREATIVE_ITEMS.getItems(gameVersion)) {
             if (item.equals(aCreative, !item.isTool())) {
                 return true;
             }
