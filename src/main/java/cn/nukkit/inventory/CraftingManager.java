@@ -260,8 +260,7 @@ public class CraftingManager {
 
         Map shapelessOutput = (Map) ((List) recipe.get("output")).get(0);
         Item outputItem;
-        
-        // Новый формат с namespaceId
+
         if (shapelessOutput.containsKey("id")) {
             String outputId = (String) shapelessOutput.get("id");
             int outputDamage = (int) shapelessOutput.getOrDefault("damage", 0);
@@ -277,7 +276,6 @@ public class CraftingManager {
                 outputItem.setCompoundTag(nbtBytes);
             }
         } else {
-            // Старый формат с legacyId (для обратной совместимости)
             RuntimeItemMapping.LegacyEntry shapelessOutputEntry = itemMapping.fromRuntime((int) shapelessOutput.get("legacyId"));
             if (shapelessOutputEntry == null || shapelessOutputEntry.getLegacyId() == 0) {
                 log.trace("Unknown shapeless output: {}", recipe);
@@ -291,8 +289,7 @@ public class CraftingManager {
             byte[] nbtBytes = nbt != null ? Base64.getDecoder().decode(nbt) : new byte[0];
             outputItem = Item.get(shapelessOutputEntry.getLegacyId(), outputDamage, (Integer) shapelessOutput.getOrDefault("count", 1), nbtBytes);
         }
-        
-        top:
+
         List<Map> input = (List<Map>) recipe.get("input");
         List<Item> sorted = new ArrayList<>();
 
@@ -304,10 +301,9 @@ public class CraftingManager {
                 } else {
                     log.trace("Unknown shapeless ingredient type: {}", recipe);
                 }
-                break top;
+                break;
             }
             Item inputItem;
-            // Новый формат с namespaceId
             if (ingredient.containsKey("namespaceId")) {
                 String namespaceId = (String) ingredient.get("namespaceId");
                 int damage = (int) ingredient.getOrDefault("damage", 0);
@@ -320,11 +316,10 @@ public class CraftingManager {
                 }
                 inputItem.setCount(count);
             } else {
-                // Старый формат с itemId (для обратной совместимости)
                 RuntimeItemMapping.LegacyEntry legacyEntry = itemMapping.fromRuntime((int) ingredient.get("itemId"));
                 if (legacyEntry == null || legacyEntry.getLegacyId() == 0) {
                     log.trace("Unknown shapeless input: {}", recipe);
-                    break top;
+                    break;
                 }
                 int aux = (int) ingredient.getOrDefault("auxValue", 0);
                 if (aux == 32767) {
@@ -360,8 +355,7 @@ public class CraftingManager {
     private void loadStonecutterRecipe(RuntimeItemMapping itemMapping, Map recipe) {
         Map outputMap = (Map) ((List) recipe.get("output")).get(0);
         Item outputItem;
-        
-        // Новый формат с namespaceId
+
         if (outputMap.containsKey("id")) {
             String outputId = (String) outputMap.get("id");
             int outputDamage = (int) outputMap.getOrDefault("damage", 0);
@@ -377,7 +371,6 @@ public class CraftingManager {
                 outputItem.setCompoundTag(nbtBytes);
             }
         } else {
-            // Старый формат с legacyId (для обратной совместимости)
             RuntimeItemMapping.LegacyEntry outputEntry = itemMapping.fromRuntime((int) outputMap.get("legacyId"));
             if (outputEntry == null || outputEntry.getLegacyId() == 0) {
                 log.trace("Unknown stonecutter output: {}", recipe);
@@ -401,9 +394,8 @@ public class CraftingManager {
             log.trace("Unknown stonecutter ingredient type: {}", recipe);
             return;
         }
-        
+
         Item inputItem;
-        // Новый формат с namespaceId
         if (ingredientMap.containsKey("namespaceId")) {
             String namespaceId = (String) ingredientMap.get("namespaceId");
             int damage = (int) ingredientMap.getOrDefault("damage", 0);
@@ -417,7 +409,6 @@ public class CraftingManager {
             }
             inputItem.setCount(count);
         } else {
-            // Старый формат с itemId (для обратной совместимости)
             RuntimeItemMapping.LegacyEntry inputEntry = itemMapping.fromRuntime((int) ingredientMap.get("itemId"));
             if (inputEntry == null || inputEntry.getLegacyId() == 0) {
                 log.trace("Unknown stonecutter input: {}", recipe);
@@ -453,8 +444,7 @@ public class CraftingManager {
         List<Map> outputList = (List<Map>) recipe.get("output");
         Map shapedOutput = outputList.get(0);
         Item outputItem;
-        
-        // Новый формат с namespaceId
+
         if (shapedOutput.containsKey("id")) {
             String outputId = (String) shapedOutput.get("id");
             int outputDamage = (int) shapedOutput.getOrDefault("damage", 0);
@@ -470,7 +460,6 @@ public class CraftingManager {
                 outputItem.setCompoundTag(nbtBytes);
             }
         } else {
-            // Старый формат с legacyId (для обратной совместимости)
             RuntimeItemMapping.LegacyEntry shapedOutputEntry = itemMapping.fromRuntime((int) shapedOutput.get("legacyId"));
             if (shapedOutputEntry == null || shapedOutputEntry.getLegacyId() == 0) {
                 log.trace("Unknown shaped output: {}", recipe);
@@ -489,8 +478,7 @@ public class CraftingManager {
         for (int i = 1; i < outputList.size(); i++) {
             Map extraOutput = outputList.get(i);
             Item extraItem;
-            
-            // Новый формат с namespaceId
+
             if (extraOutput.containsKey("id")) {
                 String extraId = (String) extraOutput.get("id");
                 int extraDamage = (int) extraOutput.getOrDefault("damage", 0);
@@ -506,7 +494,6 @@ public class CraftingManager {
                     extraItem.setCompoundTag(extraNbtBytes);
                 }
             } else {
-                // Старый формат с legacyId
                 RuntimeItemMapping.LegacyEntry extraEntry = itemMapping.fromRuntime((int) extraOutput.get("legacyId"));
                 if (extraEntry != null && extraEntry.getLegacyId() != 0) {
                     int extraDamage = (int) extraOutput.getOrDefault("damage", 0);
@@ -522,7 +509,7 @@ public class CraftingManager {
             }
             extraOutputs.add(extraItem);
         }
-        
+
         String[] shape = ((List<String>) recipe.get("shape")).toArray(new String[0]);
         Map<Character, Item> ingredients = new CharObjectHashMap<>();
         Map<String, Map<String, Object>> input = (Map) recipe.get("input");
@@ -570,7 +557,6 @@ public class CraftingManager {
                 }
             }
             if (inputItem == null) {
-                // Новый формат с namespaceId
                 if (ingredientEntry.getValue().containsKey("namespaceId")) {
                     String namespaceId = (String) ingredientEntry.getValue().get("namespaceId");
                     int damage = (int) ingredientEntry.getValue().getOrDefault("damage", 0);
@@ -583,7 +569,6 @@ public class CraftingManager {
                     }
                     inputItem.setCount(count);
                 } else {
-                    // Старый формат с itemId
                     RuntimeItemMapping.LegacyEntry legacyEntry = itemMapping.fromRuntime((int) ingredientEntry.getValue().get("itemId"));
                     if (legacyEntry == null || legacyEntry.getLegacyId() == 0) {
                         log.trace("Unknown shaped input: {}", recipe);
