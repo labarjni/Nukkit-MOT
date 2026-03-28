@@ -259,29 +259,68 @@ public class CraftingManager {
         }
 
         Map shapelessOutput = (Map) ((List) recipe.get("output")).get(0);
-        RuntimeItemMapping.LegacyEntry shapelessOutputEntry = itemMapping.fromRuntime((int) shapelessOutput.get("legacyId"));
-        top:
-        if (shapelessOutputEntry != null && shapelessOutputEntry.getLegacyId() != 0) {
+        Item outputItem;
+        
+        // Новый формат с namespaceId
+        if (shapelessOutput.containsKey("id")) {
+            String outputId = (String) shapelessOutput.get("id");
+            int outputDamage = (int) shapelessOutput.getOrDefault("damage", 0);
+            int outputCount = (Integer) shapelessOutput.getOrDefault("count", 1);
+            String nbt = (String) shapelessOutput.get("nbt_b64");
+            byte[] nbtBytes = nbt != null ? Base64.getDecoder().decode(nbt) : new byte[0];
+            outputItem = Item.fromString(outputId);
+            if (outputDamage != 0) {
+                outputItem.setDamage(outputDamage);
+            }
+            outputItem.setCount(outputCount);
+            if (nbtBytes.length > 0) {
+                outputItem.setCompoundTag(nbtBytes);
+            }
+        } else {
+            // Старый формат с legacyId (для обратной совместимости)
+            RuntimeItemMapping.LegacyEntry shapelessOutputEntry = itemMapping.fromRuntime((int) shapelessOutput.get("legacyId"));
+            if (shapelessOutputEntry == null || shapelessOutputEntry.getLegacyId() == 0) {
+                log.trace("Unknown shapeless output: {}", recipe);
+                return;
+            }
             int outputDamage = (int) shapelessOutput.getOrDefault("damage", 0);
             if (outputDamage == 0) {
                 outputDamage = shapelessOutputEntry.getDamage();
             }
             String nbt = (String) shapelessOutput.get("nbt_b64");
             byte[] nbtBytes = nbt != null ? Base64.getDecoder().decode(nbt) : new byte[0];
-            Item outputItem = Item.get(shapelessOutputEntry.getLegacyId(), outputDamage, (Integer) shapelessOutput.getOrDefault("count", 1), nbtBytes);
-            List<Map> input = (List<Map>) recipe.get("input");
-            List<Item> sorted = new ArrayList<>();
+            outputItem = Item.get(shapelessOutputEntry.getLegacyId(), outputDamage, (Integer) shapelessOutput.getOrDefault("count", 1), nbtBytes);
+        }
+        
+        top:
+        List<Map> input = (List<Map>) recipe.get("input");
+        List<Item> sorted = new ArrayList<>();
 
-            for (Map<String, Object> ingredient : input) {
-                String type = (String) ingredient.get("type");
-                if (!"default".equals(type)) {
-                    if ("item_tag".equals(type)) {
-                        buildShapelessRecipeItemTagOverrides(itemMapping, input, outputItem, (String) ingredient.get("itemTag"), null, null);
-                    } else {
-                        log.trace("Unknown shapeless ingredient type: {}", recipe);
-                    }
-                    break top;
+        for (Map<String, Object> ingredient : input) {
+            String type = (String) ingredient.get("type");
+            if (!"default".equals(type)) {
+                if ("item_tag".equals(type)) {
+                    buildShapelessRecipeItemTagOverrides(itemMapping, input, outputItem, (String) ingredient.get("itemTag"), null, null);
+                } else {
+                    log.trace("Unknown shapeless ingredient type: {}", recipe);
                 }
+                break top;
+            }
+            Item inputItem;
+            // Новый формат с namespaceId
+            if (ingredient.containsKey("namespaceId")) {
+                String namespaceId = (String) ingredient.get("namespaceId");
+                int damage = (int) ingredient.getOrDefault("damage", 0);
+                int count = (Integer) ingredient.getOrDefault("count", 1);
+                inputItem = Item.fromString(namespaceId);
+                if (damage == 32767 || damage == -1) {
+                    inputItem.setDamage(-1);
+                } else if (damage != 0) {
+                    inputItem.setDamage(damage);
+                }
+                inputItem.setCount(count);
+            } else {
+                // Старый формат с itemId (для обратной совместимости)
                 RuntimeItemMapping.LegacyEntry legacyEntry = itemMapping.fromRuntime((int) ingredient.get("itemId"));
                 if (legacyEntry == null || legacyEntry.getLegacyId() == 0) {
                     log.trace("Unknown shapeless input: {}", recipe);
@@ -293,47 +332,65 @@ public class CraftingManager {
                 } else if (aux == 0) {
                     aux = legacyEntry.getDamage();
                 }
-                sorted.add(Item.get(legacyEntry.getLegacyId(), aux, (Integer) ingredient.getOrDefault("count", 1)));
+                inputItem = Item.get(legacyEntry.getLegacyId(), aux, (Integer) ingredient.getOrDefault("count", 1));
             }
+            sorted.add(inputItem);
+        }
 
+        sorted.sort(recipeComparator);
+
+        int priority = (int) recipe.getOrDefault("priority", 0);
+        this.registerRecipe(new ShapelessRecipe((String) recipe.get("id"), priority, outputItem, sorted));
+
+        // Inject recipes for flight duration 2 and 3 fireworks
+        if (outputItem.getId() == Item.FIREWORKS && outputItem.getCount() == 3) {
+            sorted.add(Item.get(Item.GUNPOWDER, 0, 1));
             sorted.sort(recipeComparator);
+            ((ItemFirework) outputItem).setFlight(2);
+            this.registerRecipe(new ShapelessRecipe(null, 0, outputItem, sorted));
 
-            int priority = (int) recipe.getOrDefault("priority", 0);
-            this.registerRecipe(new ShapelessRecipe((String) recipe.get("id"), priority, outputItem, sorted));
-
-            // Inject recipes for flight duration 2 and 3 fireworks
-            if (outputItem.getId() == Item.FIREWORKS && outputItem.getCount() == 3) {
-                sorted.add(Item.get(Item.GUNPOWDER, 0, 1));
-                sorted.sort(recipeComparator);
-                ((ItemFirework) outputItem).setFlight(2);
-                this.registerRecipe(new ShapelessRecipe(null, 0, outputItem, sorted));
-
-                sorted.add(Item.get(Item.GUNPOWDER, 0, 1));
-                sorted.sort(recipeComparator);
-                ((ItemFirework) outputItem).setFlight(3);
-                this.registerRecipe(new ShapelessRecipe(null, 0, outputItem, sorted));
-            }
-        } else {
-            log.trace("Unknown shapeless output: {}", recipe);
+            sorted.add(Item.get(Item.GUNPOWDER, 0, 1));
+            sorted.sort(recipeComparator);
+            ((ItemFirework) outputItem).setFlight(3);
+            this.registerRecipe(new ShapelessRecipe(null, 0, outputItem, sorted));
         }
     }
 
     @SuppressWarnings("unchecked")
     private void loadStonecutterRecipe(RuntimeItemMapping itemMapping, Map recipe) {
         Map outputMap = (Map) ((List) recipe.get("output")).get(0);
-        RuntimeItemMapping.LegacyEntry outputEntry = itemMapping.fromRuntime((int) outputMap.get("legacyId"));
-        if (outputEntry == null || outputEntry.getLegacyId() == 0) {
-            log.trace("Unknown stonecutter output: {}", recipe);
-            return;
+        Item outputItem;
+        
+        // Новый формат с namespaceId
+        if (outputMap.containsKey("id")) {
+            String outputId = (String) outputMap.get("id");
+            int outputDamage = (int) outputMap.getOrDefault("damage", 0);
+            int outputCount = (Integer) outputMap.getOrDefault("count", 1);
+            String nbt = (String) outputMap.get("nbt_b64");
+            byte[] nbtBytes = nbt != null ? Base64.getDecoder().decode(nbt) : new byte[0];
+            outputItem = Item.fromString(outputId);
+            if (outputDamage != 0) {
+                outputItem.setDamage(outputDamage);
+            }
+            outputItem.setCount(outputCount);
+            if (nbtBytes.length > 0) {
+                outputItem.setCompoundTag(nbtBytes);
+            }
+        } else {
+            // Старый формат с legacyId (для обратной совместимости)
+            RuntimeItemMapping.LegacyEntry outputEntry = itemMapping.fromRuntime((int) outputMap.get("legacyId"));
+            if (outputEntry == null || outputEntry.getLegacyId() == 0) {
+                log.trace("Unknown stonecutter output: {}", recipe);
+                return;
+            }
+            int outputDamage = (int) outputMap.getOrDefault("damage", 0);
+            if (outputDamage == 0) {
+                outputDamage = outputEntry.getDamage();
+            }
+            String nbt = (String) outputMap.get("nbt_b64");
+            byte[] nbtBytes = nbt != null ? Base64.getDecoder().decode(nbt) : new byte[0];
+            outputItem = Item.get(outputEntry.getLegacyId(), outputDamage, (Integer) outputMap.getOrDefault("count", 1), nbtBytes);
         }
-
-        int outputDamage = (int) outputMap.getOrDefault("damage", 0);
-        if (outputDamage == 0) {
-            outputDamage = outputEntry.getDamage();
-        }
-        String nbt = (String) outputMap.get("nbt_b64");
-        byte[] nbtBytes = nbt != null ? Base64.getDecoder().decode(nbt) : new byte[0];
-        Item outputItem = Item.get(outputEntry.getLegacyId(), outputDamage, (Integer) outputMap.getOrDefault("count", 1), nbtBytes);
 
         List<Map> input = (List<Map>) recipe.get("input");
         if (input.isEmpty()) {
@@ -344,27 +401,42 @@ public class CraftingManager {
             log.trace("Unknown stonecutter ingredient type: {}", recipe);
             return;
         }
-        RuntimeItemMapping.LegacyEntry inputEntry = itemMapping.fromRuntime((int) ingredientMap.get("itemId"));
-        if (inputEntry == null || inputEntry.getLegacyId() == 0) {
-            log.trace("Unknown stonecutter input: {}", recipe);
-            return;
-        }
-        int inputAux = (int) ingredientMap.getOrDefault("auxValue", 0);
-        int count = (Integer) ingredientMap.getOrDefault("count", 1);
+        
         Item inputItem;
-        if (inputAux == 32767) {
-            if (inputEntry.isHasDamage()) {
-                // 运行时物品映射到带 damage 的 legacy ID（如花岗岩→stone:1），使用具体 damage 值
-                inputItem = Item.get(inputEntry.getLegacyId(), inputEntry.getDamage(), count);
-            } else {
-                // 真正的通配符：meta 传 null 使 hasMeta=false，编码时 damage=Short.MAX_VALUE(32767)，客户端按 runtimeId 过滤
-                inputItem = Item.get(inputEntry.getLegacyId(), null, count);
+        // Новый формат с namespaceId
+        if (ingredientMap.containsKey("namespaceId")) {
+            String namespaceId = (String) ingredientMap.get("namespaceId");
+            int damage = (int) ingredientMap.getOrDefault("damage", 0);
+            int count = (Integer) ingredientMap.getOrDefault("count", 1);
+            inputItem = Item.fromString(namespaceId);
+            if (damage == 32767 || damage == -1) {
+                //通配符
+                inputItem.setDamage(-1);
+            } else if (damage != 0) {
+                inputItem.setDamage(damage);
             }
+            inputItem.setCount(count);
         } else {
-            if (inputAux == 0) {
-                inputAux = inputEntry.getDamage();
+            // Старый формат с itemId (для обратной совместимости)
+            RuntimeItemMapping.LegacyEntry inputEntry = itemMapping.fromRuntime((int) ingredientMap.get("itemId"));
+            if (inputEntry == null || inputEntry.getLegacyId() == 0) {
+                log.trace("Unknown stonecutter input: {}", recipe);
+                return;
             }
-            inputItem = Item.get(inputEntry.getLegacyId(), inputAux, count);
+            int inputAux = (int) ingredientMap.getOrDefault("auxValue", 0);
+            int count = (Integer) ingredientMap.getOrDefault("count", 1);
+            if (inputAux == 32767) {
+                if (inputEntry.isHasDamage()) {
+                    inputItem = Item.get(inputEntry.getLegacyId(), inputEntry.getDamage(), count);
+                } else {
+                    inputItem = Item.get(inputEntry.getLegacyId(), null, count);
+                }
+            } else {
+                if (inputAux == 0) {
+                    inputAux = inputEntry.getDamage();
+                }
+                inputItem = Item.get(inputEntry.getLegacyId(), inputAux, count);
+            }
         }
 
         String recipeId = (String) recipe.get("id");
@@ -380,20 +452,61 @@ public class CraftingManager {
 
         List<Map> outputList = (List<Map>) recipe.get("output");
         Map shapedOutput = outputList.get(0);
-        RuntimeItemMapping.LegacyEntry shapedOutputEntry = itemMapping.fromRuntime((int) shapedOutput.get("legacyId"));
-        top:
-        if (shapedOutputEntry != null && shapedOutputEntry.getLegacyId() != 0) {
+        Item outputItem;
+        
+        // Новый формат с namespaceId
+        if (shapedOutput.containsKey("id")) {
+            String outputId = (String) shapedOutput.get("id");
+            int outputDamage = (int) shapedOutput.getOrDefault("damage", 0);
+            int outputCount = (Integer) shapedOutput.getOrDefault("count", 1);
+            String nbt = (String) shapedOutput.get("nbt_b64");
+            byte[] nbtBytes = nbt != null ? Base64.getDecoder().decode(nbt) : new byte[0];
+            outputItem = Item.fromString(outputId);
+            if (outputDamage != 0) {
+                outputItem.setDamage(outputDamage);
+            }
+            outputItem.setCount(outputCount);
+            if (nbtBytes.length > 0) {
+                outputItem.setCompoundTag(nbtBytes);
+            }
+        } else {
+            // Старый формат с legacyId (для обратной совместимости)
+            RuntimeItemMapping.LegacyEntry shapedOutputEntry = itemMapping.fromRuntime((int) shapedOutput.get("legacyId"));
+            if (shapedOutputEntry == null || shapedOutputEntry.getLegacyId() == 0) {
+                log.trace("Unknown shaped output: {}", recipe);
+                return;
+            }
             int outputDamage = (int) shapedOutput.getOrDefault("damage", 0);
             if (outputDamage == 0) {
                 outputDamage = shapedOutputEntry.getDamage();
             }
             String nbt = (String) shapedOutput.get("nbt_b64");
             byte[] nbtBytes = nbt != null ? Base64.getDecoder().decode(nbt) : new byte[0];
-            Item outputItem = Item.get(shapedOutputEntry.getLegacyId(), outputDamage, (Integer) shapedOutput.getOrDefault("count", 1), nbtBytes);
+            outputItem = Item.get(shapedOutputEntry.getLegacyId(), outputDamage, (Integer) shapedOutput.getOrDefault("count", 1), nbtBytes);
+        }
 
-            List<Item> extraOutputs = new ArrayList<>();
-            for (int i = 1; i < outputList.size(); i++) {
-                Map extraOutput = outputList.get(i);
+        List<Item> extraOutputs = new ArrayList<>();
+        for (int i = 1; i < outputList.size(); i++) {
+            Map extraOutput = outputList.get(i);
+            Item extraItem;
+            
+            // Новый формат с namespaceId
+            if (extraOutput.containsKey("id")) {
+                String extraId = (String) extraOutput.get("id");
+                int extraDamage = (int) extraOutput.getOrDefault("damage", 0);
+                int extraCount = (Integer) extraOutput.getOrDefault("count", 1);
+                String extraNbt = (String) extraOutput.get("nbt_b64");
+                byte[] extraNbtBytes = extraNbt != null ? Base64.getDecoder().decode(extraNbt) : new byte[0];
+                extraItem = Item.fromString(extraId);
+                if (extraDamage != 0) {
+                    extraItem.setDamage(extraDamage);
+                }
+                extraItem.setCount(extraCount);
+                if (extraNbtBytes.length > 0) {
+                    extraItem.setCompoundTag(extraNbtBytes);
+                }
+            } else {
+                // Старый формат с legacyId
                 RuntimeItemMapping.LegacyEntry extraEntry = itemMapping.fromRuntime((int) extraOutput.get("legacyId"));
                 if (extraEntry != null && extraEntry.getLegacyId() != 0) {
                     int extraDamage = (int) extraOutput.getOrDefault("damage", 0);
@@ -402,55 +515,75 @@ public class CraftingManager {
                     }
                     String extraNbt = (String) extraOutput.get("nbt_b64");
                     byte[] extraNbtBytes = extraNbt != null ? Base64.getDecoder().decode(extraNbt) : new byte[0];
-                    extraOutputs.add(Item.get(extraEntry.getLegacyId(), extraDamage, (Integer) extraOutput.getOrDefault("count", 1), extraNbtBytes));
+                    extraItem = Item.get(extraEntry.getLegacyId(), extraDamage, (Integer) extraOutput.getOrDefault("count", 1), extraNbtBytes);
+                } else {
+                    continue;
                 }
             }
-            String[] shape = ((List<String>) recipe.get("shape")).toArray(new String[0]);
-            Map<Character, Item> ingredients = new CharObjectHashMap<>();
-            Map<String, Map<String, Object>> input = (Map) recipe.get("input");
+            extraOutputs.add(extraItem);
+        }
+        
+        String[] shape = ((List<String>) recipe.get("shape")).toArray(new String[0]);
+        Map<Character, Item> ingredients = new CharObjectHashMap<>();
+        Map<String, Map<String, Object>> input = (Map) recipe.get("input");
 
-            for (Map.Entry<String, Map<String, Object>> ingredientEntry : input.entrySet()) {
-                Item inputItem = null;
-                String type = (String) ingredientEntry.getValue().get("type");
-                if (!"default".equals(type)) {
-                    if ("item_tag".equals(type)) {
-                        buildShapedRecipeItemTagOverrides(itemMapping, input, shape, outputItem, (String) ingredientEntry.getValue().get("itemTag"), null, null);
-                    } else if ("complex_alias".equals(type)) {
-                        switch ((String) recipe.get("id")) {
-                            case "minecraft:painting":
-                                inputItem = Item.get(BlockID.WOOL, 0, 1);
-                                break;
-                            case "minecraft:purpur_stairs":
-                                inputItem = Item.get(BlockID.PURPUR_BLOCK, 0, 1);
-                                break;
-                            case "minecraft:stonecutter":
-                                inputItem = Item.get(BlockID.STONE, 0, 1);
-                                break;
-                            case "minecraft:tnt":
-                                inputItem = Item.get(BlockID.SAND, 0, 1);
-                                break;
-                            // TODO: bedrock allows alternative materials for some trim duplication
-                            case "minecraft:dune_armor_trim_smithing_template_duplicate":
-                                inputItem = Item.get(BlockID.SANDSTONE, 0, 1);
-                                break;
-                            case "minecraft:spire_armor_trim_smithing_template_duplicate":
-                                inputItem = Item.get(BlockID.PURPUR_BLOCK, 0, 1);
-                                break;
-                            case "minecraft:tide_armor_trim_smithing_template_duplicate":
-                                inputItem = Item.get(BlockID.PRISMARINE, 0, 1);
-                                break;
-                        }
-                        if (inputItem == null) {
-                            log.trace("Missing shaped ingredient complex_alias: {}", recipe);
-                        }
-                    } else {
-                        log.trace("Unknown shaped ingredient type: {}", recipe);
+        top:
+        for (Map.Entry<String, Map<String, Object>> ingredientEntry : input.entrySet()) {
+            Item inputItem = null;
+            String type = (String) ingredientEntry.getValue().get("type");
+            if (!"default".equals(type)) {
+                if ("item_tag".equals(type)) {
+                    buildShapedRecipeItemTagOverrides(itemMapping, input, shape, outputItem, (String) ingredientEntry.getValue().get("itemTag"), null, null);
+                } else if ("complex_alias".equals(type)) {
+                    switch ((String) recipe.get("id")) {
+                        case "minecraft:painting":
+                            inputItem = Item.get(BlockID.WOOL, 0, 1);
+                            break;
+                        case "minecraft:purpur_stairs":
+                            inputItem = Item.get(BlockID.PURPUR_BLOCK, 0, 1);
+                            break;
+                        case "minecraft:stonecutter":
+                            inputItem = Item.get(BlockID.STONE, 0, 1);
+                            break;
+                        case "minecraft:tnt":
+                            inputItem = Item.get(BlockID.SAND, 0, 1);
+                            break;
+                        // TODO: bedrock allows alternative materials for some trim duplication
+                        case "minecraft:dune_armor_trim_smithing_template_duplicate":
+                            inputItem = Item.get(BlockID.SANDSTONE, 0, 1);
+                            break;
+                        case "minecraft:spire_armor_trim_smithing_template_duplicate":
+                            inputItem = Item.get(BlockID.PURPUR_BLOCK, 0, 1);
+                            break;
+                        case "minecraft:tide_armor_trim_smithing_template_duplicate":
+                            inputItem = Item.get(BlockID.PRISMARINE, 0, 1);
+                            break;
                     }
                     if (inputItem == null) {
-                        break top;
+                        log.trace("Missing shaped ingredient complex_alias: {}", recipe);
                     }
+                } else {
+                    log.trace("Unknown shaped ingredient type: {}", recipe);
                 }
                 if (inputItem == null) {
+                    break top;
+                }
+            }
+            if (inputItem == null) {
+                // Новый формат с namespaceId
+                if (ingredientEntry.getValue().containsKey("namespaceId")) {
+                    String namespaceId = (String) ingredientEntry.getValue().get("namespaceId");
+                    int damage = (int) ingredientEntry.getValue().getOrDefault("damage", 0);
+                    int count = (Integer) ingredientEntry.getValue().getOrDefault("count", 1);
+                    inputItem = Item.fromString(namespaceId);
+                    if (damage == 32767 || damage == -1) {
+                        inputItem.setDamage(-1);
+                    } else if (damage != 0) {
+                        inputItem.setDamage(damage);
+                    }
+                    inputItem.setCount(count);
+                } else {
+                    // Старый формат с itemId
                     RuntimeItemMapping.LegacyEntry legacyEntry = itemMapping.fromRuntime((int) ingredientEntry.getValue().get("itemId"));
                     if (legacyEntry == null || legacyEntry.getLegacyId() == 0) {
                         log.trace("Unknown shaped input: {}", recipe);
@@ -464,14 +597,12 @@ public class CraftingManager {
                     }
                     inputItem = Item.get(legacyEntry.getLegacyId(), aux, (Integer) ingredientEntry.getValue().getOrDefault("count", 1));
                 }
-                ingredients.put(ingredientEntry.getKey().charAt(0), inputItem);
             }
-
-            int priority = (int) recipe.getOrDefault("priority", 0);
-            this.registerRecipe(new ShapedRecipe((String) recipe.get("id"), priority, outputItem, shape, ingredients, extraOutputs));
-        } else {
-            log.trace("Unknown shaped output: {}", recipe);
+            ingredients.put(ingredientEntry.getKey().charAt(0), inputItem);
         }
+
+        int priority = (int) recipe.getOrDefault("priority", 0);
+        this.registerRecipe(new ShapedRecipe((String) recipe.get("id"), priority, outputItem, shape, ingredients, extraOutputs));
     }
 
     @SuppressWarnings("unchecked")
