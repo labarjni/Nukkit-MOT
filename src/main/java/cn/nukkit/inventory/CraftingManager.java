@@ -130,9 +130,9 @@ public class CraftingManager {
         this.registerMultiRecipe(new FireworkRecipe());
         this.registerMultiRecipe(new DecoratedPotRecipe());
 
-        Map<String, Object> root = new Config(Config.YAML).loadFromStream(Server.class.getClassLoader().getResourceAsStream("recipes.json")).getRootSection();
+        Map<String, Object> root = new Config(Config.JSON).loadFromStream(Server.class.getClassLoader().getResourceAsStream("recipes.json")).getRootSection();
         RuntimeItemMapping itemMapping = RuntimeItems.getMapping(GameVersion.getLastVersion());
-        Config furnaceXpConfig = new Config(Config.YAML).loadFromStream(Server.class.getClassLoader().getResourceAsStream("recipes/furnace_xp.json"));
+        Config furnaceXpConfig = new Config(Config.JSON).loadFromStream(Server.class.getClassLoader().getResourceAsStream("recipes/furnace_xp.json"));
 
         for (Map recipe : (List<Map>) root.get("recipes")) {
             try {
@@ -161,7 +161,7 @@ public class CraftingManager {
         }
 
         // Smithing recipes
-        ConfigSection smithing = new Config(Config.YAML).loadFromStream(Server.class.getClassLoader().getResourceAsStream("smithing.json")).getRootSection();
+        ConfigSection smithing = new Config(Config.JSON).loadFromStream(Server.class.getClassLoader().getResourceAsStream("smithing.json")).getRootSection();
         top:
         for (Map<String, Object> recipe : (List<Map<String, Object>>) smithing.get((Object) "smithing")) {
             String recipeId = (String) recipe.get("id");
