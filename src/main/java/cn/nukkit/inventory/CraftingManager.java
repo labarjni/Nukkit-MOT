@@ -160,69 +160,6 @@ public class CraftingManager {
             }
         }
 
-        // Potion mixes
-        for (Map potionMix : (List<Map>) root.get("potionMixes")) {
-            RuntimeItemMapping.LegacyEntry legacyEntry;
-
-            legacyEntry = itemMapping.fromIdentifier((String) potionMix.get("inputId"));
-            if (legacyEntry == null) {
-                log.trace("Unknown potion inputId: {}", potionMix);
-                continue;
-            }
-            int fromPotionId = legacyEntry.getLegacyId();
-            int fromPotionMeta = ((Integer) potionMix.get("inputMeta"));
-            legacyEntry = itemMapping.fromIdentifier((String) potionMix.get("reagentId"));
-            if (legacyEntry == null) {
-                log.trace("Unknown potion reagentId: {}", potionMix);
-                continue;
-            }
-            int ingredient = legacyEntry.getLegacyId();
-            int ingredientMeta = ((Integer) potionMix.get("reagentMeta"));
-            legacyEntry = itemMapping.fromIdentifier((String) potionMix.get("outputId"));
-            if (legacyEntry == null) {
-                log.trace("Unknown potion outputId: {}", potionMix);
-                continue;
-            }
-            int toPotionId = legacyEntry.getLegacyId();
-            int toPotionMeta = ((Integer) potionMix.get("outputMeta"));
-            if (fromPotionId == 0 || ingredient == 0 || toPotionId == 0) {
-                log.trace("Unknown potion mix: {}", potionMix);
-                continue;
-            }
-
-            registerBrewingRecipe(new BrewingRecipe(Item.get(fromPotionId, fromPotionMeta), Item.get(ingredient, ingredientMeta), Item.get(toPotionId, toPotionMeta)));
-        }
-
-        // Container mixes
-        for (Map containerMix : (List<Map>) root.get("containerMixes")) {
-            RuntimeItemMapping.LegacyEntry legacyEntry;
-
-            legacyEntry = itemMapping.fromIdentifier((String) containerMix.get("inputId"));
-            if (legacyEntry == null) {
-                log.trace("Unknown container inputId: {}", containerMix);
-                continue;
-            }
-            int fromItemId = legacyEntry.getLegacyId();
-            legacyEntry = itemMapping.fromIdentifier((String) containerMix.get("reagentId"));
-            if (legacyEntry == null) {
-                log.trace("Unknown container reagentId: {}", containerMix);
-                continue;
-            }
-            int ingredientId = legacyEntry.getLegacyId();
-            legacyEntry = itemMapping.fromIdentifier((String) containerMix.get("outputId"));
-            if (legacyEntry == null) {
-                log.trace("Unknown container outputId: {}", containerMix);
-                continue;
-            }
-            int toItemId = legacyEntry.getLegacyId();
-            if (fromItemId == 0 || ingredientId == 0 || toItemId == 0) {
-                log.trace("Unknown container mix: {}", containerMix);
-                continue;
-            }
-
-            registerContainerRecipe(new ContainerRecipe(Item.get(fromItemId), Item.get(ingredientId), Item.get(toItemId)));
-        }
-
         // Smithing recipes
         ConfigSection smithing = new Config(Config.YAML).loadFromStream(Server.class.getClassLoader().getResourceAsStream("smithing.json")).getRootSection();
         top:
