@@ -1,0 +1,17 @@
+name: DDUI Test Plugin
+version: 1.0.0
+author: DDUI Team
+description: Плагин для тестирования всех элементов DDUI в игре с полным логированием
+main: cn.nukkit.ddui.test.DDUITestPlugin
+api:
+  - "2.0.0"
+
+commands:
+  dduitest:
+    description: Открыть тестовую форму DDUI
+    usage: "/dduitest"
+    permission: ddui.test.command
+
+permissions:
+  ddui.test.command:
+    default: true
