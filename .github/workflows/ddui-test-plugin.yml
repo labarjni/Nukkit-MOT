@@ -2,11 +2,11 @@ name: DDUI Test Plugin Build
 
 on:
   push:
-    branches: [ main, master, feat/ddui ]
+    branches: [ dota-ui-elements-tester-plugin-3c5d0 ]
     paths:
       - 'ddui-test-plugin/**'
   pull_request:
-    branches: [ main, master, feat/ddui ]
+    branches: [ dota-ui-elements-tester-plugin-3c5d0 ]
     paths:
       - 'ddui-test-plugin/**'
 
@@ -16,29 +16,29 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: 17
         distribution: 'temurin'
-    
+
     - name: Cache Maven packages
       uses: actions/cache@v4
       with:
         path: ~/.m2
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
-    
+
     - name: Build main project first (Maven)
       run: |
         mvn -B package --file pom.xml -DskipTests
-    
+
     - name: Build DDUI Test Plugin (Maven)
       run: |
         cd ddui-test-plugin
         mvn -B clean package --file pom.xml
-    
+
     - name: Upload DDUI Test Plugin artifact
       uses: actions/upload-artifact@v4
       with:
