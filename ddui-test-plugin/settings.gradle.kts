@@ -1,1 +1,1 @@
-rootProject.name = "DDUI-TestPlugin"
+rootProject.name = "DDUI-Test"
