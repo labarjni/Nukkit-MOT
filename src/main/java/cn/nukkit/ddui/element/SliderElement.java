@@ -11,59 +11,36 @@ import cn.nukkit.ddui.properties.StringProperty;
 public class SliderElement extends Element<Long> {
 
     private final Observable<Long> currentValue;
-
     private long min = 0L;
     private long max = 100L;
 
-    public SliderElement(String label,
-                         Observable<Long> currentValue,
-                         long minValue,
-                         long maxValue,
-                         ObjectProperty parent) {
-        this(label, currentValue, minValue, maxValue,
-            SliderElementOptions.builder().build(), parent);
+    public SliderElement(String label, Observable<Long> currentValue, long minValue, long maxValue, ObjectProperty parent) {
+        this(label, currentValue, minValue, maxValue, SliderElementOptions.builder().build(), parent);
     }
 
     @SuppressWarnings("unchecked")
-    public SliderElement(String label,
-                         Observable<Long> currentValue,
-                         long minValue,
-                         long maxValue,
-                         SliderElementOptions options,
-                         ObjectProperty parent) {
+    public SliderElement(String label, Observable<Long> currentValue, long minValue, long maxValue, SliderElementOptions options, ObjectProperty parent) {
         super("slider", parent);
         this.currentValue = currentValue;
 
         setLabel(label);
 
-        if (options.getVisible() instanceof Observable<?> obs) {
-            setVisibility((Observable<Boolean>) obs);
-        } else {
-            setVisibility((Boolean) options.getVisible());
-        }
+        if (options.getVisible() instanceof Observable<?> obs) setVisibility((Observable<Boolean>) obs);
+        else setVisibility((Boolean) options.getVisible());
 
-        if (options.getDisabled() instanceof Observable<?> obs) {
-            setDisabled((Observable<Boolean>) obs);
-        } else {
-            setDisabled((Boolean) options.getDisabled());
-        }
+        if (options.getDisabled() instanceof Observable<?> obs) setDisabled((Observable<Boolean>) obs);
+        else setDisabled((Boolean) options.getDisabled());
 
-        if (options.getStep() instanceof Observable<?> obs) {
-            setStep((Observable<Long>) obs);
-        } else {
-            setStep(((Number) options.getStep()).longValue());
-        }
+        if (options.getStep() instanceof Observable<?> obs) setStep((Observable<Long>) obs);
+        else setStep(((Number) options.getStep()).longValue());
 
         setMinValue(minValue);
         setMaxValue(maxValue);
 
         setValue(currentValue);
 
-        if (options.getDescription() instanceof Observable<?> obs) {
-            setDescription((Observable<String>) obs);
-        } else {
-            setDescription((String) options.getDescription());
-        }
+        if (options.getDescription() instanceof Observable<?> obs) setDescription((Observable<String>) obs);
+        else setDescription((String) options.getDescription());
     }
 
     private long clampValue(long value) {
@@ -73,19 +50,15 @@ public class SliderElement extends Element<Long> {
 
     public long getMaxValue() {
         var prop = getProperty("maxValue");
-        if (prop instanceof LongProperty lp) return lp.getValue();
-        return max;
+        return (prop instanceof LongProperty lp) ? lp.getValue() : max;
     }
 
     public void setMaxValue(long maxValue) {
         this.max = maxValue;
         var property = new LongProperty("maxValue", maxValue, this);
         setProperty(property);
-
         long currentVal = getSliderValue();
-        if (currentVal > maxValue) {
-            setValueInternal(maxValue);
-        }
+        if (currentVal > maxValue) setValueInternal(maxValue);
     }
 
     public SliderElement setMaxValue(Observable<Long> maxValue) {
@@ -101,8 +74,7 @@ public class SliderElement extends Element<Long> {
 
     public long getMinValue() {
         var prop = getProperty("minValue");
-        if (prop instanceof LongProperty lp) return lp.getValue();
-        return min;
+        return (prop instanceof LongProperty lp) ? lp.getValue() : min;
     }
 
     public void setMinValue(long minValue) {
@@ -111,9 +83,7 @@ public class SliderElement extends Element<Long> {
         setProperty(property);
 
         long currentVal = getSliderValue();
-        if (currentVal < minValue) {
-            setValueInternal(minValue);
-        }
+        if (currentVal < minValue) setValueInternal(minValue);
     }
 
     public SliderElement setMinValue(Observable<Long> minValue) {
@@ -129,8 +99,7 @@ public class SliderElement extends Element<Long> {
 
     public long getStep() {
         var prop = getProperty("step");
-        if (prop instanceof LongProperty lp) return lp.getValue();
-        return 1L;
+        return (prop instanceof LongProperty lp) ? lp.getValue() : 1L;
     }
 
     public SliderElement setStep(long step) {
@@ -151,8 +120,7 @@ public class SliderElement extends Element<Long> {
 
     public long getSliderValue() {
         var prop = getProperty("value");
-        if (prop instanceof LongProperty lp) return lp.getValue();
-        return min;
+        return (prop instanceof LongProperty lp) ? lp.getValue() : min;
     }
 
     public SliderElement setValue(long value) {
@@ -161,10 +129,7 @@ public class SliderElement extends Element<Long> {
 
     private SliderElement setValueInternal(long value) {
         var existing = getProperty("value");
-        LongProperty property = (existing instanceof LongProperty lp)
-            ? lp
-            : createValueProperty();
-
+        LongProperty property = (existing instanceof LongProperty lp) ? lp : createValueProperty();
         property.setValue(value);
         setProperty(property);
 
@@ -179,9 +144,7 @@ public class SliderElement extends Element<Long> {
         long clampedInitial = clampValue(value.getValue());
 
         var existing = getProperty("value");
-        LongProperty property = (existing instanceof LongProperty lp)
-            ? lp
-            : createValueProperty();
+        LongProperty property = (existing instanceof LongProperty lp) ? lp : createValueProperty();
 
         property.setValue(clampedInitial);
         setProperty(property);
@@ -226,15 +189,12 @@ public class SliderElement extends Element<Long> {
 
     public String getDescription() {
         var prop = getProperty("description");
-        if (prop instanceof StringProperty sp) return sp.getValue();
-        return "";
+        return (prop instanceof StringProperty sp) ? sp.getValue() : "";
     }
 
     public SliderElement setDescription(String description) {
         var existing = getProperty("description");
-        StringProperty property = (existing instanceof StringProperty sp)
-            ? sp
-            : new StringProperty("description", "", this);
+        StringProperty property = (existing instanceof StringProperty sp) ? sp : new StringProperty("description", "", this);
         property.setValue(description);
         setProperty(property);
         return this;
@@ -242,9 +202,7 @@ public class SliderElement extends Element<Long> {
 
     public SliderElement setDescription(Observable<String> description) {
         var existing = getProperty("description");
-        StringProperty property = (existing instanceof StringProperty sp)
-            ? sp
-            : new StringProperty("description", "", this);
+        StringProperty property = (existing instanceof StringProperty sp) ? sp : new StringProperty("description", "", this);
         property.setValue(description.getValue());
         description.subscribe(value -> {
             setDescription(value);
@@ -276,9 +234,6 @@ public class SliderElement extends Element<Long> {
     @Override
     public void triggerListeners(Player player, Object data) {
         super.triggerListeners(player, data);
-
-        if (data instanceof Long l) {
-            setValue(l);
-        }
+        if (data instanceof Long l) setValue(l);
     }
 }
