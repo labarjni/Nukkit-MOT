@@ -12,13 +12,16 @@ public class SliderElement extends Element<Long> {
 
     private final Observable<Long> currentValue;
 
+    private long min = 0L;
+    private long max = 100L;
+
     public SliderElement(String label,
                          Observable<Long> currentValue,
                          long minValue,
                          long maxValue,
                          ObjectProperty parent) {
         this(label, currentValue, minValue, maxValue,
-                SliderElementOptions.builder().build(), parent);
+            SliderElementOptions.builder().build(), parent);
     }
 
     @SuppressWarnings("unchecked")
@@ -63,20 +66,33 @@ public class SliderElement extends Element<Long> {
         }
     }
 
+    private long clampValue(long value) {
+        if (value < min) return min;
+        if (value > max) return max;
+        return value;
+    }
+
     public long getMaxValue() {
         var prop = getProperty("maxValue");
         if (prop instanceof LongProperty lp) return lp.getValue();
-        return 100L;
+        return max;
     }
 
     public SliderElement setMaxValue(long maxValue) {
+        this.max = maxValue;
         var property = new LongProperty("maxValue", maxValue, this);
         setProperty(property);
+
+        long currentVal = getSliderValue();
+        if (currentVal > maxValue) {
+            setValueInternal(maxValue);
+        }
         return this;
     }
 
     public SliderElement setMaxValue(Observable<Long> maxValue) {
         var property = new LongProperty("maxValue", maxValue.getValue(), this);
+        this.max = maxValue.getValue();
         maxValue.subscribe(value -> {
             setMaxValue(value);
             return property;
@@ -88,17 +104,24 @@ public class SliderElement extends Element<Long> {
     public long getMinValue() {
         var prop = getProperty("minValue");
         if (prop instanceof LongProperty lp) return lp.getValue();
-        return 0L;
+        return min;
     }
 
     public SliderElement setMinValue(long minValue) {
+        this.min = minValue;
         var property = new LongProperty("minValue", minValue, this);
         setProperty(property);
+
+        long currentVal = getSliderValue();
+        if (currentVal < minValue) {
+            setValueInternal(minValue);
+        }
         return this;
     }
 
     public SliderElement setMinValue(Observable<Long> minValue) {
         var property = new LongProperty("minValue", minValue.getValue(), this);
+        this.min = minValue.getValue();
         minValue.subscribe(value -> {
             setMinValue(value);
             return property;
@@ -132,25 +155,43 @@ public class SliderElement extends Element<Long> {
     public long getSliderValue() {
         var prop = getProperty("value");
         if (prop instanceof LongProperty lp) return lp.getValue();
-        return 0L;
+        return min;
     }
 
     public SliderElement setValue(long value) {
+        return setValueInternal(clampValue(value));
+    }
+
+    private SliderElement setValueInternal(long value) {
         var existing = getProperty("value");
         LongProperty property = (existing instanceof LongProperty lp)
-                ? lp
-                : createValueProperty();
+            ? lp
+            : createValueProperty();
+
         property.setValue(value);
         setProperty(property);
+
+        if (currentValue != null && !currentValue.getValue().equals(value)) {
+            currentValue.setValue(value);
+        }
+
         return this;
     }
 
     public SliderElement setValue(Observable<Long> value) {
+        long clampedInitial = clampValue(value.getValue());
+
         var existing = getProperty("value");
         LongProperty property = (existing instanceof LongProperty lp)
-                ? lp
-                : createValueProperty();
-        property.setValue(value.getValue());
+            ? lp
+            : createValueProperty();
+
+        property.setValue(clampedInitial);
+
+        if (!value.getValue().equals(clampedInitial)) {
+            value.setValue(clampedInitial);
+        }
+
         value.subscribe(v -> {
             setValue(v);
             return property;
@@ -160,7 +201,7 @@ public class SliderElement extends Element<Long> {
     }
 
     private LongProperty createValueProperty() {
-        LongProperty property = new LongProperty("value", 0L, this);
+        LongProperty property = new LongProperty("value", min, this);
         property.addListener((player, data) -> {
             if (data instanceof Long l) {
                 triggerListeners(player, l);
@@ -178,8 +219,8 @@ public class SliderElement extends Element<Long> {
     public SliderElement setDescription(String description) {
         var existing = getProperty("description");
         StringProperty property = (existing instanceof StringProperty sp)
-                ? sp
-                : new StringProperty("description", "", this);
+            ? sp
+            : new StringProperty("description", "", this);
         property.setValue(description);
         setProperty(property);
         return this;
@@ -188,8 +229,8 @@ public class SliderElement extends Element<Long> {
     public SliderElement setDescription(Observable<String> description) {
         var existing = getProperty("description");
         StringProperty property = (existing instanceof StringProperty sp)
-                ? sp
-                : new StringProperty("description", "", this);
+            ? sp
+            : new StringProperty("description", "", this);
         property.setValue(description.getValue());
         description.subscribe(value -> {
             setDescription(value);
@@ -224,7 +265,6 @@ public class SliderElement extends Element<Long> {
 
         if (data instanceof Long l) {
             setValue(l);
-            currentValue.setValue(l);
         }
     }
 }
