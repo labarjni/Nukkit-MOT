@@ -2,6 +2,7 @@ package cn.nukkit.ddui.element;
 
 import cn.nukkit.ddui.Observable;
 import cn.nukkit.ddui.properties.ObjectProperty;
+import cn.nukkit.ddui.properties.StringProperty;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,7 +23,7 @@ public class DduiElementTest {
     public void testButtonElementCreation() {
         ObjectProperty parent = createParent();
         ButtonElement button = new ButtonElement("Click Me", parent);
-        
+
         assertEquals("button", button.getName());
         assertEquals("Click Me", button.getLabel());
         assertFalse(button.getDisabled());
@@ -34,9 +35,9 @@ public class DduiElementTest {
         ObjectProperty parent = createParent();
         Observable<String> labelObs = new Observable<>("Initial");
         ButtonElement button = new ButtonElement(labelObs.getValue(), parent);
-        
+
         assertEquals("Initial", button.getLabel());
-        
+
         labelObs.setValue("Updated");
         // Label должен обновиться через подписку
         assertEquals("Updated", button.getLabel());
@@ -46,7 +47,7 @@ public class DduiElementTest {
     public void testButtonElementSetToolTip() {
         ObjectProperty parent = createParent();
         ButtonElement button = new ButtonElement("Test", parent);
-        
+
         button.setToolTip("Tooltip text");
         assertEquals("Tooltip text", button.getToolTip());
     }
@@ -55,10 +56,10 @@ public class DduiElementTest {
     public void testButtonElementSetVisibility() {
         ObjectProperty parent = createParent();
         ButtonElement button = new ButtonElement("Test", parent);
-        
+
         button.setVisibility(false);
         assertFalse(button.getVisibility());
-        
+
         button.setVisibility(true);
         assertTrue(button.getVisibility());
     }
@@ -67,7 +68,7 @@ public class DduiElementTest {
     public void testButtonElementSetDisabled() {
         ObjectProperty parent = createParent();
         ButtonElement button = new ButtonElement("Test", parent);
-        
+
         button.setDisabled(true);
         assertTrue(button.getDisabled());
     }
@@ -79,7 +80,7 @@ public class DduiElementTest {
         ObjectProperty parent = createParent();
         Observable<String> text = new Observable<>("initial text");
         TextFieldElement field = new TextFieldElement("Enter Text", text, parent);
-        
+
         assertEquals("textField", field.getName());
         assertEquals("Enter Text", field.getLabel());
         assertEquals("initial text", field.getText());
@@ -90,7 +91,7 @@ public class DduiElementTest {
         ObjectProperty parent = createParent();
         Observable<String> text = new Observable<>("initial");
         TextFieldElement field = new TextFieldElement("Label", text, parent);
-        
+
         field.setText("new text");
         assertEquals("new text", field.getText());
     }
@@ -100,7 +101,7 @@ public class DduiElementTest {
         ObjectProperty parent = createParent();
         Observable<String> text = new Observable<>("initial");
         TextFieldElement field = new TextFieldElement("Label", text, parent);
-        
+
         text.setValue("updated via observable");
         assertEquals("updated via observable", field.getText());
     }
@@ -110,7 +111,7 @@ public class DduiElementTest {
         ObjectProperty parent = createParent();
         Observable<String> text = new Observable<>("text");
         TextFieldElement field = new TextFieldElement("Label", text, parent);
-        
+
         field.setDescription("Description text");
         assertEquals("Description text", field.getDescription());
     }
@@ -122,7 +123,7 @@ public class DduiElementTest {
         ObjectProperty parent = createParent();
         Observable<Long> value = new Observable<>(50L);
         SliderElement slider = new SliderElement("Volume", value, 0L, 100L, parent);
-        
+
         assertEquals("slider", slider.getName());
         assertEquals("Volume", slider.getLabel());
         assertEquals(0L, slider.getMinValue());
@@ -135,7 +136,7 @@ public class DduiElementTest {
         ObjectProperty parent = createParent();
         Observable<Long> value = new Observable<>(0L);
         SliderElement slider = new SliderElement("Test", value, 0L, 100L, parent);
-        
+
         slider.setValue(75L);
         assertEquals(75L, slider.getSliderValue());
     }
@@ -145,7 +146,7 @@ public class DduiElementTest {
         ObjectProperty parent = createParent();
         Observable<Long> value = new Observable<>(0L);
         SliderElement slider = new SliderElement("Test", value, 0L, 100L, parent);
-        
+
         slider.setStep(5L);
         assertEquals(5L, slider.getStep());
     }
@@ -155,7 +156,7 @@ public class DduiElementTest {
         ObjectProperty parent = createParent();
         Observable<Long> value = new Observable<>(10L);
         SliderElement slider = new SliderElement("Test", value, 0L, 100L, parent);
-        
+
         value.setValue(25L);
         assertEquals(25L, slider.getSliderValue());
     }
@@ -167,7 +168,7 @@ public class DduiElementTest {
         ObjectProperty parent = createParent();
         Observable<Boolean> toggled = new Observable<>(false);
         ToggleElement toggle = new ToggleElement("Enable Feature", toggled, parent);
-        
+
         assertEquals("toggle", toggle.getName());
         assertEquals("Enable Feature", toggle.getLabel());
         assertFalse(toggle.isToggled());
@@ -178,7 +179,7 @@ public class DduiElementTest {
         ObjectProperty parent = createParent();
         Observable<Boolean> toggled = new Observable<>(false);
         ToggleElement toggle = new ToggleElement("Test", toggled, parent);
-        
+
         toggle.setToggled(true);
         assertTrue(toggle.isToggled());
     }
@@ -188,7 +189,7 @@ public class DduiElementTest {
         ObjectProperty parent = createParent();
         Observable<Boolean> toggled = new Observable<>(false);
         ToggleElement toggle = new ToggleElement("Test", toggled, parent);
-        
+
         toggled.setValue(true);
         assertTrue(toggle.isToggled());
     }
@@ -203,9 +204,9 @@ public class DduiElementTest {
             DropdownElement.Item.builder().label("Option 1").build(),
             DropdownElement.Item.builder().label("Option 2").build()
         );
-        
+
         DropdownElement dropdown = new DropdownElement("Choose", items, selected, parent);
-        
+
         assertEquals("dropdown", dropdown.getName());
         assertEquals("Choose", dropdown.getLabel());
         assertEquals(0L, dropdown.getSelectedIndex());
@@ -219,9 +220,9 @@ public class DduiElementTest {
             DropdownElement.Item.builder().label("Option 1").build(),
             DropdownElement.Item.builder().label("Option 2").build()
         );
-        
+
         DropdownElement dropdown = new DropdownElement("Choose", items, selected, parent);
-        
+
         dropdown.setSelectedIndex(1L);
         assertEquals(1L, dropdown.getSelectedIndex());
     }
@@ -234,9 +235,9 @@ public class DduiElementTest {
             DropdownElement.Item.builder().label("Option 1").build(),
             DropdownElement.Item.builder().label("Option 2").build()
         );
-        
+
         DropdownElement dropdown = new DropdownElement("Choose", items, selected, parent);
-        
+
         selected.setValue(1L);
         assertEquals(1L, dropdown.getSelectedIndex());
     }
@@ -247,7 +248,7 @@ public class DduiElementTest {
     public void testHeaderElementCreation() {
         ObjectProperty parent = createParent();
         HeaderElement header = new HeaderElement("Section Title", parent);
-        
+
         assertEquals("header", header.getName());
         assertEquals("Section Title", header.getText());
     }
@@ -256,7 +257,7 @@ public class DduiElementTest {
     public void testHeaderElementSetText() {
         ObjectProperty parent = createParent();
         HeaderElement header = new HeaderElement("Initial", parent);
-        
+
         header.setText("Updated Title");
         assertEquals("Updated Title", header.getText());
     }
@@ -266,7 +267,7 @@ public class DduiElementTest {
         ObjectProperty parent = createParent();
         Observable<String> text = new Observable<>("Initial");
         HeaderElement header = new HeaderElement(text, parent);
-        
+
         text.setValue("Updated");
         assertEquals("Updated", header.getText());
     }
@@ -277,7 +278,7 @@ public class DduiElementTest {
     public void testLabelElementCreation() {
         ObjectProperty parent = createParent();
         LabelElement label = new LabelElement("Label Text", parent);
-        
+
         assertEquals("label", label.getName());
         assertEquals("Label Text", label.getText());
     }
@@ -286,7 +287,7 @@ public class DduiElementTest {
     public void testLabelElementSetText() {
         ObjectProperty parent = createParent();
         LabelElement label = new LabelElement("Initial", parent);
-        
+
         label.setText("Updated");
         assertEquals("Updated", label.getText());
     }
@@ -296,7 +297,7 @@ public class DduiElementTest {
         ObjectProperty parent = createParent();
         Observable<String> text = new Observable<>("Initial");
         LabelElement label = new LabelElement(text, parent);
-        
+
         text.setValue("Updated");
         assertEquals("Updated", label.getText());
     }
@@ -307,7 +308,7 @@ public class DduiElementTest {
     public void testSpacerElementCreation() {
         ObjectProperty parent = createParent();
         SpacerElement spacer = new SpacerElement(parent);
-        
+
         assertEquals("spacer", spacer.getName());
         assertTrue(spacer.getVisibility());
     }
@@ -316,7 +317,7 @@ public class DduiElementTest {
     public void testSpacerElementSetVisibility() {
         ObjectProperty parent = createParent();
         SpacerElement spacer = new SpacerElement(parent);
-        
+
         spacer.setVisibility(false);
         assertFalse(spacer.getVisibility());
     }
@@ -327,7 +328,7 @@ public class DduiElementTest {
     public void testCloseButtonElementCreation() {
         ObjectProperty parent = createParent();
         CloseButtonElement closeButton = new CloseButtonElement(parent);
-        
+
         assertEquals("closeButton", closeButton.getName());
     }
 
@@ -337,7 +338,7 @@ public class DduiElementTest {
     public void testLayoutElementCreation() {
         ObjectProperty parent = createParent();
         LayoutElement layout = new LayoutElement(parent);
-        
+
         assertEquals("layout", layout.getName());
         assertNotNull(layout.getValue());
     }
@@ -346,11 +347,11 @@ public class DduiElementTest {
     public void testLayoutElementAddProperty() {
         ObjectProperty parent = createParent();
         LayoutElement layout = new LayoutElement(parent);
-        
+
         StringProperty child = new StringProperty("test", "value", layout);
         layout.setProperty(child);
-        
-        assertEquals(1, layout.getChildCount());
+
+        assertEquals(1, layout.getValue().size() - 1);
     }
 
     // ==================== Edge Cases & Null Safety Tests ====================
@@ -359,7 +360,7 @@ public class DduiElementTest {
     public void testElementWithNullLabel() {
         ObjectProperty parent = createParent();
         ButtonElement button = new ButtonElement("", parent);
-        
+
         assertEquals("", button.getLabel());
     }
 
@@ -367,7 +368,7 @@ public class DduiElementTest {
     public void testElementWithEmptyString() {
         ObjectProperty parent = createParent();
         TextFieldElement field = new TextFieldElement("", new Observable<>(""), parent);
-        
+
         assertEquals("", field.getLabel());
         assertEquals("", field.getText());
     }
@@ -377,7 +378,7 @@ public class DduiElementTest {
         ObjectProperty parent = createParent();
         Observable<Long> value = new Observable<>(-50L);
         SliderElement slider = new SliderElement("Temp", value, -100L, 100L, parent);
-        
+
         assertEquals(-100L, slider.getMinValue());
         assertEquals(100L, slider.getMaxValue());
         assertEquals(-50L, slider.getSliderValue());
@@ -388,7 +389,7 @@ public class DduiElementTest {
         ObjectProperty parent = createParent();
         Observable<Long> value = new Observable<>(5L);
         SliderElement slider = new SliderElement("Fixed", value, 5L, 5L, parent);
-        
+
         assertEquals(5L, slider.getMinValue());
         assertEquals(5L, slider.getMaxValue());
     }
@@ -398,9 +399,9 @@ public class DduiElementTest {
         ObjectProperty parent = createParent();
         Observable<Long> selected = new Observable<>(0L);
         List<DropdownElement.Item> items = List.of();
-        
+
         DropdownElement dropdown = new DropdownElement("Empty", items, selected, parent);
-        
+
         assertEquals("Empty", dropdown.getLabel());
         assertEquals(0L, dropdown.getSelectedIndex());
     }
@@ -410,12 +411,12 @@ public class DduiElementTest {
         ObjectProperty parent = createParent();
         Observable<Boolean> toggled = new Observable<>(false);
         ToggleElement toggle = new ToggleElement("Test", toggled, parent);
-        
+
         // Быстрые изменения
         for (int i = 0; i < 10; i++) {
             toggled.setValue(i % 2 == 0);
         }
-        
+
         assertTrue(toggle.isToggled()); // последнее значение true
     }
 
@@ -425,16 +426,16 @@ public class DduiElementTest {
         Observable<String> labelObs = new Observable<>("Label");
         Observable<Boolean> disabledObs = new Observable<>(false);
         Observable<Boolean> visibleObs = new Observable<>(true);
-        
+
         ButtonElement button = new ButtonElement(labelObs.getValue(), parent);
         button.setLabel(labelObs);
         button.setDisabled(disabledObs);
         button.setVisibility(visibleObs);
-        
+
         labelObs.setValue("New Label");
         disabledObs.setValue(true);
         visibleObs.setValue(false);
-        
+
         assertEquals("New Label", button.getLabel());
         assertTrue(button.getDisabled());
         assertFalse(button.getVisibility());

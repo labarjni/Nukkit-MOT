@@ -12,11 +12,11 @@ public class PropertiesTest {
     public void testStringProperty() {
         ObjectProperty parent = new ObjectProperty("parent");
         StringProperty prop = new StringProperty("test", "initial", parent);
-        
+
         assertEquals("test", prop.getName());
         assertEquals("initial", prop.getValue());
         assertEquals(parent, prop.getParent());
-        
+
         prop.setValue("updated");
         assertEquals("updated", prop.getValue());
     }
@@ -25,7 +25,7 @@ public class PropertiesTest {
     public void testBooleanProperty() {
         ObjectProperty parent = new ObjectProperty("parent");
         BooleanProperty prop = new BooleanProperty("flag", true, parent);
-        
+
         assertTrue(prop.getValue());
         prop.setValue(false);
         assertFalse(prop.getValue());
@@ -35,7 +35,7 @@ public class PropertiesTest {
     public void testLongProperty() {
         ObjectProperty parent = new ObjectProperty("parent");
         LongProperty prop = new LongProperty("count", 10L, parent);
-        
+
         assertEquals(10L, prop.getValue());
         prop.setValue(20L);
         assertEquals(20L, prop.getValue());
@@ -46,14 +46,14 @@ public class PropertiesTest {
         ObjectProperty prop = new ObjectProperty("root");
         assertEquals("root", prop.getName());
         assertNotNull(prop.getValue());
-        assertTrue(prop.getValue().isEmpty());
+        assertTrue(((java.util.Map<?, ?>) prop.getValue()).isEmpty());
     }
 
     @Test
     public void testObjectPropertySetProperty() {
         ObjectProperty root = new ObjectProperty("root");
         StringProperty child = new StringProperty("child", "value", root);
-        
+
         root.setProperty(child);
         assertSame(child, root.getProperty("child"));
     }
@@ -63,10 +63,10 @@ public class PropertiesTest {
         ObjectProperty root = new ObjectProperty("");
         ObjectProperty layout = new ObjectProperty("layout", root);
         StringProperty label = new StringProperty("label", "text", layout);
-        
+
         layout.setProperty(label);
         root.setProperty(layout);
-        
+
         // Путь должен быть layout.label
         String path = label.getPath();
         assertTrue(path.contains("label"));
@@ -77,10 +77,10 @@ public class PropertiesTest {
         ObjectProperty root = new ObjectProperty("");
         ObjectProperty layout = new ObjectProperty("layout", root);
         StringProperty item = new StringProperty("0", "first", layout);
-        
+
         layout.setProperty(item);
         root.setProperty(layout);
-        
+
         String path = item.getPath();
         // Числовые имена должны использовать скобочный синтаксис
         assertTrue(path.contains("[0]") || path.contains("0"));
@@ -91,7 +91,7 @@ public class PropertiesTest {
         ObjectProperty root = new ObjectProperty("");
         StringProperty child = new StringProperty("child", "value", root);
         root.setProperty(child);
-        
+
         // getRootScreen возвращает null если не прикреплён к экрану
         assertNull(child.getRootScreen());
     }
@@ -100,10 +100,10 @@ public class PropertiesTest {
     public void testTriggerListeners() {
         ObjectProperty parent = new ObjectProperty("parent");
         StringProperty prop = new StringProperty("test", "initial", parent);
-        
+
         final boolean[] triggered = {false};
         prop.addListener((player, data) -> triggered[0] = true);
-        
+
         // Эмуляция триггера (нужен mock Player для полного теста)
         assertEquals(0, prop.getTriggerCount());
     }
@@ -112,10 +112,10 @@ public class PropertiesTest {
     public void testRemoveListener() {
         ObjectProperty parent = new ObjectProperty("parent");
         StringProperty prop = new StringProperty("test", "initial", parent);
-        
-        var listener = (java.util.function.BiConsumer<cn.nukkit.Player, Object>) 
+
+        var listener = (java.util.function.BiConsumer<cn.nukkit.Player, Object>)
             (player, data) -> {};
-        
+
         prop.addListener(listener);
         prop.removeListener(listener);
         // После удаления слушатель не должен вызываться
