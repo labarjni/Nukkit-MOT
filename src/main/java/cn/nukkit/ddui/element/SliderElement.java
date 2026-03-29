@@ -190,7 +190,7 @@ public class SliderElement extends Element<Long> {
         setProperty(property);
 
         if (!value.getValue().equals(clampedInitial)) {
-            value.setValue(clampedInitial);
+            Observable.withOutboundSuppressed(() -> value.setValue(clampedInitial));
         }
 
         value.subscribe(v -> {
@@ -202,7 +202,9 @@ public class SliderElement extends Element<Long> {
             setProperty(prop);
 
             if (v != clamped) {
-                value.setValue(clamped);
+                if (!value.getValue().equals(clamped)) {
+                    Observable.withOutboundSuppressed(() -> value.setValue(clamped));
+                }
             }
 
             return prop;
