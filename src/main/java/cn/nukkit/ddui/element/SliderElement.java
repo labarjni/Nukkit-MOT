@@ -78,7 +78,7 @@ public class SliderElement extends Element<Long> {
         return max;
     }
 
-    public void setMaxValue(long maxValue) {
+    public SliderElement setMaxValue(long maxValue) {
         this.max = maxValue;
         var property = new LongProperty("maxValue", maxValue, this);
         setProperty(property);
@@ -87,6 +87,7 @@ public class SliderElement extends Element<Long> {
         if (currentVal > maxValue) {
             setValueInternal(maxValue);
         }
+        return this;
     }
 
     public SliderElement setMaxValue(Observable<Long> maxValue) {
@@ -106,7 +107,7 @@ public class SliderElement extends Element<Long> {
         return min;
     }
 
-    public void setMinValue(long minValue) {
+    public SliderElement setMinValue(long minValue) {
         this.min = minValue;
         var property = new LongProperty("minValue", minValue, this);
         setProperty(property);
@@ -115,6 +116,7 @@ public class SliderElement extends Element<Long> {
         if (currentVal < minValue) {
             setValueInternal(minValue);
         }
+        return this;
     }
 
     public SliderElement setMinValue(Observable<Long> minValue) {
@@ -190,12 +192,18 @@ public class SliderElement extends Element<Long> {
         if (!value.getValue().equals(clampedInitial)) {
             value.setValue(clampedInitial);
         }
+
         value.subscribe(v -> {
             long clamped = clampValue(v);
 
             LongProperty prop = (getProperty("value") instanceof LongProperty lp) ? lp : createValueProperty();
+
             prop.setValue(clamped);
             setProperty(prop);
+
+            if (v != clamped) {
+                value.setValue(clamped);
+            }
 
             return prop;
         });
