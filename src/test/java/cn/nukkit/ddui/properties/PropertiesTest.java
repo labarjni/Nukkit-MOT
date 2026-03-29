@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Тесты для классов свойств (Properties)
+ * Tests for properties classes (Properties)
  */
 public class PropertiesTest {
 
@@ -67,7 +67,6 @@ public class PropertiesTest {
         layout.setProperty(label);
         root.setProperty(layout);
 
-        // Путь должен быть layout.label
         String path = label.getPath();
         assertTrue(path.contains("label"));
     }
@@ -82,7 +81,7 @@ public class PropertiesTest {
         root.setProperty(layout);
 
         String path = item.getPath();
-        // Числовые имена должны использовать скобочный синтаксис
+
         assertTrue(path.contains("[0]") || path.contains("0"));
     }
 
@@ -92,7 +91,6 @@ public class PropertiesTest {
         StringProperty child = new StringProperty("child", "value", root);
         root.setProperty(child);
 
-        // getRootScreen возвращает null если не прикреплён к экрану
         assertNull(child.getRootScreen());
     }
 
@@ -104,7 +102,6 @@ public class PropertiesTest {
         final boolean[] triggered = {false};
         prop.addListener((player, data) -> triggered[0] = true);
 
-        // Эмуляция триггера (нужен mock Player для полного теста)
         assertEquals(0, prop.getTriggerCount());
     }
 
@@ -118,6 +115,5 @@ public class PropertiesTest {
 
         prop.addListener(listener);
         prop.removeListener(listener);
-        // После удаления слушатель не должен вызываться
     }
 }

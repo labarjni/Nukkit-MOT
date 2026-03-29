@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Тесты для класса Observable
+ * Tests for class Observable
  */
 public class ObservableTest {
 
@@ -54,7 +54,7 @@ public class ObservableTest {
 
         obs.unsubscribe(listener);
         obs.setValue("second");
-        assertEquals(1, callCount[0]); // не должно увеличиться
+        assertEquals(1, callCount[0]);
     }
 
     @Test
@@ -93,6 +93,6 @@ public class ObservableTest {
             obs.setValue("suppressed");
         });
 
-        assertTrue(called[0]); // подписчик всё равно вызывается
+        assertTrue(called[0]);
     }
 }

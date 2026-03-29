@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 
 /**
- * Тесты для элементов DDUI (Data-Driven UI)
+ * Tests for DDUI classes (Data-Driven UI)
  */
 public class DduiElementTest {
 
@@ -41,7 +41,7 @@ public class DduiElementTest {
         button.setLabel(labelObs);
 
         labelObs.setValue("Updated");
-        // Label должен обновиться через подписку
+
         assertEquals("Updated", button.getLabel());
     }
 
