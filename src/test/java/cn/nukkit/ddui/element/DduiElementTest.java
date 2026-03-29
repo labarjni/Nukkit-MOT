@@ -2,6 +2,7 @@ package cn.nukkit.ddui.element;
 
 import cn.nukkit.ddui.Observable;
 import cn.nukkit.ddui.properties.ObjectProperty;
+import cn.nukkit.ddui.properties.StringProperty;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -350,7 +351,8 @@ public class DduiElementTest {
         StringProperty child = new StringProperty("test", "value", layout);
         layout.setProperty(child);
         
-        assertEquals(1, layout.getChildCount());
+        // Проверяем, что свойство было добавлено (размер увеличился)
+        assertEquals(1, ((java.util.Map<?, ?>) layout.getValue()).size() - 1); // -1 для "length"
     }
 
     // ==================== Edge Cases & Null Safety Tests ====================

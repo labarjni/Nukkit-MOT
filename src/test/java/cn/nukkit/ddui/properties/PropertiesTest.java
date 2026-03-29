@@ -46,7 +46,7 @@ public class PropertiesTest {
         ObjectProperty prop = new ObjectProperty("root");
         assertEquals("root", prop.getName());
         assertNotNull(prop.getValue());
-        assertTrue(prop.getValue().isEmpty());
+        assertTrue(((java.util.Map<?, ?>) prop.getValue()).isEmpty());
     }
 
     @Test
