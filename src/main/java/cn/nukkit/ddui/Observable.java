@@ -67,12 +67,14 @@ public class Observable<T> {
             DataDrivenScreen screen = element.getRootScreen();
             if (screen == null) continue;
 
+            Object actualValue = element.getValue();
+
             DataStoreUpdate update = new DataStoreUpdate();
             update.setDataStoreName(screen.getIdentifier().split(":")[0]);
             update.setProperty(screen.getProperty());
             update.setPath(element.getPath());
             update.setType(element.getType());
-            update.setData(value);
+            update.setData(actualValue);
             update.setPropertyUpdateCount(1);
             update.setPathUpdateCount(1);
 

@@ -11,6 +11,7 @@ import cn.nukkit.ddui.properties.StringProperty;
 public class SliderElement extends Element<Long> {
 
     private final Observable<Long> currentValue;
+
     private long min = 0L;
     private long max = 100L;
 
@@ -142,7 +143,6 @@ public class SliderElement extends Element<Long> {
 
     public SliderElement setValue(Observable<Long> value) {
         long clampedInitial = clampValue(value.getValue());
-
         var existing = getProperty("value");
         LongProperty property = (existing instanceof LongProperty lp) ? lp : createValueProperty();
 
@@ -157,19 +157,24 @@ public class SliderElement extends Element<Long> {
             long clamped = clampValue(v);
 
             if (v != clamped) {
+                LongProperty prop = (getProperty("value") instanceof LongProperty lp) ? lp : createValueProperty();
+                if (prop.getValue() != clamped) {
+                    prop.setValue(clamped);
+                    setProperty(prop);
+                }
+
                 if (!value.getValue().equals(clamped)) {
                     Observable.withOutboundSuppressed(() -> value.setValue(clamped));
                 }
-                return property;
+
+                return prop;
             }
 
             LongProperty prop = (getProperty("value") instanceof LongProperty lp) ? lp : createValueProperty();
-
             if (prop.getValue() != clamped) {
                 prop.setValue(clamped);
                 setProperty(prop);
             }
-
             return prop;
         });
 
