@@ -179,7 +179,9 @@ public class SliderElement extends Element<Long> {
         long clampedInitial = clampValue(value.getValue());
 
         var existing = getProperty("value");
-        LongProperty property = (existing instanceof LongProperty lp) ? lp : createValueProperty();
+        LongProperty property = (existing instanceof LongProperty lp)
+            ? lp
+            : createValueProperty();
 
         property.setValue(clampedInitial);
         setProperty(property);
@@ -199,8 +201,11 @@ public class SliderElement extends Element<Long> {
             }
 
             LongProperty prop = (getProperty("value") instanceof LongProperty lp) ? lp : createValueProperty();
-            prop.setValue(clamped);
-            setProperty(prop);
+
+            if (prop.getValue() != clamped) {
+                prop.setValue(clamped);
+                setProperty(prop);
+            }
 
             return prop;
         });
