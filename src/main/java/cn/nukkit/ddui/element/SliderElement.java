@@ -68,8 +68,7 @@ public class SliderElement extends Element<Long> {
 
     private long clampValue(long value) {
         if (value < min) return min;
-        if (value > max) return max;
-        return value;
+        return Math.min(value, max);
     }
 
     public long getMaxValue() {
@@ -78,7 +77,7 @@ public class SliderElement extends Element<Long> {
         return max;
     }
 
-    public SliderElement setMaxValue(long maxValue) {
+    public void setMaxValue(long maxValue) {
         this.max = maxValue;
         var property = new LongProperty("maxValue", maxValue, this);
         setProperty(property);
@@ -87,7 +86,6 @@ public class SliderElement extends Element<Long> {
         if (currentVal > maxValue) {
             setValueInternal(maxValue);
         }
-        return this;
     }
 
     public SliderElement setMaxValue(Observable<Long> maxValue) {
@@ -107,7 +105,7 @@ public class SliderElement extends Element<Long> {
         return min;
     }
 
-    public SliderElement setMinValue(long minValue) {
+    public void setMinValue(long minValue) {
         this.min = minValue;
         var property = new LongProperty("minValue", minValue, this);
         setProperty(property);
@@ -116,7 +114,6 @@ public class SliderElement extends Element<Long> {
         if (currentVal < minValue) {
             setValueInternal(minValue);
         }
-        return this;
     }
 
     public SliderElement setMinValue(Observable<Long> minValue) {
@@ -182,9 +179,7 @@ public class SliderElement extends Element<Long> {
         long clampedInitial = clampValue(value.getValue());
 
         var existing = getProperty("value");
-        LongProperty property = (existing instanceof LongProperty lp)
-            ? lp
-            : createValueProperty();
+        LongProperty property = (existing instanceof LongProperty lp) ? lp : createValueProperty();
 
         property.setValue(clampedInitial);
         setProperty(property);
@@ -196,16 +191,16 @@ public class SliderElement extends Element<Long> {
         value.subscribe(v -> {
             long clamped = clampValue(v);
 
-            LongProperty prop = (getProperty("value") instanceof LongProperty lp) ? lp : createValueProperty();
-
-            prop.setValue(clamped);
-            setProperty(prop);
-
             if (v != clamped) {
                 if (!value.getValue().equals(clamped)) {
                     Observable.withOutboundSuppressed(() -> value.setValue(clamped));
                 }
+                return property;
             }
+
+            LongProperty prop = (getProperty("value") instanceof LongProperty lp) ? lp : createValueProperty();
+            prop.setValue(clamped);
+            setProperty(prop);
 
             return prop;
         });
