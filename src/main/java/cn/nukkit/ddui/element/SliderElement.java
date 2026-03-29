@@ -78,7 +78,7 @@ public class SliderElement extends Element<Long> {
         return max;
     }
 
-    public SliderElement setMaxValue(long maxValue) {
+    public void setMaxValue(long maxValue) {
         this.max = maxValue;
         var property = new LongProperty("maxValue", maxValue, this);
         setProperty(property);
@@ -87,7 +87,6 @@ public class SliderElement extends Element<Long> {
         if (currentVal > maxValue) {
             setValueInternal(maxValue);
         }
-        return this;
     }
 
     public SliderElement setMaxValue(Observable<Long> maxValue) {
@@ -107,7 +106,7 @@ public class SliderElement extends Element<Long> {
         return min;
     }
 
-    public SliderElement setMinValue(long minValue) {
+    public void setMinValue(long minValue) {
         this.min = minValue;
         var property = new LongProperty("minValue", minValue, this);
         setProperty(property);
@@ -116,7 +115,6 @@ public class SliderElement extends Element<Long> {
         if (currentVal < minValue) {
             setValueInternal(minValue);
         }
-        return this;
     }
 
     public SliderElement setMinValue(Observable<Long> minValue) {
@@ -187,16 +185,21 @@ public class SliderElement extends Element<Long> {
             : createValueProperty();
 
         property.setValue(clampedInitial);
+        setProperty(property);
 
         if (!value.getValue().equals(clampedInitial)) {
             value.setValue(clampedInitial);
         }
-
         value.subscribe(v -> {
-            setValue(v);
-            return property;
+            long clamped = clampValue(v);
+
+            LongProperty prop = (getProperty("value") instanceof LongProperty lp) ? lp : createValueProperty();
+            prop.setValue(clamped);
+            setProperty(prop);
+
+            return prop;
         });
-        setProperty(property);
+
         return this;
     }
 
@@ -204,6 +207,7 @@ public class SliderElement extends Element<Long> {
         LongProperty property = new LongProperty("value", min, this);
         property.addListener((player, data) -> {
             if (data instanceof Long l) {
+                setValue(l);
                 triggerListeners(player, l);
             }
         });
