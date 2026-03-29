@@ -2,9 +2,9 @@ name: Java CI with Maven
 
 on:
   push:
-    branches: [ feat/ddui ]
+    branches: [ testing-ddui-elements-d2bf2 ]
   pull_request:
-    branches: [ feat/ddui ]
+    branches: [ testing-ddui-elements-d2bf2 ]
 
 jobs:
   build:
