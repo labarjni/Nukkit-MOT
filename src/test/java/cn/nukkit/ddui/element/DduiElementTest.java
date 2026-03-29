@@ -38,6 +38,8 @@ public class DduiElementTest {
 
         assertEquals("Initial", button.getLabel());
 
+        button.setLabel(labelObs);
+
         labelObs.setValue("Updated");
         // Label должен обновиться через подписку
         assertEquals("Updated", button.getLabel());
@@ -412,12 +414,11 @@ public class DduiElementTest {
         Observable<Boolean> toggled = new Observable<>(false);
         ToggleElement toggle = new ToggleElement("Test", toggled, parent);
 
-        // Быстрые изменения
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 11; i++) {
             toggled.setValue(i % 2 == 0);
         }
 
-        assertTrue(toggle.isToggled()); // последнее значение true
+        assertTrue(toggle.isToggled());
     }
 
     @Test
