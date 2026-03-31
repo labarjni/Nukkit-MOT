@@ -289,7 +289,11 @@ public class CraftingManager {
                 }
                 int aux = (int) ingredient.getOrDefault("auxValue", 0);
                 if (aux == 32767) {
-                    aux = -1;
+                    if (legacyEntry.isHasDamage()) {
+                        aux = legacyEntry.getDamage();
+                    } else {
+                        aux = -1;
+                    }
                 } else if (aux == 0) {
                     aux = legacyEntry.getDamage();
                 }
@@ -458,7 +462,11 @@ public class CraftingManager {
                     }
                     int aux = (int) ingredientEntry.getValue().getOrDefault("auxValue", 0);
                     if (aux == 32767) {
-                        aux = -1;
+                        if (legacyEntry.isHasDamage()) {
+                            aux = legacyEntry.getDamage();
+                        } else {
+                            aux = -1;
+                        }
                     } else if (aux == 0) {
                         aux = legacyEntry.getDamage();
                     }
@@ -597,7 +605,11 @@ public class CraftingManager {
                     }
                     int aux = (int) ingredient.getOrDefault("auxValue", 0);
                     if (aux == 32767) {
-                        aux = -1;
+                        if (legacyEntry.isHasDamage()) {
+                            aux = legacyEntry.getDamage();
+                        } else {
+                            aux = -1;
+                        }
                     } else if (aux == 0) {
                         aux = legacyEntry.getDamage();
                     }
@@ -683,7 +695,11 @@ public class CraftingManager {
                     }
                     int aux = (int) ingredientEntry.getValue().getOrDefault("auxValue", 0);
                     if (aux == 32767) {
-                        aux = -1;
+                        if (legacyEntry.isHasDamage()) {
+                            aux = legacyEntry.getDamage();
+                        } else {
+                            aux = -1;
+                        }
                     } else if (aux == 0) {
                         aux = legacyEntry.getDamage();
                     }
