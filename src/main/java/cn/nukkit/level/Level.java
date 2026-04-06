@@ -2206,10 +2206,7 @@ public class Level implements ChunkManager, Metadatable {
 
     @Override
     public void setBlockFullIdAt(int x, int y, int z, int layer, int fullId) {
-        Block block = Block.fullList[fullId];
-        if (block == null) {
-            block = new BlockUnknown(fullId >> Block.DATA_BITS, fullId & Block.DATA_MASK);
-        }
+        Block block = Block.get(fullId >> Block.DATA_BITS, fullId & Block.DATA_MASK);
         this.setBlock(x, y, z, layer, block, false, false);
     }
 
@@ -5298,7 +5295,9 @@ public class Level implements ChunkManager, Metadatable {
     private GameVersion getChunkProtocol(GameVersion version) {
         int protocol = version.getProtocol();
         if (version.isNetEase()) {
-            if (protocol >= GameVersion.V1_21_50_NETEASE.getProtocol()) {
+            if (protocol >= GameVersion.V1_21_93_NETEASE.getProtocol()) {
+                return GameVersion.V1_21_93_NETEASE;
+            } else if (protocol >= GameVersion.V1_21_50_NETEASE.getProtocol()) {
                 return GameVersion.V1_21_50_NETEASE;
             } else if (protocol >= GameVersion.V1_21_2_NETEASE.getProtocol()) {
                 return GameVersion.V1_21_2_NETEASE;
