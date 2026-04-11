@@ -1947,6 +1947,7 @@ public class Item implements Cloneable, BlockID, ItemID, ItemNamespaceId, Protoc
      * @param protocolId 协议版本 protocol version
      * @return 是否支持 whether supported
      */
+    @Deprecated
     public boolean isSupportedOn(int protocolId) {
         return this.isSupportedOn(GameVersion.byProtocol(protocolId, Server.getInstance().onlyNetEaseMode));
     }
@@ -1961,11 +1962,9 @@ public class Item implements Cloneable, BlockID, ItemID, ItemNamespaceId, Protoc
      */
     public boolean isSupportedOn(GameVersion protocolId) {
         int itemId = this.getId();
-
-        if (itemId >= 0 && itemId <= 255) {
+        if (itemId == AIR) {
             return true;
         }
-
         return RuntimeItems.getMapping(protocolId).isRegistered(itemId, this.getDamage());
     }
 
