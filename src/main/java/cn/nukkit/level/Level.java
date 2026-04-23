@@ -1474,7 +1474,7 @@ public class Level implements ChunkManager, Metadatable {
                     continue;
                 }
 
-                int loaders = entry.getIntValue();
+                int loaderCount = entry.getIntValue();
 
                 int chunkX = getHashX(index);
                 int chunkZ = getHashZ(index);
@@ -1484,7 +1484,7 @@ public class Level implements ChunkManager, Metadatable {
                     iter.remove();
                     continue;
                 }
-                if (loaders <= 0) {
+                if (loaderCount <= 0) {
                     iter.remove();
                 }
 
@@ -3994,8 +3994,8 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     public boolean isChunkInUse(long hash) {
-        Map<Integer, Player> players = this.playerLoaders.get(hash);
-        return players != null && !players.isEmpty();
+        Map<Integer, ChunkLoader> loaders = this.chunkLoaders.get(hash);
+        return loaders != null && !loaders.isEmpty();
     }
 
     public boolean loadChunk(int x, int z) {
@@ -4404,9 +4404,7 @@ public class Level implements ChunkManager, Metadatable {
 
                 if (!force) {
                     long time = entry.getValue();
-                    if (unloaded > maxUnload) {
-                        break;
-                    } else if (time > (now - 20000)) {
+                    if (time > (now - 30000)) {
                         continue;
                     }
                     unloaded++;
@@ -4444,7 +4442,7 @@ public class Level implements ChunkManager, Metadatable {
 
         if (!this.unloadQueue.isEmpty()) {
             boolean result = true;
-            int maxIterations = this.unloadQueue.size();
+            int maxIterations = Math.min(this.unloadQueue.size(), 100);
 
             if (lastUsingUnloadingIter == null) {
                 lastUsingUnloadingIter = this.unloadQueue.fastEntrySet().iterator();
@@ -4468,7 +4466,7 @@ public class Level implements ChunkManager, Metadatable {
 
                 if (!force) {
                     long time = entry.getValue();
-                    if (time > (now - 20000)) {
+                    if (time > (now - 30000)) {
                         continue;
                     }
                 }
