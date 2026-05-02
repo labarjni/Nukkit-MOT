@@ -6,7 +6,10 @@ import cn.nukkit.utils.Binary;
 import org.cloudburstmc.nbt.NbtMap;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.DBIterator;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 import java.nio.ByteBuffer;
 import java.util.AbstractMap;
@@ -16,13 +19,26 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 /**
  * @author LT_Name
  */
 public class LevelDBConstantsTest {
+
+    @BeforeAll
+    public static void mockLevelDBProvider() {
+        // Мокаем статические методы LevelDBProvider, чтобы избежать загрузки нативных библиотек
+        try (MockedStatic<LevelDBProvider> mockedProvider = mockStatic(LevelDBProvider.class)) {
+            mockedProvider.when(() -> LevelDBProvider.isChunkVersionKeyForDimension(any(), anyInt()))
+                .thenCallRealMethod();
+            mockedProvider.when(() -> LevelDBProvider.hasLegacyNukkitFinalizationState(any(), anyString()))
+                .thenCallRealMethod();
+            mockedProvider.when(() -> LevelDBProvider.isLegacyNukkitFinalizationState(any(), anyInt(), any()))
+                .thenCallRealMethod();
+        }
+    }
 
     @Test
     public void testStateVersion() {
@@ -221,5 +237,4 @@ public class LevelDBConstantsTest {
             throw new UnsupportedOperationException();
         }
     }
-
 }
