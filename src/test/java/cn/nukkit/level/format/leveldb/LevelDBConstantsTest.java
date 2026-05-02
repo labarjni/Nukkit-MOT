@@ -29,7 +29,6 @@ public class LevelDBConstantsTest {
 
     @BeforeAll
     public static void mockLevelDBProvider() {
-        // Мокаем статические методы LevelDBProvider, чтобы избежать загрузки нативных библиотек
         try (MockedStatic<LevelDBProvider> mockedProvider = mockStatic(LevelDBProvider.class)) {
             mockedProvider.when(() -> LevelDBProvider.isChunkVersionKeyForDimension(any(), anyInt()))
                 .thenCallRealMethod();
