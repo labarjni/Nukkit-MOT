@@ -15,7 +15,7 @@ import java.awt.*;
 import java.util.List;
 
 @Value
-@RequiredArgsConstructor(onConstructor_ = { @Deprecated })
+@RequiredArgsConstructor
 public class BiomeDefinitionData {
     /**
      * Custom biome ID. (uint16)

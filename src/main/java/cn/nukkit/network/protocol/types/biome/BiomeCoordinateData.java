@@ -9,7 +9,7 @@ import org.cloudburstmc.protocol.common.util.index.Indexable;
 import org.cloudburstmc.protocol.common.util.index.Unindexed;
 
 @Value
-@RequiredArgsConstructor(onConstructor_ = { @Deprecated })
+@RequiredArgsConstructor
 public class BiomeCoordinateData {
     ExpressionOp minValueType;
     @Getter(AccessLevel.NONE)
