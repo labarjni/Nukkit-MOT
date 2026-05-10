@@ -21,7 +21,7 @@
         <jline.version>3.30.6</jline.version>
         <leveldb-mcpe-java.version>1.1.0</leveldb-mcpe-java.version>
         <leveldb-mcpe-jni.version>0.0.10</leveldb-mcpe-jni.version>
-        <block-state-updater.version>1.21.60-20250619.144147-3</block-state-updater.version>
+        <block-state-updater.version>1.21.110-SNAPSHOT</block-state-updater.version>
         <netty.version>4.1.131.Final</netty.version>
         <caffeine.version>3.2.3</caffeine.version>
         <guava.version>33.1.0-jre</guava.version>
@@ -43,17 +43,18 @@
         <annotations.version>26.0.2</annotations.version>
         <jose4j.version>0.9.6</jose4j.version>
         <nukkitx-natives.version>1.0.3</nukkitx-natives.version>
-        <raknet.version>1.0.0.CR4-20260406.120344-3</raknet.version>
-        <cloudburst-common.version>3.0.0.Beta12-20260324.161234-12</cloudburst-common.version>
+        <raknet.version>1.0.0.CR4-20260426.145646-4</raknet.version>
+        <cloudburst-common.version>3.0.0.Beta12-20260428.175455-16</cloudburst-common.version>
         <jackson-dataformat-toml.version>2.20.1</jackson-dataformat-toml.version>
         <eu.okaeri.version>6.1.0-beta.1</eu.okaeri.version>
 
         <!-- Test -->
         <allaymc.version>0.1.6</allaymc.version>
         <cloudburstmc-math.version>2.0-SNAPSHOT</cloudburstmc-math.version>
-        <junit.version>6.0.3</junit.version>
-        <mockito.version>5.17.0</mockito.version>
-        <bytebuddy.version>1.17.5</bytebuddy.version>
+        <junit.version>5.10.2</junit.version>
+        <junit-platform.version>1.10.2</junit-platform.version>
+        <mockito.version>5.23.0</mockito.version>
+        <bytebuddy.version>1.18.8</bytebuddy.version>
         <objenesis.version>3.4</objenesis.version>
 
         <error-prone.version>2.41.0</error-prone.version>
@@ -499,6 +500,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>${junit-platform.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>${mockito.version}</version>
@@ -582,6 +589,8 @@
                     <parameters>true</parameters>
                     <compilerArgs>
                         <arg>-Xlint:all</arg>
+                        <arg>--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED</arg>
+                        <arg>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</arg>
                     </compilerArgs>
                     <annotationProcessorPaths>
                         <path>
@@ -595,6 +604,37 @@
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.2</version>
+                <configuration>
+                    <argLine>-Xmx512m --add-opens=java.base/java.lang=ALL-UNNAMED
+                        --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED
+                        --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+                        -Djava.library.path=./natives
+                    </argLine>
+                    <forkCount>1</forkCount>
+                    <reuseForks>false</reuseForks>
+                    <useModulePath>false</useModulePath>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.mockito</groupId>
+                        <artifactId>mockito-core</artifactId>
+                        <version>${mockito.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.7.0</version>
+                <executions>
+                    <execution>
+                        <id>test-dependency-properties</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -605,7 +645,7 @@
                         <id>enforce</id>
                         <configuration>
                             <rules>
-                                <DependencyConvergence />
+                                <DependencyConvergence/>
                             </rules>
                         </configuration>
                         <goals>
@@ -644,7 +684,7 @@
                     </filters>
                     <transformers>
                         <transformer
-                                implementation="com.github.edwgiz.mavenShadePlugin.log4j2CacheTransformer.PluginsCacheFileTransformer">
+                            implementation="com.github.edwgiz.mavenShadePlugin.log4j2CacheTransformer.PluginsCacheFileTransformer">
                         </transformer>
                     </transformers>
                     <createDependencyReducedPom>false</createDependencyReducedPom>

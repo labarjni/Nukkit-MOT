@@ -1,12 +1,22 @@
 import com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer
 
-@Suppress("DSL_SCOPE_VIOLATION")
+@Suppress("DSL_SCOPE_VIOLATION") // https://youtrack.jetbrains.com/issue/IDEA-262280
 
 plugins {
     id("java-library")
     id("maven-publish")
     id("application")
     alias(libs.plugins.shadow)
+    alias(libs.plugins.git)
+}
+
+abstract class JavaAgentArgumentProvider : CommandLineArgumentProvider {
+    @get:Classpath
+    abstract val classpath: ConfigurableFileCollection
+
+    override fun asArguments(): Iterable<String> {
+        return classpath.files.map { "-javaagent:${it.absolutePath}" }
+    }
 }
 
 group = "cn.nukkit"
@@ -17,6 +27,7 @@ java {
         languageVersion.set(JavaLanguageVersion.of(25))
     }
     withSourcesJar()
+    withJavadocJar()
 }
 
 repositories {
@@ -26,6 +37,12 @@ repositories {
     maven("https://repo.opencollab.dev/maven-snapshots/")
     maven("https://repo.lanink.cn/repository/maven-public/")
     maven("https://repo.okaeri.cloud/releases")
+}
+
+val mockitoAgent by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    isTransitive = false
 }
 
 dependencies {
@@ -89,10 +106,17 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.bundles.mockito)
     testRuntimeOnly(libs.junit.engine)
+    testRuntimeOnly(libs.junit.platform.launcher)
+    add("mockitoAgent", libs.mockito.core.get())
 }
 
 application {
     mainClass.set("cn.nukkit.Nukkit")
+}
+
+gitProperties {
+    dateFormat = "dd.MM.yyyy '@' HH:mm:ss z"
+    failOnNoGitDirectory = false
 }
 
 publishing {
@@ -113,19 +137,18 @@ publishing {
     }
 }
 
+
 tasks {
     compileJava {
         options.encoding = "UTF-8"
-        options.compilerArgs.addAll(listOf("-nowarn", "-Xlint:none"))
     }
 
     test {
         useJUnitPlatform()
-        jvmArgs = listOf(
-            "--enable-native-access=ALL-UNNAMED",
-            "--add-opens=java.base/sun.misc=ALL-UNNAMED",
-            "--add-opens=java.base/java.lang=ALL-UNNAMED",
-            "-Dorg.slf4j.simpleLogger.defaultLogLevel=off"
+        jvmArgumentProviders.add(
+            objects.newInstance<JavaAgentArgumentProvider>().apply {
+                classpath.from(mockitoAgent)
+            }
         )
     }
 
@@ -139,6 +162,7 @@ tasks {
 
         transform(Log4j2PluginsCacheFileTransformer())
 
+        // Backwards compatible jar directory
         destinationDirectory.set(file("$projectDir/target"))
         archiveClassifier.set("")
 
@@ -152,20 +176,9 @@ tasks {
         }
         standardInput = System.`in`
         workingDir = dir
-
-        jvmArgs = listOf(
-            "--enable-native-access=ALL-UNNAMED",
-            "--add-opens=java.base/sun.misc=ALL-UNNAMED",
-            "--add-opens=java.base/java.lang=ALL-UNNAMED",
-            "--add-opens=java.base/java.nio=ALL-UNNAMED",
-            "-Dio.netty.tryReflectionSetAccessible=true",
-            "-Dorg.slf4j.simpleLogger.defaultLogLevel=off",
-            "-Djava.util.logging.config.class=java.util.logging.LogManager"
-        )
     }
 
     javadoc {
         options.encoding = "UTF-8"
-        options.quiet()
     }
 }

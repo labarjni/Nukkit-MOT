@@ -592,7 +592,7 @@ public class PlayerInventory extends BaseInventory {
                 pk.windowid = ContainerSetContentPacketV113.SPECIAL_CREATIVE;
                 pk.eid = p.getId();
                 if (!p.isSpectator()) {
-                    pk.slots = Item.getCreativeItems(p).toArray(Item.EMPTY_ARRAY);
+                    pk.slots = Item.getCreativeItems(p.getGameVersion()).toArray(Item.EMPTY_ARRAY);
                 }
                 p.dataPacket(pk);
             } else {
