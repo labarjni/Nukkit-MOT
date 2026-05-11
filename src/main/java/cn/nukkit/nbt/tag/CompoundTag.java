@@ -8,7 +8,7 @@ import java.io.PrintStream;
 import java.util.*;
 import java.util.Map.Entry;
 
-public class CompoundTag extends Tag implements Cloneable {
+public final class CompoundTag extends Tag implements Cloneable {
 
     protected final Map<String, Tag> tags;
 

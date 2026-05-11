@@ -1,46 +1,39 @@
+```
+# Compiled and build artifacts
 *.class
-.vscode
-.vscode/*
-target
-target/*
-build
-build/*
-nukkit-core/build
-nukkit-core/build/*
-nukkit-loader/build
-nukkit-loader/build/*
-.mtj.tmp/
-*.war
-*.ear
-hs_err_pid*
-*.MF
-*.iml
-.idea
-.idea/*
-.classpath
-.project
-.settings
-.settings/*
-banned-ips.json
-banned-players.json
-ops.txt
-server.log
-server.properties
-white-list.txt
-worlds
-worlds/*
-plugins
-plugins/*
-players
-players/*
-resource_packs
-resource_packs/*
-*.md
-.DS_Store
-.factorypath
-dependency-reduced-pom.xml
+*.o
+*.obj
+*.out
+build/
+target/
+
+# Dependencies
+.gradle/
+libs/
+lib/
+
+# Logs and temp files
 *.log
-/logs
-/.gradle/
-/bin/
-.codex
+*.tmp
+*.swp
+
+# Editors
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+
+# Package manager caches
+node_modules/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+```

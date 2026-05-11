@@ -6,7 +6,7 @@ import cn.nukkit.nbt.stream.NBTOutputStream;
 import java.io.IOException;
 import java.util.Objects;
 
-public class StringTag extends Tag {
+public final class StringTag extends Tag {
 
     public String data;
 

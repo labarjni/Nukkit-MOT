@@ -19,7 +19,7 @@ import cn.nukkit.Server;
  * @author 粉鞋大妈(javadoc) @ Nukkit Project
  * @since Nukkit 1.0 | Nukkit API 1.0.0
  */
-public abstract class Task implements Runnable {
+public sealed abstract class Task implements Runnable permits PluginTask {
 
     private TaskHandler taskHandler = null;
 
