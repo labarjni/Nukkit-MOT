@@ -9,6 +9,8 @@ import cn.nukkit.math.NukkitMath;
 import cn.nukkit.network.Network;
 import cn.nukkit.utils.SystemMetrics;
 import cn.nukkit.utils.TextFormat;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 import java.io.File;
@@ -16,10 +18,15 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.nio.file.Files;
+import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * Высокопроизводительная команда статуса с оптимизированным сбором метрик.
+ * Использует кэширование, виртуальные потоки и асинхронный сбор данных.
+ * <p>
  * Created on 2015/11/11 by xtypr.
  * Package cn.nukkit.command.defaults in project Nukkit .
  */
@@ -36,6 +43,15 @@ public class StatusCommand extends VanillaCommand {
             "Microsoft Virtual PC", "VMWare", "linux-vserver", "Xen", "FreeBSD Jail", "VirtualBox", "Parallels",
             "Linux Containers", "LXC", "Bochs"};
 
+    // Кэш для результатов сбора статистики миров (TTL 2 секунды) с использованием Caffeine
+    private static final Cache<String, List<String>> worldStatsCache = Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofSeconds(2))
+            .maximumSize(100)
+            .build();
+    
+    // Виртуальный поток для асинхронного сбора статистики миров
+    private static final Executor VIRTUAL_EXECUTOR;
+    
     static {
         vmVendor.put("bhyve", "bhyve");
         vmVendor.put("KVM", "KVM");
@@ -56,6 +72,17 @@ public class StatusCommand extends VanillaCommand {
         vmMac.put("00:16:3E", "Xen or Oracle VM");
         vmMac.put("08:00:27", "VirtualBox");
         vmMac.put("02:42:AC", "Docker Container");
+        
+        // Инициализация виртуального исполнителя (Java 21+)
+        Executor virtualExecutor;
+        try {
+            var method = Executors.class.getMethod("newVirtualThreadPerTaskExecutor");
+            virtualExecutor = (Executor) method.invoke(null);
+        } catch (Exception e) {
+            // Fallback для старых версий Java
+            virtualExecutor = Executors.newCachedThreadPool();
+        }
+        VIRTUAL_EXECUTOR = virtualExecutor;
     }
 
     public StatusCommand(String name) {
@@ -66,6 +93,19 @@ public class StatusCommand extends VanillaCommand {
                 CommandParameter.newEnum("mode", true, new String[]{"full", "simple"})
         });
     }
+    
+    /**
+     * Ключ кэша для статистики миров (содержит хэш состояния сервера)
+     */
+    private record CacheKey(long serverTick, int levelCount) {}
+    
+    /**
+     * Данные статистики для одного мира
+     */
+    private record WorldStatData(String worldName, int chunks, int entities, int blockEntities, 
+                                  double tickTimeMs, int tickRate) {}
+
+    // Методы форматирования остаются без изменений
 
     private static String formatKB(double bytes) {
         return NukkitMath.round((bytes / 1024 * 1000), 2) + " KB";
@@ -192,8 +232,10 @@ public class StatusCommand extends VanillaCommand {
             sender.sendMessage(TextFormat.GOLD + "Players: " + playerColor + server.getOnlinePlayers().size() + TextFormat.GREEN + " online, " +
                     TextFormat.RED + server.getMaxPlayers() + TextFormat.GREEN + " max. ");
 
-            for (Level level : server.getLevels().values()) {
-                sender.sendMessage(buildWorldInfo(level));
+            // Используем асинхронный сбор статистики миров с кэшированием
+            List<String> worldStats = collectWorldStatsAsync(server);
+            for (String worldInfo : worldStats) {
+                sender.sendMessage(worldInfo);
             }
         } else {
             // 完整模式
@@ -223,9 +265,10 @@ public class StatusCommand extends VanillaCommand {
                 }
                 sender.sendMessage(TextFormat.GOLD + "Players: " + playerColor + server.getOnlinePlayers().size() + TextFormat.GREEN + " online, " +
                         TextFormat.RED + server.getMaxPlayers() + TextFormat.GREEN + " max. ");
-                // 各个世界的情况
-                for (Level level : server.getLevels().values()) {
-                    sender.sendMessage(buildWorldInfo(level));
+                // 各个世界的情况 - используем асинхронный сбор с кэшированием
+                List<String> worldStats = collectWorldStatsAsync(server);
+                for (String worldInfo : worldStats) {
+                    sender.sendMessage(worldInfo);
                 }
                 sender.sendMessage("");
             }
@@ -305,15 +348,113 @@ public class StatusCommand extends VanillaCommand {
         return true;
     }
 
+    /**
+     * Собирает статистику миров асинхронно с использованием виртуальных потоков.
+     * Результаты кэшируются в Caffeine на 2 секунды для снижения нагрузки.
+     */
+    private List<String> collectWorldStatsAsync(Server server) {
+        // Генерируем ключ кэша на основе текущего тика и количества миров
+        CacheKey cacheKey = new CacheKey(server.getTick(), server.getLevels().size());
+        
+        // Проверяем кэш Caffeine
+        List<String> cached = worldStatsCache.getIfPresent(String.valueOf(cacheKey.hashCode()));
+        if (cached != null) {
+            return cached;
+        }
+        
+        // Если кэш отсутствует, собираем данные
+        Collection<Level> levels = server.getLevels().values();
+        List<Future<List<String>>> futures = new ArrayList<>();
+        
+        // Разделяем миры на группы для параллельной обработки
+        int batchSize = Math.max(1, levels.size() / 4);
+        List<List<Level>> batches = new ArrayList<>();
+        List<Level> currentBatch = new ArrayList<>();
+        
+        for (Level level : levels) {
+            currentBatch.add(level);
+            if (currentBatch.size() >= batchSize) {
+                batches.add(currentBatch);
+                currentBatch = new ArrayList<>();
+            }
+        }
+        if (!currentBatch.isEmpty()) {
+            batches.add(currentBatch);
+        }
+        
+        // Запускаем сбор статистики для каждой группы в виртуальном потоке
+        for (List<Level> batch : batches) {
+            Future<List<String>> future = CompletableFuture.supplyAsync(() -> {
+                List<String> results = new ObjectArrayList<>();
+                for (Level level : batch) {
+                    results.add(buildWorldInfoOptimized(level));
+                }
+                return results;
+            }, VIRTUAL_EXECUTOR);
+            futures.add(future);
+        }
+        
+        // Собираем результаты
+        List<String> allResults = new ObjectArrayList<>(levels.size());
+        for (Future<List<String>> future : futures) {
+            try {
+                allResults.addAll(future.get(2, TimeUnit.SECONDS));
+            } catch (Exception e) {
+                // В случае таймаута или ошибки добавляем заглушку
+                allResults.add(TextFormat.RED + "Error collecting world stats");
+            }
+        }
+        
+        // Сохраняем в кэш Caffeine
+        worldStatsCache.put(String.valueOf(cacheKey.hashCode()), allResults);
+        
+        return allResults;
+    }
+    
+    /**
+     * Оптимизированная версия buildWorldInfo без лишних аллокаций строк.
+     */
+    private static String buildWorldInfoOptimized(Level level) {
+        String folderName = level.getFolderName();
+        String name = level.getName();
+        int chunks = level.getChunks().size();
+        int entities = level.getEntities().length;
+        int blockEntities = level.getBlockEntities().size();
+        double tickTime = level.getTickRateTime();
+        int tickRate = level.getTickRate();
+        
+        StringBuilder sb = new StringBuilder(128);
+        sb.append(TextFormat.GOLD).append("World \"").append(folderName).append("\"");
+        
+        if (!Objects.equals(folderName, name)) {
+            sb.append(" (").append(name).append(")");
+        }
+        
+        sb.append(": ").append(TextFormat.RED).append(chunks).append(TextFormat.GREEN).append(" chunks, ");
+        sb.append(TextFormat.RED).append(entities).append(TextFormat.GREEN).append(" entities, ");
+        sb.append(TextFormat.RED).append(blockEntities).append(TextFormat.GREEN).append(" blockEntities.");
+        sb.append(" Time ");
+        
+        if (tickRate > 1 || tickTime > 40) {
+            sb.append(TextFormat.RED);
+        } else {
+            sb.append(TextFormat.YELLOW);
+        }
+        
+        sb.append(NukkitMath.round(tickTime, 2)).append("ms");
+        
+        if (tickRate > 1) {
+            sb.append(" (tick rate ").append(19 - tickRate).append(")");
+        }
+        
+        return sb.toString();
+    }
+    
+    /**
+     * Старая версия для совместимости, использует оптимизированный метод.
+     */
     private static String buildWorldInfo(Level level) {
-        return TextFormat.GOLD + "World \"" + level.getFolderName() + "\""
-                + (!Objects.equals(level.getFolderName(), level.getName()) ? " (" + level.getName() + ")" : "") + ": "
-                + TextFormat.RED + level.getChunks().size() + TextFormat.GREEN + " chunks, "
-                + TextFormat.RED + level.getEntities().length + TextFormat.GREEN + " entities, "
-                + TextFormat.RED + level.getBlockEntities().size() + TextFormat.GREEN + " blockEntities."
-                + " Time " + ((level.getTickRate() > 1 || level.getTickRateTime() > 40) ? TextFormat.RED : TextFormat.YELLOW)
-                + NukkitMath.round(level.getTickRateTime(), 2) + "ms"
-                + (level.getTickRate() > 1 ? " (tick rate " + (19 - level.getTickRate()) + ")" : "");
+        return buildWorldInfoOptimized(level);
     }
 
 }

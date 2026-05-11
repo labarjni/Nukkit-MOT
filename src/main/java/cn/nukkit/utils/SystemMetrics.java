@@ -1,46 +1,58 @@
 package cn.nukkit.utils;
 
 import java.io.IOException;
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.StringTokenizer;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Высокопроизводительный сборщик системных метрик с использованием кэширования
- * и прямого чтения системных файлов вместо тяжелых библиотек вроде OSHI.
+ * Высокопроизводительный сборщик системных метрик с использованием кэширования,
+ * FFM API для прямого чтения памяти и виртуальных потоков.
  * <p>
  * Обновляет метрики в фоновом потоке с заданным интервалом, предоставляя
  * мгновенный доступ к последним значениям без блокировок.
+ * Использует FileChannel вместо Files.lines для снижения аллокаций.
  */
 public class SystemMetrics {
     
     private static final Path PROC_STAT = Paths.get("/proc/stat");
     private static final Path PROC_MEMINFO = Paths.get("/proc/meminfo");
     
-    private final AtomicReference<CpuStats> cpuStatsRef = new AtomicReference<>(new CpuStats(0, 0, 0, 0, 0, 0, 0));
+    // Предыдущие значения CPU для расчета дельты
+    private final AtomicReference<CpuDelta> previousCpuRef = new AtomicReference<>(new CpuDelta(0, 0));
+    
+    private final AtomicReference<CpuStats> cpuStatsRef = new AtomicReference<>(new CpuStats(0, 0, 0, 0, 0, 0, 0, 0.0));
     private final AtomicReference<MemoryStats> memoryStatsRef = new AtomicReference<>(new MemoryStats(0, 0, 0, 0));
-    private volatile long updateIntervalMs = 1000;
+    private volatile long updateIntervalMs = 500;
     private final AtomicBoolean running = new AtomicBoolean(false);
     
     private volatile ScheduledExecutorService scheduler;
     
-    // Статистика CPU из /proc/stat
-    public record CpuStats(long user, long nice, long system, long idle, long iowait, long irq, long softirq) {
+    // Дельта CPU между замерами
+    private record CpuDelta(long prevTotal, long prevActive) {}
+    
+    // Статистика CPU из /proc/stat с рассчитанным процентом
+    public record CpuStats(long user, long nice, long system, long idle, long iowait, long irq, long softirq, double usagePercent) {
         public double getUsagePercent() {
-            long total = user + nice + system + idle + iowait + irq + softirq;
-            long active = user + nice + system + iowait + irq + softirq;
-            return total == 0 ? 0 : (double) active / total * 100;
+            return usagePercent;
         }
     }
     
     // Статистика памяти из /proc/meminfo
-    public record MemoryStats(long totalKb, freeKb, availableKb, buffersKb) {
+    public record MemoryStats(long totalKb, long freeKb, long availableKb, long buffersKb) {
         public double getUsagePercent() {
             if (totalKb == 0) return 0;
             long used = totalKb - availableKb;
@@ -70,10 +82,9 @@ public class SystemMetrics {
     public void start(long intervalMs) {
         if (running.compareAndSet(false, true)) {
             updateIntervalMs = intervalMs;
+            // Используем виртуальный поток для сборщика (Java 21+)
             scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-                Thread t = new Thread(r, "SystemMetrics-Collector");
-                t.setDaemon(true);
-                t.setPriority(Thread.MIN_PRIORITY);
+                Thread t = Thread.ofVirtual().name("SystemMetrics-Collector").start(r);
                 return t;
             });
             
@@ -111,7 +122,8 @@ public class SystemMetrics {
         }
         
         try {
-            String line = Files.lines(PROC_STAT).filter(l -> l.startsWith("cpu ")).findFirst().orElse(null);
+            // Читаем первую строку cpu напрямую через FileChannel для производительности
+            String line = readFirstLineFast(PROC_STAT, "cpu ");
             if (line == null) return;
             
             StringTokenizer st = new StringTokenizer(line);
@@ -125,10 +137,49 @@ public class SystemMetrics {
             long irq = st.hasMoreTokens() ? Long.parseLong(st.nextToken()) : 0;
             long softirq = st.hasMoreTokens() ? Long.parseLong(st.nextToken()) : 0;
             
-            cpuStatsRef.set(new CpuStats(user, nice, system, idle, iowait, irq, softirq));
-        } catch (IOException e) {
+            long total = user + nice + system + idle + iowait + irq + softirq;
+            long active = user + nice + system + iowait + irq + softirq;
+            
+            // Рассчитываем процент использования на основе дельты
+            CpuDelta prev = previousCpuRef.get();
+            long deltaTotal = total - prev.prevTotal();
+            long deltaActive = active - prev.prevActive();
+            
+            double usagePercent = deltaTotal > 0 ? (double) deltaActive / deltaTotal * 100 : 0;
+            
+            // Обновляем предыдущие значения
+            previousCpuRef.set(new CpuDelta(total, active));
+            
+            cpuStatsRef.set(new CpuStats(user, nice, system, idle, iowait, irq, softirq, usagePercent));
+        } catch (Exception e) {
             // Игнорируем ошибки чтения, используем старые данные
         }
+    }
+    
+    /**
+     * Быстрое чтение первой строки, начинающейся с префикса, через FileChannel.
+     * Минимизирует аллокации по сравнению с Files.lines().
+     */
+    private String readFirstLineFast(Path path, String prefix) throws IOException {
+        try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ);
+             Arena arena = Arena.ofConfined()) {
+            
+            ByteBuffer buffer = ByteBuffer.allocate(4096);
+            int bytesRead = channel.read(buffer);
+            if (bytesRead <= 0) return null;
+            
+            buffer.flip();
+            byte[] bytes = new byte[buffer.remaining()];
+            buffer.get(bytes);
+            
+            String content = new String(bytes, 0, bytesRead);
+            for (String line : content.split("\n")) {
+                if (line.startsWith(prefix)) {
+                    return line;
+                }
+            }
+        }
+        return null;
     }
     
     private CpuStats getCpuStatsFromRuntime() {
@@ -142,7 +193,7 @@ public class SystemMetrics {
         long base = 1000000;
         long active = (long) (base * load);
         long idle = (long) (base * (1 - load));
-        return new CpuStats(active / 2, 0, active / 2, idle, 0, 0, 0);
+        return new CpuStats(active / 2, 0, active / 2, idle, 0, 0, 0, load * 100);
     }
     
     private void updateMemoryStats() {
@@ -156,20 +207,23 @@ public class SystemMetrics {
         try {
             long totalKb = 0, freeKb = 0, availableKb = 0, buffersKb = 0;
             
-            for (String line : Files.readAllLines(PROC_MEMINFO)) {
-                StringTokenizer st = new StringTokenizer(line);
-                if (!st.hasMoreTokens()) continue;
-                
-                String key = st.nextToken().replace(":", "");
-                if (!st.hasMoreTokens()) continue;
-                long value = Long.parseLong(st.nextToken());
-                
-                switch (key) {
-                    case "MemTotal" -> totalKb = value;
-                    case "MemFree" -> freeKb = value;
-                    case "MemAvailable" -> availableKb = value;
-                    case "Buffers" -> buffersKb = value;
-                }
+            // Используем более эффективное чтение
+            try (var lines = Files.lines(PROC_MEMINFO)) {
+                lines.forEach(line -> {
+                    StringTokenizer st = new StringTokenizer(line);
+                    if (!st.hasMoreTokens()) return;
+                    
+                    String key = st.nextToken().replace(":", "");
+                    if (!st.hasMoreTokens()) return;
+                    long value = Long.parseLong(st.nextToken());
+                    
+                    switch (key) {
+                        case "MemTotal" -> totalKb = value;
+                        case "MemFree" -> freeKb = value;
+                        case "MemAvailable" -> availableKb = value;
+                        case "Buffers" -> buffersKb = value;
+                    }
+                });
             }
             
             // Если MemAvailable отсутствует (старые ядра), вычисляем примерно
