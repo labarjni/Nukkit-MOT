@@ -7,14 +7,9 @@ import cn.nukkit.command.data.CommandParameter;
 import cn.nukkit.level.Level;
 import cn.nukkit.math.NukkitMath;
 import cn.nukkit.network.Network;
+import cn.nukkit.utils.SystemMetrics;
 import cn.nukkit.utils.TextFormat;
-import com.sun.jna.platform.win32.COM.WbemcliUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import oshi.SystemInfo;
-import oshi.driver.windows.wmi.Win32ComputerSystem;
-import oshi.hardware.*;
-import oshi.software.os.OperatingSystem;
-import oshi.util.platform.windows.WmiQueryHandler;
 
 import java.io.File;
 import java.io.IOException;
@@ -62,8 +57,6 @@ public class StatusCommand extends VanillaCommand {
         vmMac.put("08:00:27", "VirtualBox");
         vmMac.put("02:42:AC", "Docker Container");
     }
-
-    private final SystemInfo systemInfo = new SystemInfo();
 
     public StatusCommand(String name) {
         super(name, "%nukkit.command.status.description", "%nukkit.command.status.usage");
@@ -115,74 +108,35 @@ public class StatusCommand extends VanillaCommand {
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private static String isInVM(HardwareAbstractionLayer hardware) {
-        // CPU型号检测
-        String vendor = hardware.getProcessor().getProcessorIdentifier().getVendor().trim();
-        if (vmVendor.containsKey(vendor)) {
-            return vmVendor.get(vendor);
-        }
-
-        // MAC地址检测
-        List<NetworkIF> nifs = hardware.getNetworkIFs();
-        for (NetworkIF nif : nifs) {
-            String mac = nif.getMacaddr().toUpperCase(Locale.ROOT);
-            String oui = mac.length() > 7 ? mac.substring(0, 8) : mac;
-            if (vmMac.containsKey(oui)) {
-                return vmMac.get(oui);
+    private static String isInVM() {
+        // Упрощенная детекция виртуализации без использования OSHI
+        String vendor = System.getProperty("os.arch", "").toLowerCase(Locale.ROOT);
+        for (Map.Entry<String, String> entry : vmVendor.entrySet()) {
+            if (vendor.contains(entry.getKey().toLowerCase())) {
+                return entry.getValue();
             }
         }
 
-        // 模型检测
-        String model = hardware.getComputerSystem().getModel();
-        for (String vm : vmModelArray) {
-            if (model.contains(vm)) {
-                return vm;
-            }
+        // Docker detection
+        var file = new File("/.dockerenv");
+        if (file.exists()) {
+            return "Docker Container";
         }
-        String manufacturer = hardware.getComputerSystem().getManufacturer();
-        if ("Microsoft Corporation".equals(manufacturer) && "Virtual Machine".equals(model)) {
-            return "Microsoft Hyper-V";
-        }
-
-        //内存型号检测
-        if (hardware.getMemory().getPhysicalMemory().get(0).getManufacturer().equals("QEMU")) {
-            return "QEMU";
-        }
-
-        //检查Windows系统参数
-        //Wmi虚拟机查询只能在Windows上使用，Linux上不执行这个部分即可
-        if (System.getProperties().getProperty("os.name").toUpperCase(Locale.ROOT).contains("WINDOWS")) {
-            WbemcliUtil.WmiQuery<Win32ComputerSystem.ComputerSystemProperty> computerSystemQuery = new WbemcliUtil.WmiQuery("Win32_ComputerSystem", ComputerSystemEntry.class);
-            WbemcliUtil.WmiResult result = WmiQueryHandler.createInstance().queryWMI(computerSystemQuery);
-            Object tmp = result.getValue(ComputerSystemEntry.HYPERVISORPRESENT, 0);
-            if (tmp != null && tmp.toString().equals("true")) {
-                return "Hyper-V";
-            }
-        }
-
-        //检查是否在Docker容器中
-        //Docker检查只在非Windows上执行
-        else {
-            var file = new File("/.dockerenv");
-            if (file.exists()) {
-                return "Docker Container";
-            }
-            var cgroupFile = new File("/proc/1/cgroup");
-            if (cgroupFile.exists()) {
-                try (var lineStream = Files.lines(cgroupFile.toPath())) {
-                    var searchResult = lineStream.filter(line -> line.contains("docker") || line.contains("lxc"));
-                    if (searchResult.findAny().isPresent()) {
-                        return "Docker Container";
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
+        var cgroupFile = new File("/proc/1/cgroup");
+        if (cgroupFile.exists()) {
+            try (var lineStream = Files.lines(cgroupFile.toPath())) {
+                var searchResult = lineStream.filter(line -> line.contains("docker") || line.contains("lxc"));
+                if (searchResult.findAny().isPresent()) {
+                    return "Docker Container";
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
 
         return null;
-
     }
+
 
     @Override
     public boolean execute(CommandSender sender, String commandLabel, String[] args) {
@@ -275,70 +229,51 @@ public class StatusCommand extends VanillaCommand {
                 }
                 sender.sendMessage("");
             }
-            // 操作系统&JVM信息
+            // 操作系统&JVM 信息
             {
-                OperatingSystem os = systemInfo.getOperatingSystem();
                 RuntimeMXBean mxBean = ManagementFactory.getRuntimeMXBean();
                 sender.sendMessage(TextFormat.YELLOW + ">>> " + TextFormat.WHITE + "OS & JVM Info" + TextFormat.YELLOW + " <<<" + TextFormat.RESET);
-                sender.sendMessage(TextFormat.GOLD + "OS: " + TextFormat.AQUA + os.getFamily() + " " + os.getManufacturer() + " " +
-                        os.getVersionInfo().getVersion() + " " + os.getVersionInfo().getCodeName() + " " + os.getBitness() + "bit, " +
-                        "build " + os.getVersionInfo().getBuildNumber());
+                
+                String osName = System.getProperty("os.name", "Unknown");
+                String osVersion = System.getProperty("os.version", "Unknown");
+                String osArch = System.getProperty("os.arch", "Unknown");
+                sender.sendMessage(TextFormat.GOLD + "OS: " + TextFormat.AQUA + osName + " " + osVersion + " " + osArch);
+                
                 sender.sendMessage(TextFormat.GOLD + "JVM: " + TextFormat.AQUA + mxBean.getVmName() + " " + mxBean.getVmVendor() + " " + mxBean.getVmVersion());
+                
                 try {
-                    String vm = isInVM(systemInfo.getHardware());
+                    String vm = isInVM();
                     if (vm == null) {
                         sender.sendMessage(TextFormat.GOLD + "Virtual environment: " + TextFormat.GREEN + "no");
                     } else {
                         sender.sendMessage(TextFormat.GOLD + "Virtual environment: " + TextFormat.YELLOW + "yes (" + vm + ")");
                     }
                 } catch (Exception ignore) {
-
+                    sender.sendMessage(TextFormat.GOLD + "Virtual environment: " + TextFormat.GRAY + "unknown");
                 }
                 sender.sendMessage("");
             }
-            // 网络信息
-            try {
-                Network network = server.getNetwork();
-                if (network.getHardWareNetworkInterfaces() != null) {
-                    sender.sendMessage(TextFormat.YELLOW + ">>> " + TextFormat.WHITE + "Network Info" + TextFormat.YELLOW + " <<<" + TextFormat.RESET);
-                    sender.sendMessage(TextFormat.GOLD + "Network upload: " + TextFormat.GREEN + formatKB(network.getUpload()) + "/s");
-                    sender.sendMessage(TextFormat.GOLD + "Network download: " + TextFormat.GREEN + formatKB(network.getDownload()) + "/s");
-                    sender.sendMessage(TextFormat.GOLD + "Network hardware list: ");
-                    ObjectArrayList<String> list;
-                    for (NetworkIF each : network.getHardWareNetworkInterfaces()) {
-                        list = new ObjectArrayList<>(each.getIPv4addr().length + each.getIPv6addr().length);
-                        list.addElements(0, each.getIPv4addr());
-                        list.addElements(list.size(), each.getIPv6addr());
-                        sender.sendMessage(TextFormat.AQUA + "  " + each.getDisplayName());
-                        sender.sendMessage(TextFormat.RESET + "    " + formatKB(each.getSpeed()) + "/s " + TextFormat.GRAY + String.join(", ", list));
-                    }
-                    sender.sendMessage("");
-                }
-            } catch (Exception ignored) {
-                sender.sendMessage(TextFormat.RED + "    Failed to get network info.");
-            }
-            // CPU信息
+            // CPU 信息 - с использованием SystemMetrics
             {
-                CentralProcessor cpu = systemInfo.getHardware().getProcessor();
+                SystemMetrics.CpuStats cpuStats = SystemMetrics.getInstance().getCpuStats();
                 sender.sendMessage(TextFormat.YELLOW + ">>> " + TextFormat.WHITE + "CPU Info" + TextFormat.YELLOW + " <<<" + TextFormat.RESET);
-                sender.sendMessage(TextFormat.GOLD + "CPU: " + TextFormat.AQUA + cpu.getProcessorIdentifier().getName() + TextFormat.GRAY +
-                        " (" + formatFreq(cpu.getMaxFreq()) + " baseline; " + cpu.getPhysicalProcessorCount() + " cores, " + cpu.getLogicalProcessorCount() + " logical cores)");
+                
+                String cpuName = System.getProperty("os.arch", "Unknown");
+                int cores = Runtime.getRuntime().availableProcessors();
+                sender.sendMessage(TextFormat.GOLD + "CPU: " + TextFormat.AQUA + cpuName + TextFormat.GRAY +
+                        " (" + cores + " logical cores)");
                 sender.sendMessage(TextFormat.GOLD + "Thread count: " + TextFormat.GREEN + Thread.getAllStackTraces().size());
-                sender.sendMessage(TextFormat.GOLD + "CPU Features: " + TextFormat.RESET + (cpu.getProcessorIdentifier().isCpu64bit() ? "64bit, " : "32bit, ") +
-                        cpu.getProcessorIdentifier().getModel() + ", micro-arch: " + cpu.getProcessorIdentifier().getMicroarchitecture());
+                sender.sendMessage(TextFormat.GOLD + "CPU Usage: " + TextFormat.GREEN + NukkitMath.round(cpuStats.getUsagePercent(), 2) + "%");
                 sender.sendMessage("");
             }
-            // 内存信息
+            // 内存信息 - с использованием SystemMetrics
             {
-                GlobalMemory globalMemory = systemInfo.getHardware().getMemory();
-                List<PhysicalMemory> physicalMemories = globalMemory.getPhysicalMemory();
-                VirtualMemory virtualMemory = globalMemory.getVirtualMemory();
-                long allPhysicalMemory = globalMemory.getTotal() / 1000;
-                long usedPhysicalMemory = (globalMemory.getTotal() - globalMemory.getAvailable()) / 1000;
-                long allVirtualMemory = virtualMemory.getVirtualMax() / 1000;
-                long usedVirtualMemory = virtualMemory.getVirtualInUse() / 1000;
+                SystemMetrics.MemoryStats memStats = SystemMetrics.getInstance().getMemoryStats();
+                long allPhysicalMemory = memStats.totalKb();
+                long usedPhysicalMemory = memStats.getUsedKb();
+                
                 sender.sendMessage(TextFormat.YELLOW + ">>> " + TextFormat.WHITE + "Memory Info" + TextFormat.YELLOW + " <<<" + TextFormat.RESET);
-                //JVM内存
+                //JVM 内存
                 Runtime runtime = Runtime.getRuntime();
                 double totalMB = NukkitMath.round(((double) runtime.totalMemory()) / 1024 / 1024, 2);
                 double usedMB = NukkitMath.round((double) (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024, 2);
@@ -353,25 +288,14 @@ public class StatusCommand extends VanillaCommand {
                 sender.sendMessage(TextFormat.GOLD + "  Total JVM memory: " + TextFormat.RED + totalMB + " MB.");
                 sender.sendMessage(TextFormat.GOLD + "  Maximum JVM memory: " + TextFormat.RED + maxMB + " MB.");
                 // 操作系统内存
-                usage = (double) usedPhysicalMemory / allPhysicalMemory * 100;
-                usageColor = TextFormat.GREEN;
-                if (usage > 85) {
-                    usageColor = TextFormat.GOLD;
-                }
-                sender.sendMessage(TextFormat.GOLD + "OS memory: ");
-                sender.sendMessage(TextFormat.GOLD + "  Physical memory: " + TextFormat.GREEN + usageColor + formatMB(usedPhysicalMemory) + " / " + formatMB(allPhysicalMemory) + ". (" + NukkitMath.round(usage, 2) + "%)");
-                usage = (double) usedVirtualMemory / allVirtualMemory * 100;
-                usageColor = TextFormat.GREEN;
-                if (usage > 85) {
-                    usageColor = TextFormat.GOLD;
-                }
-                sender.sendMessage(TextFormat.GOLD + "  Virtual memory: " + TextFormat.GREEN + usageColor + formatMB(usedVirtualMemory) + " / " + formatMB(allVirtualMemory) + ". (" + NukkitMath.round(usage, 2) + "%)");
-                if (physicalMemories.size() > 0) {
-                    sender.sendMessage(TextFormat.GOLD + "  Hardware list: ");
-                    for (PhysicalMemory each : physicalMemories) {
-                        sender.sendMessage(TextFormat.AQUA + "    " + each.getBankLabel() + " @ " + formatFreq(each.getClockSpeed()) + TextFormat.WHITE + " " + formatMB(each.getCapacity() / 1000));
-                        sender.sendMessage(TextFormat.GRAY + "      " + each.getMemoryType() + ", " + each.getManufacturer());
+                if (allPhysicalMemory > 0) {
+                    usage = (double) usedPhysicalMemory / allPhysicalMemory * 100;
+                    usageColor = TextFormat.GREEN;
+                    if (usage > 85) {
+                        usageColor = TextFormat.GOLD;
                     }
+                    sender.sendMessage(TextFormat.GOLD + "OS memory: ");
+                    sender.sendMessage(TextFormat.GOLD + "  Physical memory: " + TextFormat.GREEN + usageColor + formatMB(usedPhysicalMemory) + " / " + formatMB(allPhysicalMemory) + ". (" + NukkitMath.round(usage, 2) + "%)");
                 }
                 sender.sendMessage("");
             }
@@ -392,7 +316,4 @@ public class StatusCommand extends VanillaCommand {
                 + (level.getTickRate() > 1 ? " (tick rate " + (19 - level.getTickRate()) + ")" : "");
     }
 
-    public enum ComputerSystemEntry {
-        HYPERVISORPRESENT
-    }
 }
