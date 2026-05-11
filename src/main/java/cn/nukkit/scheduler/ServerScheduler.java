@@ -50,6 +50,10 @@ public class ServerScheduler {
         return asyncPool;
     }
 
+    public ExecutorService getVirtualPool() {
+        return virtualPool;
+    }
+
     @Deprecated
     public TaskHandler scheduleTask(@NotNull Task task) {
         return addTask(task, 0, 0, false);
@@ -346,10 +350,12 @@ public class ServerScheduler {
             }
         } else { // Normal server tick
             for (int i = this.currentTick + 1; i <= currentTick; i++) {
-                runTasks(currentTick);
+                runTasks(i);
             }
         }
         this.currentTick = currentTick;
+        
+        // Collect completed async tasks using structured concurrency pattern
         AsyncTask.collectTask();
     }
 

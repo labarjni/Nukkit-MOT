@@ -1,10 +1,18 @@
 package cn.nukkit.math;
 
-public class BlockVector3 implements Cloneable {
+/**
+ * @author MagicDroidX
+ * Nukkit Project
+ */
+public final class BlockVector3 {
 
-    public int x;
-    public int y;
-    public int z;
+    public final int x;
+    public final int y;
+    public final int z;
+
+    // Pre-allocated common instances for performance
+    private static final BlockVector3 ZERO = new BlockVector3(0, 0, 0);
+    private static final BlockVector3 ONE = new BlockVector3(1, 1, 1);
 
     public BlockVector3(int x, int y, int z) {
         this.x = x;
@@ -13,13 +21,25 @@ public class BlockVector3 implements Cloneable {
     }
 
     public BlockVector3() {
+        this(0, 0, 0);
+    }
+
+    /**
+     * Returns a cached zero vector instance.
+     */
+    public static BlockVector3 zero() {
+        return ZERO;
+    }
+
+    /**
+     * Returns a cached one vector instance.
+     */
+    public static BlockVector3 one() {
+        return ONE;
     }
 
     public BlockVector3 setComponents(int x, int y, int z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        return this;
+        return new BlockVector3(x, y, z);
     }
 
     public int getX() {
@@ -32,21 +52,6 @@ public class BlockVector3 implements Cloneable {
 
     public int getZ() {
         return this.z;
-    }
-
-    public BlockVector3 setX(int x) {
-        this.x = x;
-        return this;
-    }
-
-    public BlockVector3 setY(int y) {
-        this.y = y;
-        return this;
-    }
-
-    public BlockVector3 setZ(int z) {
-        this.z = z;
-        return this;
     }
 
     public Vector3 add(double x) {
@@ -114,7 +119,7 @@ public class BlockVector3 implements Cloneable {
     }
 
     public BlockVector3 subtract(BlockVector3 x) {
-        return this.add(-x.x, -x.y, -x.z);
+        return new BlockVector3(this.x - x.x, this.y - x.y, this.z - x.z);
     }
 
     public BlockVector3 multiply(int number) {
@@ -260,16 +265,7 @@ public class BlockVector3 implements Cloneable {
 
     @Override
     public String toString() {
-        return "BlockPosition(level=" + ",x=" + this.x + ",y=" + this.y + ",z=" + this.z + ')';
-    }
-
-    @Override
-    public BlockVector3 clone() {
-        try {
-            return (BlockVector3) super.clone();
-        } catch (CloneNotSupportedException e) {
-            return null;
-        }
+        return "BlockPosition(level=,x=" + this.x + ",y=" + this.y + ",z=" + this.z + ')';
     }
 
     public Vector3 asVector3() {
