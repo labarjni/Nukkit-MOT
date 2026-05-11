@@ -5,7 +5,7 @@ import cn.nukkit.nbt.stream.NBTOutputStream;
 
 import java.io.IOException;
 
-public class EndTag extends Tag {
+public final class EndTag extends Tag {
 
     public EndTag() {
         super(null);

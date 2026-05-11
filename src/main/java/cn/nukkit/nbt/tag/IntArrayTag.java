@@ -6,7 +6,7 @@ import cn.nukkit.nbt.stream.NBTOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class IntArrayTag extends Tag {
+public final class IntArrayTag extends Tag {
 
     public int[] data;
 

@@ -7,7 +7,7 @@ import cn.nukkit.utils.Binary;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class ByteArrayTag extends Tag {
+public final class ByteArrayTag extends Tag {
 
     public byte[] data;
 

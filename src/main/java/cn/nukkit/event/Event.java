@@ -22,7 +22,7 @@ import cn.nukkit.utils.EventException;
  * @see cn.nukkit.event.EventHandler
  * @since Nukkit 1.0 | Nukkit API 1.0.0
  */
-public abstract class Event {
+public sealed abstract class Event {
 
     protected String eventName = null;
     private boolean isCancelled = false;

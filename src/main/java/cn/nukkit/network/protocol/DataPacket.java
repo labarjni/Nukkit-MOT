@@ -16,7 +16,7 @@ import lombok.extern.log4j.Log4j2;
  * Nukkit Project
  */
 @Log4j2
-public abstract class DataPacket extends BinaryStream implements Cloneable {
+public sealed abstract class DataPacket extends BinaryStream implements Cloneable {
 
     public int protocol = Integer.MAX_VALUE;
     public GameVersion gameVersion = GameVersion.getLastVersion();

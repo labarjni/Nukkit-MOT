@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Objects;
 
-public abstract class Tag {
+public sealed abstract class Tag permits EndTag, ByteTag, ShortTag, IntTag, LongTag, FloatTag, DoubleTag, ByteArrayTag, StringTag, ListTag, CompoundTag, IntArrayTag, NumberTag {
 
     public static final byte TAG_End = 0;
     public static final byte TAG_Byte = 1;
