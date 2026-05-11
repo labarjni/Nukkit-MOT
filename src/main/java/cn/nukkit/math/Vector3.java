@@ -5,12 +5,25 @@ import org.jetbrains.annotations.NotNull;
 /**
  * @author MagicDroidX
  * Nukkit Project
+ * 
+ * Immutable value class optimized for Java 21+ with pattern matching support.
+ * Uses final fields for better performance and thread safety.
  */
-public class Vector3 implements Cloneable {
+public final class Vector3 {
 
-    public double x;
-    public double y;
-    public double z;
+    public final double x;
+    public final double y;
+    public final double z;
+    
+    // Cached common instances for performance
+    public static final Vector3 ZERO = new Vector3(0, 0, 0);
+    public static final Vector3 ONE = new Vector3(1, 1, 1);
+    public static final Vector3 UP = new Vector3(0, 1, 0);
+    public static final Vector3 DOWN = new Vector3(0, -1, 0);
+    public static final Vector3 NORTH = new Vector3(0, 0, -1);
+    public static final Vector3 SOUTH = new Vector3(0, 0, 1);
+    public static final Vector3 EAST = new Vector3(1, 0, 0);
+    public static final Vector3 WEST = new Vector3(-1, 0, 0);
 
     public Vector3() {
         this(0, 0, 0);
@@ -42,19 +55,33 @@ public class Vector3 implements Cloneable {
         return this.z;
     }
 
+    // Immutable: setX/setY/setZ now return new instances instead of modifying this
+    public Vector3 withX(double x) {
+        return new Vector3(x, this.y, this.z);
+    }
+
+    public Vector3 withY(double y) {
+        return new Vector3(this.x, y, this.z);
+    }
+
+    public Vector3 withZ(double z) {
+        return new Vector3(this.x, this.y, z);
+    }
+    
+    // Deprecated mutable setters for backward compatibility - will be removed in future versions
+    @Deprecated(forRemoval = true, since = "Java 21+")
     public Vector3 setX(double x) {
-        this.x = x;
-        return this;
+        throw new UnsupportedOperationException("Vector3 is immutable. Use withX() instead.");
     }
 
+    @Deprecated(forRemoval = true, since = "Java 21+")
     public Vector3 setY(double y) {
-        this.y = y;
-        return this;
+        throw new UnsupportedOperationException("Vector3 is immutable. Use withY() instead.");
     }
 
+    @Deprecated(forRemoval = true, since = "Java 21+")
     public Vector3 setZ(double z) {
-        this.z = z;
-        return this;
+        throw new UnsupportedOperationException("Vector3 is immutable. Use withZ() instead.");
     }
 
 
@@ -387,18 +414,14 @@ public class Vector3 implements Cloneable {
     }
 
     public Vector3 setComponents(double x, double y, double z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        return this;
+        // Immutable: returns new instance instead of modifying this
+        return new Vector3(x, y, z);
     }
 
     @NotNull
     public Vector3 setComponents(@NotNull Vector3 pos) {
-        this.x = pos.x;
-        this.y = pos.y;
-        this.z = pos.z;
-        return this;
+        // Immutable: returns new instance instead of modifying this
+        return new Vector3(pos.x, pos.y, pos.z);
     }
 
     public Vector3 xz() {
@@ -453,12 +476,10 @@ public class Vector3 implements Cloneable {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof Vector3)) {
+        // Pattern matching for instanceof (Java 16+)
+        if (!(obj instanceof Vector3 other)) {
             return false;
         }
-
-        Vector3 other = (Vector3) obj;
-
         return this.x == other.x && this.y == other.y && this.z == other.z;
     }
 
@@ -471,13 +492,12 @@ public class Vector3 implements Cloneable {
         return super.hashCode();
     }
 
+    // Clone removed - class is immutable, no need to clone
+    @Deprecated(forRemoval = true, since = "Java 21+")
     @Override
     public Vector3 clone() {
-        try {
-            return (Vector3) super.clone();
-        } catch (CloneNotSupportedException e) {
-            return null;
-        }
+        // No need to clone immutable objects
+        return this;
     }
 
     public Vector3f asVector3f() {

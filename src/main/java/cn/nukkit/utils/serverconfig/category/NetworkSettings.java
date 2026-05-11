@@ -1,70 +1,107 @@
 package cn.nukkit.utils.serverconfig.category;
 
-import eu.okaeri.configs.OkaeriConfig;
 import eu.okaeri.configs.annotation.Comment;
 import eu.okaeri.configs.annotation.CustomKey;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
 import org.cloudburstmc.netty.channel.raknet.RakConstants;
 
-import java.util.ArrayList;
 import java.util.List;
 
-@Getter
-@Setter
-@Accessors(fluent = true)
-public class NetworkSettings extends OkaeriConfig {
-
+/**
+ * Network configuration record (Java 17+).
+ * Provides immutable data container with automatic equals, hashCode, and toString.
+ */
+public record NetworkSettings(
     @Comment("ZLIB compression provider (2 recommended)")
     @CustomKey("zlib-provider")
-    private int zlibProvider = 2;
-
+    int zlibProvider,
+    
     @Comment("Compression level (1-9, higher = more CPU, smaller packets)")
     @CustomKey("compression-level")
-    private int compressionLevel = 5;
-
+    int compressionLevel,
+    
     @Comment("Chunk compression level (1-9, higher = more CPU, smaller chunks)")
     @CustomKey("chunk-compression-level")
-    private int chunkCompressionLevel = 7;
-
+    int chunkCompressionLevel,
+    
     @Comment("Compression threshold in bytes")
     @CustomKey("compression-threshold")
-    private int compressionThreshold = 256;
-
+    int compressionThreshold,
+    
     @Comment("Use Snappy compression instead of ZLIB")
     @CustomKey("use-snappy-compression")
-    private boolean useSnappyCompression = false;
-
+    boolean useSnappyCompression,
+    
     @Comment("RakNet packet limit per tick")
     @CustomKey("rak-packet-limit")
-    private int rakPacketLimit = RakConstants.DEFAULT_PACKET_LIMIT;
-
+    int rakPacketLimit,
+    
     @Comment("RakNet cookie mode (active, offloaded, offloaded_psk, off, none, stateless)")
     @CustomKey("rak-cookie-mode")
-    private String rakCookieMode = "active";
-
+    String rakCookieMode,
+    
     @Comment("Client timeout in milliseconds (reserved, not yet applied)")
     @CustomKey("timeout-milliseconds")
-    private int timeoutMilliseconds = 25000;
-
+    int timeoutMilliseconds,
+    
     @Comment("Show plugin list in query response")
     @CustomKey("query-plugins")
-    private boolean queryPlugins = false;
-
+    boolean queryPlugins,
+    
     @Comment("Enable WaterDog proxy mode")
     @CustomKey("use-waterdog")
-    private boolean useWaterdog = false;
-
+    boolean useWaterdog,
+    
     @Comment("ViaProxy Java Edition player username prefix")
     @CustomKey("viaproxy-username-prefix")
-    private String viaProxyUsernamePrefix = "";
-
+    String viaProxyUsernamePrefix,
+    
     @Comment("Enable Proxy Protocol v2 for UDP proxies (e.g. FRP). Whitelisted sources must send a valid PPv2 header; non-whitelisted sources are treated as direct clients")
     @CustomKey("enable-proxy-protocol")
-    private boolean enableProxyProtocol = false;
-
+    boolean enableProxyProtocol,
+    
     @Comment("Whitelisted proxy source IP/CIDR entries for Proxy Protocol. Use proxy addresses, not player addresses. Headerless or invalid packets from whitelisted sources are dropped")
     @CustomKey("proxy-protocol-whitelist")
-    private List<String> proxyProtocolWhitelist = new ArrayList<>(List.of("127.0.0.1/32"));
+    List<String> proxyProtocolWhitelist
+) {
+    // Canonical constructor with defaults
+    public NetworkSettings {
+        if (rakCookieMode == null || rakCookieMode.isBlank()) {
+            rakCookieMode = "active";
+        }
+        if (viaProxyUsernamePrefix == null) {
+            viaProxyUsernamePrefix = "";
+        }
+        if (proxyProtocolWhitelist == null) {
+            proxyProtocolWhitelist = List.of("127.0.0.1/32");
+        }
+    }
+    
+    // Convenience constructor with defaults
+    public NetworkSettings() {
+        this(2, 5, 7, 256, false, RakConstants.DEFAULT_PACKET_LIMIT, 
+             "active", 25000, false, false, "", false, List.of("127.0.0.1/32"));
+    }
+    
+    // Builder-style withers for immutable updates
+    public NetworkSettings withZlibProvider(int zlibProvider) {
+        return new NetworkSettings(zlibProvider, this.compressionLevel, this.chunkCompressionLevel,
+                this.compressionThreshold, this.useSnappyCompression, this.rakPacketLimit,
+                this.rakCookieMode, this.timeoutMilliseconds, this.queryPlugins, this.useWaterdog,
+                this.viaProxyUsernamePrefix, this.enableProxyProtocol, this.proxyProtocolWhitelist);
+    }
+    
+    public NetworkSettings withCompressionLevel(int compressionLevel) {
+        return new NetworkSettings(this.zlibProvider, compressionLevel, this.chunkCompressionLevel,
+                this.compressionThreshold, this.useSnappyCompression, this.rakPacketLimit,
+                this.rakCookieMode, this.timeoutMilliseconds, this.queryPlugins, this.useWaterdog,
+                this.viaProxyUsernamePrefix, this.enableProxyProtocol, this.proxyProtocolWhitelist);
+    }
+    
+    public NetworkSettings withRakCookieMode(String rakCookieMode) {
+        return new NetworkSettings(this.zlibProvider, this.compressionLevel, this.chunkCompressionLevel,
+                this.compressionThreshold, this.useSnappyCompression, this.rakPacketLimit,
+                rakCookieMode != null ? rakCookieMode : "active", this.timeoutMilliseconds, 
+                this.queryPlugins, this.useWaterdog, this.viaProxyUsernamePrefix, 
+                this.enableProxyProtocol, this.proxyProtocolWhitelist);
+    }
 }
