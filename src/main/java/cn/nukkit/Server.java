@@ -85,6 +85,7 @@ import cn.nukkit.scoreboard.manager.IScoreboardManager;
 import cn.nukkit.scoreboard.manager.ScoreboardManager;
 import cn.nukkit.scoreboard.storage.JSONScoreboardStorage;
 import cn.nukkit.utils.*;
+import cn.nukkit.utils.SystemMetrics;
 import cn.nukkit.utils.bugreport.ExceptionHandler;
 import cn.nukkit.utils.serverconfig.ConfigComments;
 import cn.nukkit.utils.serverconfig.ConfigMigration;
@@ -1276,6 +1277,9 @@ public class Server {
     }
 
     public void start() {
+        // Запускаем сборщик системных метрик с интервалом 500мс для высокой точности
+        SystemMetrics.getInstance().start(500);
+        
         if (this.getPropertyBoolean("enable-query", true)) {
             this.queryHandler = new QueryHandler();
         }
