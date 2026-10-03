@@ -144,18 +144,4 @@ public class EntityGhast extends EntityFlyingMob {
     public int nearbyDistanceMultiplier() {
         return 1000; // don't follow
     }
-
-    @Override
-    public void kill() {
-        if (this.isAlive()) {
-            super.kill();
-
-            if (this.getLastDamageCause() instanceof EntityDamageByChildEntityEvent && ((EntityDamageByChildEntityEvent) this.getLastDamageCause()).getDamager() == this) {
-                Entity damager = ((EntityDamageByChildEntityEvent) this.getLastDamageCause()).getChild();
-                if (damager instanceof EntityGhastFireBall && ((EntityGhastFireBall) damager).directionChanged != null) {
-                    ((EntityGhastFireBall) damager).directionChanged.awardAchievement("ghast");
-                }
-            }
-        }
-    }
 }

@@ -919,9 +919,9 @@ public abstract class Block extends Position implements Metadatable, Cloneable, 
             hasAquaAffinity = Optional.ofNullable(player.getInventory().getHelmet().getEnchantment(Enchantment.ID_WATER_WORKER))
                     .map(Enchantment::getLevel).map(l -> l >= 1).orElse(false);
             hasteEffectLevel = Optional.ofNullable(player.getEffect(Effect.HASTE))
-                    .map(Effect::getAmplifier).orElse(-1) + 1;
+                    .map(Effect::getAmplifier).orElse(0);
             miningFatigueLevel = Optional.ofNullable(player.getEffect(Effect.MINING_FATIGUE))
-                    .map(Effect::getAmplifier).orElse(-1) + 1;
+                    .map(Effect::getAmplifier).orElse(0);
         }
 
 
@@ -938,7 +938,7 @@ public abstract class Block extends Position implements Metadatable, Cloneable, 
                     .map(Enchantment::getLevel).orElse(0);
 
             if (canHarvest && efficiencyLevel > 0) {
-                speedMultiplier += efficiencyLevel * efficiencyLevel + 1;
+                speedMultiplier += efficiencyLevel ^ 2 + 1;
             }
         }
 
@@ -956,7 +956,7 @@ public abstract class Block extends Position implements Metadatable, Cloneable, 
         }
 
         if (miningFatigueLevel > 0) {
-            speedMultiplier *= Math.pow(0.3, miningFatigueLevel);
+            speedMultiplier /= 3 ^ miningFatigueLevel;
         }
 
         seconds /= speedMultiplier;

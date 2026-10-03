@@ -25,6 +25,6 @@ public class ItemWindCharge extends StringItemProjectileBase {
 
     @Override
     public float getThrowForce() {
-        return 1.5f;
+        return 0.5f;
     }
 }

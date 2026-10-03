@@ -9,7 +9,7 @@ import org.cloudburstmc.protocol.common.util.index.Indexable;
 import org.cloudburstmc.protocol.common.util.index.Unindexed;
 
 @Value
-@RequiredArgsConstructor(onConstructor_ = { @Deprecated })
+@RequiredArgsConstructor
 public class BiomeConsolidatedFeatureData {
     BiomeScatterParamData scatter;
     @Getter(AccessLevel.NONE)

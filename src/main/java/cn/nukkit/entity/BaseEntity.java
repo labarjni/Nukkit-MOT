@@ -401,11 +401,6 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
         baby.setBaby(true);
         baby.setPersistent(true); // TODO: different flag for this?
         baby.spawnToAll();
-        if (baby instanceof EntityCow) {
-            if (player != null) {
-                player.awardAchievement("breedCow");
-            }
-        }
         this.level.dropExpOrb(this, Utils.rand(1, 7));
         return true;
     }
