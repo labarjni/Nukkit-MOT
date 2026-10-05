@@ -3,6 +3,7 @@ package cn.nukkit.level.format.leveldb;
 import cn.nukkit.GameVersion;
 import cn.nukkit.Server;
 import cn.nukkit.block.Block;
+import cn.nukkit.level.DimensionData;
 import cn.nukkit.level.GameRules;
 import cn.nukkit.level.Level;
 import cn.nukkit.level.format.FullChunk;
@@ -594,16 +595,12 @@ public class LevelDBProvider implements LevelProvider {
 
     @Override
     public BaseFullChunk getLoadedChunk(long hash) {
-        synchronized (this.chunks) {
-            return this.chunks.get(hash);
-        }
+        return this.chunks.get(hash);
     }
 
     @Override
     public Map<Long, BaseFullChunk> getLoadedChunks() {
-        synchronized (this.chunks) {
-            return ImmutableMap.copyOf(chunks);
-        }
+        return ImmutableMap.copyOf(chunks);
     }
 
     public Long2ObjectMap<? extends FullChunk> getLoadedChunksUnsafe() {
@@ -726,7 +723,6 @@ public class LevelDBProvider implements LevelProvider {
         if (chunk == null) {
             return false;
         }
-
         if (chunk instanceof LevelDBChunk levelDBChunk) {
             // async-chunks 同时控制保存。/ async-chunks also controls saving.
             if (Server.getInstance().asyncChunkSending) {
@@ -759,7 +755,6 @@ public class LevelDBProvider implements LevelProvider {
             return false;
         }
         this.chunks.remove(index, chunk);
-
         return true;
     }
 
@@ -1424,16 +1419,14 @@ public class LevelDBProvider implements LevelProvider {
     @Override
     public void setChunk(int chunkX, int chunkZ, FullChunk chunk) {
         if (!(chunk instanceof LevelDBChunk)) throw new IllegalArgumentException("Only LevelDB chunks are supported");
-
-        long index = Level.chunkHash(chunkX, chunkZ);
-
-        BaseFullChunk oldChunk = this.chunks.remove(index);
-        if (oldChunk != null && oldChunk != chunk) {
-            oldChunk.setProvider(null);
-        }
-
         chunk.setProvider(this);
         chunk.setPosition(chunkX, chunkZ);
+        long index = Level.chunkHash(chunkX, chunkZ);
+
+        FullChunk oldChunk = this.chunks.get(index);
+        if (oldChunk != null && !oldChunk.equals(chunk)) {
+            this.unloadChunk(chunkX, chunkZ, false);
+        }
         this.chunks.put(index, (LevelDBChunk) chunk);
     }
 
@@ -1465,6 +1458,9 @@ public class LevelDBProvider implements LevelProvider {
     }
 
     private synchronized LevelDBChunk readOrCreateChunk(int chunkX, int chunkZ, boolean create) {
+        if (this.closed) {
+            return null;
+        }
         // 读取前提交挂起写。/ Commit pending data before reading.
         this.commitPendingWrite(Level.chunkHash(chunkX, chunkZ));
         LevelDBChunk chunk = null;
@@ -1511,7 +1507,7 @@ public class LevelDBProvider implements LevelProvider {
                 drained = this.executor.awaitTermination(this.closeDrainTimeoutMillis, TimeUnit.MILLISECONDS);
                 if (!drained) {
                     log.warn("LevelDB executor did not terminate in time, forcing shutdown for: {}", this.getName());
-                    java.util.List<Runnable> droppedTasks = this.executor.shutdownNow();
+                    List<Runnable> droppedTasks = this.executor.shutdownNow();
                     if (!droppedTasks.isEmpty()) {
                         log.warn("Dropped {} pending tasks during forced shutdown", droppedTasks.size());
                     }
@@ -1767,12 +1763,14 @@ public class LevelDBProvider implements LevelProvider {
 
     @Override
     public int getMinBlockY() {
-        return this.level.getDimensionData().getMinHeight();
+        Level levelTemp = this.level;
+        return (levelTemp == null ? DimensionData.LEGACY_DIMENSION : levelTemp.getDimensionData()).getMinHeight();
     }
 
     @Override
     public int getMaxBlockY() {
-        return this.level.getDimensionData().getMaxHeight();
+        Level levelTemp = this.level;
+        return (levelTemp == null ? DimensionData.LEGACY_DIMENSION : levelTemp.getDimensionData()).getMaxHeight();
     }
 
     protected static BlockVector3 deserializeExtraDataKey(int chunkVersion, int key) {
