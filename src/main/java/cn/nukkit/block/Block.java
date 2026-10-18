@@ -917,13 +917,12 @@ public abstract class Block extends Position implements Metadatable, Cloneable, 
         if (player != null) {
             hasConduitPower = player.hasEffect(Effect.CONDUIT_POWER);
             hasAquaAffinity = Optional.ofNullable(player.getInventory().getHelmet().getEnchantment(Enchantment.ID_WATER_WORKER))
-                    .map(Enchantment::getLevel).map(l -> l >= 1).orElse(false);
+                .map(Enchantment::getLevel).map(l -> l >= 1).orElse(false);
             hasteEffectLevel = Optional.ofNullable(player.getEffect(Effect.HASTE))
-                    .map(Effect::getAmplifier).orElse(-1) + 1;
+                .map(Effect::getAmplifier).orElse(-1) + 1;
             miningFatigueLevel = Optional.ofNullable(player.getEffect(Effect.MINING_FATIGUE))
-                    .map(Effect::getAmplifier).orElse(-1) + 1;
+                .map(Effect::getAmplifier).orElse(-1) + 1;
         }
-
 
         int blockId = this.getId();
 
@@ -935,16 +934,22 @@ public abstract class Block extends Position implements Metadatable, Cloneable, 
             speedMultiplier = toolBreakTimeBonus0(item);
 
             int efficiencyLevel = Optional.ofNullable(item.getEnchantment(Enchantment.ID_EFFICIENCY))
-                    .map(Enchantment::getLevel).orElse(0);
+                .map(Enchantment::getLevel).orElse(0);
 
             if (canHarvest && efficiencyLevel > 0) {
                 speedMultiplier += efficiencyLevel * efficiencyLevel + 1;
             }
+
+            if (hasConduitPower) hasteEffectLevel = Integer.max(hasteEffectLevel, 2);
+
+            if (hasteEffectLevel > 0) {
+                speedMultiplier *= 1 + (0.2 * hasteEffectLevel);
+            }
         }
 
         int effectiveHasteEffectLevel = hasConduitPower
-                ? Integer.max(hasteEffectLevel, 2)
-                : hasteEffectLevel;
+            ? Integer.max(hasteEffectLevel, 2)
+            : hasteEffectLevel;
 
         if (effectiveHasteEffectLevel > 0) {
             speedMultiplier *= 1 + (0.2 * effectiveHasteEffectLevel);
